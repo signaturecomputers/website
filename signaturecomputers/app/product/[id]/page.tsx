@@ -116,8 +116,8 @@ export default function ProductDetailsPage() {
                                     key={tab}
                                     onClick={() => setActiveTab(tab)}
                                     className={`${activeTab === tab
-                                            ? 'border-blue-500 text-blue-600'
-                                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                        ? 'border-blue-500 text-blue-600'
+                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                                         } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm capitalize transition-colors`}
                                 >
                                     {tab}
@@ -151,6 +151,40 @@ export default function ProductDetailsPage() {
                         )}
                     </div>
                 </div>
+
+                {/* Related Products Section */}
+                <div className="mt-20 border-t border-gray-200 dark:border-gray-800 pt-16">
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-8">Related Products</h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        {/* Reusing ProductCard for consistent design */}
+                        {[
+                            { id: '2', name: 'Dell XPS 15', brand: 'Dell', price: 1899, originalPrice: 2099, image: '', rating: 4.5 },
+                            { id: '3', name: 'ThinkPad X1 Carbon', brand: 'Lenovo', price: 1599, originalPrice: 1799, image: '', rating: 4.8 },
+                            { id: '4', name: 'HP Spectre x360', brand: 'HP', price: 1499, originalPrice: 1699, image: '', rating: 4.6 },
+                            { id: '5', name: 'Asus ROG Zephyrus', brand: 'Asus', price: 1999, originalPrice: 2199, image: '', rating: 4.7 }
+                        ].map((relatedProduct) => (
+                            // @ts-ignore - ProductCard expects specific props, mocking for UI demo
+                            <div key={relatedProduct.id} className="bg-white dark:bg-gray-900 rounded-xl shadow-sm hover:shadow-lg transition-shadow border border-gray-100 dark:border-gray-800 overflow-hidden group">
+                                <div className="relative aspect-square overflow-hidden bg-gray-100 dark:bg-gray-800">
+                                    <div className="w-full h-full flex items-center justify-center text-gray-400">
+                                        <span className="text-sm">Image</span>
+                                    </div>
+                                </div>
+                                <div className="p-4">
+                                    <p className="text-xs text-gray-500 mb-1">{relatedProduct.brand}</p>
+                                    <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 hover:text-blue-600 cursor-pointer">{relatedProduct.name}</h3>
+                                    <div className="flex items-center justify-between mt-3">
+                                        <span className="font-bold text-gray-900">${relatedProduct.price.toLocaleString()}</span>
+                                        <button className="p-2 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-colors">
+                                            <FiShoppingCart />
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
             </div>
         </div>
     );
