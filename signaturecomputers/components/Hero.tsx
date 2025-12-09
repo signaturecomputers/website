@@ -5,20 +5,17 @@ import { FiShoppingCart } from 'react-icons/fi';
 export default function Hero() {
     return (
         <div className="relative bg-white overflow-hidden">
-            {/* ALIGNMENT: Full width to match Navbar */}
             <div className="w-full">
 
-                {/* GAP CONTROL: pt-20 push down */}
-                <div className="relative z-10 bg-white pb-8 lg:pb-16 pt-16 lg:pt-24">
+                {/* 
+                   Vertical Spacing Adjustment: 
+                   Reduced pt-24 -> pt-12/16 and pb-16 -> pb-4 
+                   to accommodate the logo strip without growing the total height excessively.
+                */}
+                <div className="relative z-10 bg-white pb-12 pt-12 lg:pt-16">
+                    <main className="w-full px-4 sm:px-8 lg:px-12 flex flex-col lg:flex-row items-center gap-10 lg:gap-0">
 
-                    {/* Main Layout */}
-                    <main className="mt-0 w-full px-4 sm:px-8 lg:px-12 flex flex-col lg:flex-row items-center gap-10 lg:gap-0">
-
-                        {/* 
-               LEFT: Text Content
-               - lg:w-[58%]: End point aligns with Search Bar end
-               - Alignment: Matches Logo (pl-6 effect)
-            */}
+                        {/* LEFT: Text Content */}
                         <div className="flex-1 lg:flex-none lg:w-[58%] sm:text-center lg:text-left z-20 pl-0 lg:pl-6 self-center pr-8">
                             <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold tracking-wide text-blue-700 bg-blue-100 mb-4 uppercase">
                                 HP Direct Dealer & Distributor
@@ -45,17 +42,12 @@ export default function Hero() {
                             </div>
                         </div>
 
-                        {/* 
-               RIGHT: Image Content 
-               - lg:w-[42%]: Starts exactly where Text ends
-               - justify-start: Image strictly left-aligned in this col
-            */}
+                        {/* RIGHT: Image Content */}
                         <div className="flex-1 lg:flex-none lg:w-[42%] w-full relative flex items-start justify-start mt-6 lg:mt-0">
                             <div className="relative w-full max-w-lg lg:max-w-none h-auto">
-                                {/* High Clarity Image Settings */}
                                 <Image
                                     src="/hero-image-new.png"
-                                    alt="Signature Computers Hero - PCs and Laptops"
+                                    alt="Signature Computers Hero"
                                     width={800}
                                     height={600}
                                     priority
@@ -65,7 +57,6 @@ export default function Hero() {
                                 />
                             </div>
                         </div>
-
                     </main>
                 </div>
             </div>

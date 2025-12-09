@@ -76,9 +76,9 @@ export default function Navbar() {
                         <nav className="flex space-x-6 items-center">
                             <Link href="/" className="text-sm font-semibold text-gray-700 hover:text-blue-600 transition-colors">Home</Link>
                             <Link href="/products" className="text-sm font-semibold text-gray-700 hover:text-blue-600 transition-colors">Products</Link>
-                            <Link href="/about" className="text-sm font-semibold text-gray-700 hover:text-blue-600 transition-colors">About Us</Link>
+                            <Link href="/#about-us" className="text-sm font-semibold text-gray-700 hover:text-blue-600 transition-colors">About Us</Link>
                             {/* Hot Deals Color Fix: Removed red, now matches others */}
-                            <Link href="/deals" className="text-sm font-semibold text-gray-700 hover:text-blue-600 transition-colors">Hot Deals</Link>
+                            <Link href="/hot-deals" className="text-sm font-semibold text-gray-700 hover:text-blue-600 transition-colors">Hot Deals</Link>
                             <Link href="/contact" className="text-sm font-semibold text-gray-700 hover:text-blue-600 transition-colors">Contact</Link>
                         </nav>
 
@@ -159,7 +159,7 @@ export default function Navbar() {
                     <div className="px-2 pt-2 pb-3 space-y-1">
                         <Link href="/" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50">Home</Link>
                         <Link href="/products" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50">Products</Link>
-                        <Link href="/about" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50">About Us</Link>
+                        <Link href="/#about-us" onClick={() => setIsOpen(false)} className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50">About Us</Link>
                         <Link href="/deals" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50">Hot Deals</Link>
                         <Link href="/contact" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50">Contact</Link>
                         <div className="border-t border-gray-100 mt-2 pt-2">

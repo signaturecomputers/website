@@ -6,7 +6,7 @@ import { FiClock, FiUsers, FiAward } from 'react-icons/fi';
 export default function AboutSection() {
     return (
         // REMOVED: overflow-hidden to prevent cutting off left-shifted text if screen is tight
-        <section id="about" className="relative bg-white py-8">
+        <section id="about-us" className="relative bg-white py-8 scroll-mt-24">
             <div className="w-full">
                 <div className="relative z-10 bg-white">
                     <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-12">
