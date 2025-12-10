@@ -1,59 +1,127 @@
+'use client';
+
 import Link from 'next/link';
 import Image from 'next/image';
-import { FiFacebook, FiTwitter, FiInstagram, FiLinkedin, FiMail, FiPhone, FiMapPin } from 'react-icons/fi';
+import { useState, useEffect } from 'react';
+import { FiFacebook, FiTwitter, FiInstagram, FiLinkedin, FiStar } from 'react-icons/fi';
+import { useAuth } from '@/context/AuthContext';
+import { useRouter, usePathname } from 'next/navigation';
+import { useSmoothScroll } from '@/hooks/useSmoothScroll';
 
 export default function Footer() {
     const currentYear = new Date().getFullYear();
+    const { user, loading } = useAuth();
+    const router = useRouter();
+    const pathname = usePathname();
+    const { smoothScrollTo } = useSmoothScroll();
+
+    const [rating, setRating] = useState(0);
+    const [review, setReview] = useState('');
+    const [isSubmitted, setIsSubmitted] = useState(false);
+    const [hoveredStar, setHoveredStar] = useState(0);
+    const [validationError, setValidationError] = useState('');
+
+    // Restore draft if available and user is logged in; otherwise clear it
+    useEffect(() => {
+        if (typeof window !== 'undefined' && !loading) {
+            const draft = sessionStorage.getItem('review_draft');
+
+            if (user && draft) {
+                // Restore state for logged-in user
+                try {
+                    const { rating: savedRating, review: savedReview } = JSON.parse(draft);
+                    if (savedRating) setRating(Number(savedRating));
+                    if (savedReview) setReview(savedReview);
+                } catch (e) {
+                    console.error("Failed to parse review draft", e);
+                }
+            } else if (!user) {
+                // Strictly plain slate for non-logged-in user
+                setRating(0);
+                setReview('');
+                sessionStorage.removeItem('review_draft');
+            }
+        }
+    }, [user, loading]);
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        setValidationError('');
+
+        // 1. Validation: Require at least Rating OR Review
+        if (rating === 0 && !review.trim()) {
+            setValidationError('Please add a rating or a short feedback to submit.');
+            return;
+        }
+
+        // 2. Auth Check
+        if (!user) {
+            // Save draft
+            sessionStorage.setItem('review_draft', JSON.stringify({ rating, review }));
+            // Redirect to login
+            const redirectUrl = encodeURIComponent(`${pathname}#contact-footer`);
+            router.push(`/login?reason=feedback&redirect=${redirectUrl}`);
+            return;
+        }
+
+        // 3. Submit (Mock)
+        setIsSubmitted(true);
+        sessionStorage.removeItem('review_draft'); // Clear draft on success
+        setTimeout(() => {
+            // Reset state? Or keep success message.
+            // setRating(0); setReview(''); setIsSubmitted(false);
+        }, 3000);
+    };
 
     return (
-        <footer className="w-full bg-[#0f172a] text-gray-300 border-t-0 mt-0 mb-0 pb-0">
-            <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 pt-8 pb-0">
+        <footer id="contact-footer" className="w-full bg-[#0f172a] text-gray-300 border-t-0 mt-0 mb-0 pb-0">
+            <div className="w-full px-4 sm:px-8 lg:px-12 pt-10 pb-4">
 
-                {/* GRID LAYOUT: 4 Columns on Desktop */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-8">
+                {/* LAYOUT: Grid on Mobile/Tablet, Flex on Desktop for Uniform Visual Spacing */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-row lg:items-start lg:gap-14">
 
                     {/* COLUMN 1: Brand Info & QR Code */}
-                    <div className="space-y-6">
+                    <div className="space-y-6 lg:w-[22%] lg:shrink-0">
                         <div>
-                            <h3 className="text-2xl font-bold text-white tracking-tight mb-2">Signature Computers</h3>
-                            <p className="text-sm leading-relaxed text-gray-400 mb-4">
+                            <h3 className="text-2xl font-bold text-white tracking-tight mb-3">Signature Computers</h3>
+                            <p className="text-sm leading-relaxed text-gray-400 mb-2">
                                 Your trusted partner for genuine HP products and enterprise IT solutions.
                             </p>
-                            <p className="text-sm font-semibold text-white/90">
-                                Authorized HP Distributor & Business Partner
+                            <p className="text-sm leading-relaxed text-gray-400">
+                                For bulk orders, special pricing, or latest HP models, feel free to reach out to us.
                             </p>
                         </div>
 
-                        {/* WhatsApp QR */}
-                        <div className="pt-2">
-                            <div className="bg-white p-2 rounded-lg w-fit mb-2 shadow-lg">
+                        {/* WhatsApp QR (Moved Below Text) */}
+                        <div className="pt-1">
+                            <div className="bg-white p-1.5 rounded-lg w-fit mb-2 shadow-lg">
                                 <Image
-                                    src="/images/whatsapp-qr.png"
+                                    src="/images/whatsapp-qr.jpg"
                                     alt="WhatsApp QR Code"
-                                    width={100}
-                                    height={100}
-                                    className="w-24 h-24 object-contain"
+                                    width={80}
+                                    height={80}
+                                    className="w-20 h-20 object-contain"
                                 />
                             </div>
-                            <p className="text-xs text-gray-400">Scan to chat with us on WhatsApp</p>
+                            <p className="text-xs text-gray-400">Scan to chat on WhatsApp</p>
                         </div>
                     </div>
 
                     {/* COLUMN 2: Quick Links */}
-                    <div>
-                        <h4 className="text-lg font-bold text-white mb-6 border-b border-gray-700/50 pb-2 inline-block">Quick Links</h4>
-                        <ul className="space-y-3 text-sm">
-                            <li><Link href="/about" className="hover:text-white hover:pl-1 transition-all">About Us</Link></li>
+                    <div className="lg:shrink-0">
+                        <h4 className="text-base font-bold text-white mb-4 border-b border-gray-700/50 pb-1 inline-block">Quick Links</h4>
+                        <ul className="space-y-2 text-sm">
+                            <li><a href="#about-us" onClick={(e) => smoothScrollTo(e, 'about-us')} className="hover:text-white hover:pl-1 transition-all cursor-pointer">About Us</a></li>
                             <li><Link href="/products" className="hover:text-white hover:pl-1 transition-all">Products</Link></li>
-                            <li><Link href="/contact" className="hover:text-white hover:pl-1 transition-all">Contact Us</Link></li>
+                            <li><a href="#contact-footer" onClick={(e) => smoothScrollTo(e, 'contact-footer')} className="hover:text-white hover:pl-1 transition-all cursor-pointer">Contact Us</a></li>
                             <li><Link href="/hot-deals" className="hover:text-white hover:pl-1 transition-all">Hot Deals</Link></li>
                         </ul>
                     </div>
 
                     {/* COLUMN 3: Policies */}
-                    <div>
-                        <h4 className="text-lg font-bold text-white mb-6 border-b border-gray-700/50 pb-2 inline-block">Policies</h4>
-                        <ul className="space-y-3 text-sm">
+                    <div className="lg:shrink-0">
+                        <h4 className="text-base font-bold text-white mb-4 border-b border-gray-700/50 pb-1 inline-block">Policies</h4>
+                        <ul className="space-y-2 text-sm">
                             <li><Link href="/terms" className="hover:text-white hover:pl-1 transition-all">Terms & Conditions</Link></li>
                             <li><Link href="/privacy" className="hover:text-white hover:pl-1 transition-all">Privacy Policy</Link></li>
                             <li><Link href="/returns" className="hover:text-white hover:pl-1 transition-all">Return & Refund Policy</Link></li>
@@ -61,47 +129,112 @@ export default function Footer() {
                     </div>
 
                     {/* COLUMN 4: Contact & Social */}
-                    <div>
-                        <h4 className="text-lg font-bold text-white mb-6 border-b border-gray-700/50 pb-2 inline-block">Contact Details</h4>
-                        <ul className="space-y-4 text-sm mb-8">
-                            <li className="flex items-start gap-3">
-                                <span className="font-semibold text-white w-20 shrink-0">Address:</span>
+                    <div className="lg:shrink-0 lg:w-[20%]">
+                        <h4 className="text-base font-bold text-white mb-4 border-b border-gray-700/50 pb-1 inline-block">Contact Details</h4>
+                        <ul className="space-y-3 text-sm mb-6">
+                            <li className="flex items-start gap-2">
+                                <span className="font-semibold text-white w-14 shrink-0">Address:</span>
                                 <span className="text-gray-400">
                                     Ground Floor, Sri Kalyan Square, 83/52 Pantheon Rd, Egmore, Chennai, Tamil Nadu 600008
                                 </span>
                             </li>
-                            <li className="flex items-center gap-3">
-                                <span className="font-semibold text-white w-20 shrink-0">Phone:</span>
+                            <li className="flex items-center gap-2">
+                                <span className="font-semibold text-white w-14 shrink-0">Phone:</span>
                                 <span className="text-gray-400">+91 98842 85858</span>
                             </li>
-                            <li className="flex items-center gap-3">
-                                <span className="font-semibold text-white w-20 shrink-0">Email:</span>
+                            <li className="flex items-center gap-2">
+                                <span className="font-semibold text-white w-14 shrink-0">Email:</span>
                                 <span className="text-gray-400">sales@signaturecomputers.com</span>
                             </li>
                         </ul>
 
                         {/* Social Icons */}
-                        <div className="flex space-x-5">
+                        <div className="flex space-x-4">
                             <a href="#" className="text-gray-400 hover:text-white transition-colors transform hover:scale-110 duration-200">
-                                <FiInstagram size={20} />
+                                <FiInstagram size={18} />
                             </a>
                             <a href="#" className="text-gray-400 hover:text-white transition-colors transform hover:scale-110 duration-200">
-                                <FiFacebook size={20} />
+                                <FiFacebook size={18} />
                             </a>
                             <a href="#" className="text-gray-400 hover:text-white transition-colors transform hover:scale-110 duration-200">
-                                <FiTwitter size={20} />
+                                <FiTwitter size={18} />
                             </a>
                             <a href="#" className="text-gray-400 hover:text-white transition-colors transform hover:scale-110 duration-200">
-                                <FiLinkedin size={20} />
+                                <FiLinkedin size={18} />
                             </a>
                         </div>
+                    </div>
+
+                    {/* COLUMN 5: Your Experience (Access Controlled) */}
+                    <div className="lg:flex-1 lg:max-w-xs lg:ml-8">
+                        <h4 className="text-base font-bold text-white mb-4 border-b border-gray-700/50 pb-1 inline-block">Your Experience</h4>
+
+                        {isSubmitted ? (
+                            <div className="text-center py-6 bg-gray-800/30 rounded-lg border border-gray-700/50">
+                                <div className="inline-block p-2 bg-green-500/20 rounded-full mb-2">
+                                    <FiStar className="text-green-400 fill-current" size={24} />
+                                </div>
+                                <p className="text-base font-medium text-white">Thank you!</p>
+                                <p className="text-sm text-gray-400 mt-1">Your feedback has been submitted.</p>
+                            </div>
+                        ) : (
+                            <form onSubmit={handleSubmit} className="space-y-3">
+                                {/* Star Rating */}
+                                <div className="flex gap-1" onMouseLeave={() => setHoveredStar(0)}>
+                                    {[1, 2, 3, 4, 5].map((star) => (
+                                        <button
+                                            key={star}
+                                            type="button"
+                                            className="focus:outline-none transition-transform hover:scale-110"
+                                            onMouseEnter={() => setHoveredStar(star)}
+                                            onClick={() => setRating(star)}
+                                        >
+                                            <FiStar
+                                                size={20}
+                                                className={`${star <= (hoveredStar || rating)
+                                                    ? 'text-yellow-400 fill-yellow-400'
+                                                    : 'text-gray-600'
+                                                    } transition-colors`}
+                                            />
+                                        </button>
+                                    ))}
+                                </div>
+
+                                {/* Text Area */}
+                                <textarea
+                                    className="w-full bg-gray-800/50 border border-gray-700 rounded-md p-2 text-sm text-gray-300 placeholder-gray-500 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 resize-none"
+                                    rows={3}
+                                    placeholder="Share your experience (optional)"
+                                    value={review}
+                                    onChange={(e) => setReview(e.target.value)}
+                                ></textarea>
+
+                                {validationError && (
+                                    <p className="text-xs text-red-400 animate-pulse">{validationError}</p>
+                                )}
+
+                                {/* Submit Button */}
+                                <button
+                                    type="submit"
+                                    className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 rounded-md transition-colors"
+                                >
+                                    Submit Feedback
+                                </button>
+                            </form>
+                        )}
                     </div>
 
                 </div>
 
                 {/* BOTTOM BAR */}
-                <div className="border-t border-gray-700/50 mt-8 pt-4 pb-6 text-center text-sm text-gray-500">
-                    <p>&copy; {currentYear} Signature Computers. All rights reserved.</p>
+                <div className="border-t border-gray-700/50 mt-10 pt-6 pb-2 text-center text-xs text-gray-500">
+                    <p>
+                        &copy; {currentYear} Signature Computers. All rights reserved.
+                        <span className="mx-2 text-gray-600">|</span>
+                        Authorized HP Partner
+                        <span className="mx-2 text-gray-600">|</span>
+                        Genuine Products
+                    </p>
                 </div>
 
             </div>

@@ -1,57 +1,63 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { createUserWithEmailAndPassword, updateProfile, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
-import { auth, db } from '@/lib/firebase';
-import { doc, setDoc } from 'firebase/firestore';
+import { auth } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 import { FcGoogle } from 'react-icons/fc';
+import { createFirestoreUser } from '@/lib/auth-helpers';
+import { useAuth } from '@/context/AuthContext';
 
 export default function Signup() {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
     const router = useRouter();
+    const { user, loading: authLoading } = useAuth();
+
+    useEffect(() => {
+        if (!authLoading && user) {
+            router.push('/');
+        }
+    }, [user, authLoading, router]);
 
     const handleSignup = async (e: React.FormEvent) => {
         e.preventDefault();
+        setError('');
+        setLoading(true);
         try {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
-
             await updateProfile(user, { displayName: name });
-
-            // Store user data in Firestore
-            await setDoc(doc(db, 'users', user.uid), {
-                name,
-                email,
-                createdAt: new Date().toISOString(),
-            });
-
+            await createFirestoreUser(user, 'password', name);
             router.push('/');
         } catch (err: any) {
-            setError(err.message);
+            console.error("Signup Error:", err);
+            if (err.code === 'auth/email-already-in-use') {
+                setError('Email is already registered. Please login.');
+            } else if (err.code === 'auth/weak-password') {
+                setError('Password should be at least 6 characters.');
+            } else {
+                setError(err.message || 'Failed to create account.');
+            }
+            setLoading(false);
         }
     };
 
     const handleGoogleLogin = async () => {
+        setError('');
         try {
             const provider = new GoogleAuthProvider();
             const result = await signInWithPopup(auth, provider);
-            const user = result.user;
-
-            // Check/Create user in Firestore (simplified for now, ideally check existence)
-            await setDoc(doc(db, 'users', user.uid), {
-                name: user.displayName,
-                email: user.email,
-                createdAt: new Date().toISOString(),
-            }, { merge: true });
-
+            await createFirestoreUser(result.user, 'google');
             router.push('/');
         } catch (err: any) {
-            setError(err.message);
+            console.error("Google Signup Error:", err);
+            if (err.code === 'auth/popup-closed-by-user') return;
+            setError('Failed to sign up with Google.');
         }
     };
 
@@ -70,7 +76,7 @@ export default function Signup() {
                     </p>
                 </div>
                 <form className="mt-8 space-y-6" onSubmit={handleSignup}>
-                    {error && <div className="text-red-500 text-sm text-center">{error}</div>}
+                    {error && <div className="text-red-500 text-sm text-center font-medium">{error}</div>}
                     <div className="rounded-md shadow-sm -space-y-px">
                         <div>
                             <input
@@ -107,9 +113,11 @@ export default function Signup() {
                     <div>
                         <button
                             type="submit"
-                            className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                            disabled={loading}
+                            className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white ${loading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
+                                } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors`}
                         >
-                            Sign up
+                            {loading ? 'Creating account...' : 'Sign up'}
                         </button>
                     </div>
                 </form>
@@ -127,7 +135,7 @@ export default function Signup() {
                     <div className="mt-6">
                         <button
                             onClick={handleGoogleLogin}
-                            className="w-full flex items-center justify-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700"
+                            className="w-full flex items-center justify-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700 transition-colors"
                         >
                             <FcGoogle className="h-5 w-5 mr-2" />
                             Google

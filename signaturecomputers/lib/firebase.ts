@@ -12,6 +12,17 @@ const firebaseConfig = {
     appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
+// Debug Config (Safe)
+if (typeof window !== 'undefined') {
+    const missingKeys = Object.entries(firebaseConfig)
+        .filter(([key, value]) => !value)
+        .map(([key]) => key);
+
+    if (missingKeys.length > 0) {
+        console.error("Firebase Configuration Error: Missing keys:", missingKeys.join(", "));
+    }
+}
+
 // Initialize Firebase
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);

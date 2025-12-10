@@ -7,6 +7,7 @@ import { FiSearch, FiShoppingCart, FiUser, FiMenu, FiX, FiLogOut, FiPackage } fr
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
+import { useSmoothScroll } from '@/hooks/useSmoothScroll';
 
 export default function Navbar() {
     const [isOpen, setIsOpen] = useState(false);
@@ -14,6 +15,7 @@ export default function Navbar() {
     const { user, logout } = useAuth();
     const { cartCount } = useCart();
     const router = useRouter();
+    const { smoothScrollTo } = useSmoothScroll();
     const [searchQuery, setSearchQuery] = useState('');
 
     const handleSearch = (e: React.FormEvent) => {
@@ -30,8 +32,8 @@ export default function Navbar() {
     };
 
     return (
-        // NAVBAR STYLE: Sticky, Glassmorphism (bg-white/90 + backdrop-blur), Z-50, Shadow
-        <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100 shadow-sm h-20 flex flex-col justify-center">
+        // NAVBAR STYLE: Static, White, Shadow (No Sticky/Fixed)
+        <nav className="relative bg-white border-b border-gray-100 shadow-sm h-20 flex flex-col justify-center">
             <div className="w-full px-4 sm:px-8 lg:px-12">
                 <div className="flex items-center">
 
@@ -76,10 +78,10 @@ export default function Navbar() {
                         <nav className="flex space-x-6 items-center">
                             <Link href="/" className="text-sm font-semibold text-gray-700 hover:text-blue-600 transition-colors">Home</Link>
                             <Link href="/products" className="text-sm font-semibold text-gray-700 hover:text-blue-600 transition-colors">Products</Link>
-                            <Link href="/#about-us" className="text-sm font-semibold text-gray-700 hover:text-blue-600 transition-colors">About Us</Link>
+                            <a href="#about-us" onClick={(e) => smoothScrollTo(e, 'about-us')} className="text-sm font-semibold text-gray-700 hover:text-blue-600 transition-colors cursor-pointer">About Us</a>
                             {/* Hot Deals Color Fix: Removed red, now matches others */}
                             <Link href="/hot-deals" className="text-sm font-semibold text-gray-700 hover:text-blue-600 transition-colors">Hot Deals</Link>
-                            <Link href="/contact" className="text-sm font-semibold text-gray-700 hover:text-blue-600 transition-colors">Contact</Link>
+                            <a href="#contact-footer" onClick={(e) => smoothScrollTo(e, 'contact-footer')} className="text-sm font-semibold text-gray-700 hover:text-blue-600 transition-colors cursor-pointer">Contact</a>
                         </nav>
 
                         <div className="flex items-center space-x-4 border-l border-gray-200 pl-4">
@@ -159,9 +161,10 @@ export default function Navbar() {
                     <div className="px-2 pt-2 pb-3 space-y-1">
                         <Link href="/" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50">Home</Link>
                         <Link href="/products" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50">Products</Link>
-                        <Link href="/#about-us" onClick={() => setIsOpen(false)} className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50">About Us</Link>
+                        <a href="#about-us" onClick={(e) => { setIsOpen(false); smoothScrollTo(e, 'about-us'); }} className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50">About Us</a>
                         <Link href="/deals" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50">Hot Deals</Link>
-                        <Link href="/contact" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50">Contact</Link>
+                        <a href="#contact-footer" onClick={(e) => { setIsOpen(false); smoothScrollTo(e, 'contact-footer'); }} className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50">Contact</a>
+
                         <div className="border-t border-gray-100 mt-2 pt-2">
                             <Link href="/cart" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50 flex items-center justify-between">
                                 <span>Cart</span>
