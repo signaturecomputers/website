@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { collection, query, where, getDocs } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 import { useAdminAuth } from "@/context/AdminAuthContext";
+import { loginAdmin } from "@/lib/admin-actions";
 
 export default function AdminLogin() {
     const { gatewayVerified, login, loading: authLoading } = useAdminAuth();
@@ -26,31 +25,16 @@ export default function AdminLogin() {
         setLoading(true);
 
         try {
-            const usersRef = collection(db, "admin_users");
-            const q = query(usersRef, where("username", "==", username));
-            const querySnapshot = await getDocs(q);
+            const result = await loginAdmin(username, password);
 
-            if (querySnapshot.empty) {
-                setError("Invalid credentials");
-                setLoading(false);
-                return;
-            }
-
-            let userFound = false;
-            querySnapshot.forEach((doc) => {
-                const userData = doc.data();
-                if (userData.password === password) {
-                    userFound = true;
-                    login({
-                        username: userData.username,
-                        role: userData.role as "admin" | "staff",
-                    });
-                    router.push("/admindashboard");
-                }
-            });
-
-            if (!userFound) {
-                setError("Invalid credentials");
+            if (result.success && result.user) {
+                login({
+                    username: result.user.username,
+                    role: result.user.role as "admin" | "staff",
+                });
+                router.push("/admindashboard");
+            } else {
+                setError(result.error || "Invalid credentials");
             }
         } catch (err) {
             console.error("Login error:", err);

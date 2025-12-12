@@ -2,9 +2,8 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 import { useAdminAuth } from "@/context/AdminAuthContext";
+import { validateAdminAccessKey } from "@/lib/admin-actions";
 
 function AdminGatewayContent() {
     const searchParams = useSearchParams();
@@ -22,29 +21,21 @@ function AdminGatewayContent() {
             }
 
             try {
-                const docRef = doc(db, "admin_settings", "admin_access_key");
-                const docSnap = await getDoc(docRef);
+                // Validate using Server Action (secure, no Firestore permission needed)
+                const result = await validateAdminAccessKey(key);
 
-                if (docSnap.exists()) {
-                    const storedKey = docSnap.data().key;
-                    if (key === storedKey) {
-                        verifyGateway();
-                        setStatus("success");
-                        router.push("/admin/login");
-                    } else {
-                        setStatus("denied");
-                    }
+                if (result.success) {
+                    verifyGateway();
+                    setStatus("success");
+                    router.push("/admin/login");
                 } else {
-                    // If no key set yet, deny or handle setup? 
-                    // Defaulting to "denied" for security.
-                    console.error("No admin_access_key document found.");
                     setStatus("denied");
-                    setErrorMsg("Configuration Error: Key not found in DB");
+                    setErrorMsg(result.reason || "Invalid Access Key");
                 }
             } catch (error) {
                 console.error("Error validating key:", error);
                 setStatus("denied");
-                setErrorMsg("System Error");
+                setErrorMsg("System Error: Check console logs.");
             }
         };
 

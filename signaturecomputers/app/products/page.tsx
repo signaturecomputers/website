@@ -1,28 +1,36 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import SidebarFilters from '@/components/SidebarFilters';
 import ProductCard from '@/components/ProductCard';
 import CategorySection from '@/components/CategorySection';
-
-// Dummy data for "All products"
-const dummyProducts = [
-    { id: '1', name: 'MacBook Pro 16"', brand: 'Apple', price: 2499, originalPrice: 2699, image: '', rating: 5 },
-    { id: '2', name: 'Dell XPS 15', brand: 'Dell', price: 1899, originalPrice: 2099, image: '', rating: 4.5 },
-    { id: '3', name: 'ThinkPad X1 Carbon', brand: 'Lenovo', price: 1599, originalPrice: 1799, image: '', rating: 4.8 },
-    { id: '4', name: 'HP Spectre x360', brand: 'HP', price: 1499, originalPrice: 1699, image: '', rating: 4.6 },
-    { id: '5', name: 'Asus ROG Zephyrus', brand: 'Asus', price: 1999, originalPrice: 2199, image: '', rating: 4.7 },
-    { id: '6', name: 'MacBook Air M2', brand: 'Apple', price: 1199, originalPrice: 1299, image: '', rating: 4.9 },
-    { id: '7', name: 'HP Envy 13', brand: 'HP', price: 999, originalPrice: 1199, image: '', rating: 4.4 },
-    { id: '8', name: 'Surface Laptop 5', brand: 'Microsoft', price: 1299, originalPrice: 1499, image: '', rating: 4.5 },
-];
+import { getAllProducts, Product } from '@/lib/products';
 
 export default function ProductsPage() {
     const [sortBy, setSortBy] = useState('newest');
+    const [products, setProducts] = useState<Product[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        async function fetchProducts() {
+            setLoading(true);
+            const data = await getAllProducts();
+            setProducts(data);
+            setLoading(false);
+        }
+        fetchProducts();
+    }, []);
+
+    // Simple sorting
+    const sortedProducts = [...products].sort((a, b) => {
+        if (sortBy === 'price_low') return a.price - b.price;
+        if (sortBy === 'price_high') return b.price - a.price;
+        return 0; // newest not implemented yet (needs createdAt)
+    });
 
     return (
         <div className="bg-gray-50 dark:bg-black min-h-screen">
-            {/* Categories Display - "Just like in landing page" */}
+            {/* Categories Display */}
             <CategorySection />
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
@@ -52,22 +60,19 @@ export default function ProductsPage() {
                             </div>
                         </div>
 
-                        {/* Product Grid - Using ProductCard "Design" */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {dummyProducts.map((product) => (
-                                <ProductCard key={product.id} product={product} />
-                            ))}
-                        </div>
+                        {/* Product Grid */}
+                        {loading ? (
+                            <div className="text-center py-12">Loading products...</div>
+                        ) : products.length === 0 ? (
+                            <div className="text-center py-12">No products found.</div>
+                        ) : (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {sortedProducts.map((product) => (
+                                    <ProductCard key={product.id} product={product} />
+                                ))}
+                            </div>
+                        )}
 
-                        {/* Pagination Placeholder */}
-                        <div className="mt-12 flex justify-center">
-                            <nav className="flex space-x-2">
-                                <button className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800">Previous</button>
-                                <button className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium">1</button>
-                                <button className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800">2</button>
-                                <button className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800">Next</button>
-                            </nav>
-                        </div>
                     </div>
                 </div>
             </div>

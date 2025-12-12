@@ -1,30 +1,45 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
 import { FiStar, FiShoppingCart, FiHeart, FiShare2 } from 'react-icons/fi';
+import { getProductById, Product } from '@/lib/products';
+import { toast } from 'sonner';
 
 export default function ProductDetailsPage() {
+    const params = useParams();
+    const id = params.id as string;
+
+    const [product, setProduct] = useState<Product | null>(null);
+    const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('description');
     const [quantity, setQuantity] = useState(1);
+    const [activeImage, setActiveImage] = useState('');
 
-    // Dummy data
-    const product = {
-        name: 'MacBook Pro 16" M3 Max',
-        brand: 'Apple',
-        price: 3499,
-        originalPrice: 3699,
-        rating: 4.9,
-        reviews: 128,
-        description: 'The new MacBook Pro delivers game-changing performance for pro users. With the powerful M3 Max chip, it gets even more intense workloads done faster.',
-        specs: {
-            Processor: 'Apple M3 Max',
-            RAM: '36GB Unified Memory',
-            Storage: '1TB SSD',
-            Screen: '16.2-inch Liquid Retina XDR',
-            Battery: 'Up to 22 hours'
-        },
-        images: ['', '', '', ''] // Placeholders
-    };
+    useEffect(() => {
+        async function loadProduct() {
+            setLoading(true);
+            const data = await getProductById(id);
+            if (data) {
+                setProduct(data);
+                setActiveImage(data.images?.[0] || '');
+            } else {
+                toast.error('Product not found');
+            }
+            setLoading(false);
+        }
+        if (id) {
+            loadProduct();
+        }
+    }, [id]);
+
+    if (loading) {
+        return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+    }
+
+    if (!product) {
+        return <div className="min-h-screen flex items-center justify-center">Product not found.</div>;
+    }
 
     return (
         <div className="bg-white dark:bg-black min-h-screen py-12">
@@ -33,15 +48,25 @@ export default function ProductDetailsPage() {
                     {/* Image Gallery */}
                     <div className="space-y-4">
                         <div className="aspect-square bg-gray-100 dark:bg-gray-900 rounded-2xl overflow-hidden flex items-center justify-center">
-                            <span className="text-gray-400">Main Image</span>
+                            {activeImage ? (
+                                <img src={activeImage} alt={product.name} className="w-full h-full object-contain" />
+                            ) : (
+                                <span className="text-gray-400">No Image</span>
+                            )}
                         </div>
-                        <div className="grid grid-cols-4 gap-4">
-                            {[0, 1, 2, 3].map((i) => (
-                                <div key={i} className="aspect-square bg-gray-100 dark:bg-gray-900 rounded-lg cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all flex items-center justify-center">
-                                    <span className="text-xs text-gray-400">Img {i + 1}</span>
-                                </div>
-                            ))}
-                        </div>
+                        {product.images && product.images.length > 1 && (
+                            <div className="grid grid-cols-4 gap-4">
+                                {product.images.map((img, i) => (
+                                    <div
+                                        key={i}
+                                        onClick={() => setActiveImage(img)}
+                                        className={`aspect-square bg-gray-100 dark:bg-gray-900 rounded-lg cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all flex items-center justify-center overflow-hidden ${activeImage === img ? 'ring-2 ring-blue-500' : ''}`}
+                                    >
+                                        <img src={img} alt="" className="w-full h-full object-cover" />
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
 
                     {/* Product Info */}
@@ -54,41 +79,23 @@ export default function ProductDetailsPage() {
                         <div className="flex items-center mb-6">
                             <div className="flex text-yellow-400 mr-2">
                                 {[...Array(5)].map((_, i) => (
-                                    <FiStar key={i} className={i < Math.floor(product.rating) ? "fill-current" : ""} />
+                                    <FiStar key={i} className={i < 4 ? "fill-current" : ""} /> // Hardcoded rating for now
                                 ))}
                             </div>
-                            <span className="text-sm text-gray-500">({product.reviews} reviews)</span>
+                            <span className="text-sm text-gray-500">(12 reviews)</span>
                         </div>
 
                         <div className="flex items-end gap-4 mb-8">
-                            <span className="text-4xl font-bold text-gray-900 dark:text-white">${product.price.toLocaleString()}</span>
+                            <span className="text-4xl font-bold text-gray-900 dark:text-white">₹{product.price.toLocaleString()}</span>
                             {product.originalPrice && (
-                                <span className="text-xl text-gray-500 line-through mb-1">${product.originalPrice.toLocaleString()}</span>
+                                <span className="text-xl text-gray-500 line-through mb-1">₹{product.originalPrice.toLocaleString()}</span>
                             )}
                         </div>
 
                         <div className="space-y-6 border-t border-b border-gray-100 dark:border-gray-800 py-6 mb-8">
-                            <div>
-                                <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-3">Memory</h3>
-                                <div className="flex gap-3">
-                                    {['18GB', '36GB', '96GB'].map((ram) => (
-                                        <button key={ram} className="px-4 py-2 border border-gray-300 rounded-md hover:border-blue-600 hover:text-blue-600 focus:ring-2 focus:ring-blue-500 transition-all dark:border-gray-700 dark:text-gray-300">
-                                            {ram}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div>
-                                <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-3">Storage</h3>
-                                <div className="flex gap-3">
-                                    {['512GB', '1TB', '2TB', '4TB'].map((storage) => (
-                                        <button key={storage} className="px-4 py-2 border border-gray-300 rounded-md hover:border-blue-600 hover:text-blue-600 focus:ring-2 focus:ring-blue-500 transition-all dark:border-gray-700 dark:text-gray-300">
-                                            {storage}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
+                            <p className={`text-sm font-medium ${product.stock > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                {product.stock > 0 ? `In Stock (${product.stock} available)` : 'Out of Stock'}
+                            </p>
                         </div>
 
                         <div className="flex items-center gap-4 mb-8">
@@ -97,8 +104,11 @@ export default function ProductDetailsPage() {
                                 <span className="px-4 py-3 font-medium border-l border-r border-gray-300 dark:border-gray-700">{quantity}</span>
                                 <button onClick={() => setQuantity(quantity + 1)} className="px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800">+</button>
                             </div>
-                            <button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-md flex items-center justify-center transition-colors">
-                                <FiShoppingCart className="mr-2" /> Add to Cart
+                            <button
+                                disabled={product.stock <= 0}
+                                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-md flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <FiShoppingCart className="mr-2" /> {product.stock > 0 ? 'Add to Cart' : 'Out of Stock'}
                             </button>
                             <button className="p-3 border border-gray-300 rounded-md hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800">
                                 <FiHeart className="text-xl" />
@@ -127,15 +137,14 @@ export default function ProductDetailsPage() {
                     </div>
                     <div className="mt-8">
                         {activeTab === 'description' && (
-                            <div className="prose dark:prose-invert max-w-none">
+                            <div className="prose dark:prose-invert max-w-none whitespace-pre-wrap">
                                 <p>{product.description}</p>
-                                <p>More detailed description about the product features, build quality, and performance benchmarks would go here.</p>
                             </div>
                         )}
                         {activeTab === 'specifications' && (
                             <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-6">
                                 <dl className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
-                                    {Object.entries(product.specs).map(([key, value]) => (
+                                    {product.specs && Object.entries(product.specs).map(([key, value]) => (
                                         <div key={key}>
                                             <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">{key}</dt>
                                             <dd className="mt-1 text-sm text-gray-900 dark:text-white font-semibold">{value}</dd>
@@ -146,43 +155,16 @@ export default function ProductDetailsPage() {
                         )}
                         {activeTab === 'reviews' && (
                             <div>
-                                <p className="text-gray-500">Customer reviews will appear here.</p>
+                                <p className="text-gray-500">No reviews yet.</p>
                             </div>
                         )}
                     </div>
                 </div>
 
-                {/* Related Products Section */}
+                {/* Related Products Section (Placeholder for now) */}
                 <div className="mt-20 border-t border-gray-200 dark:border-gray-800 pt-16">
                     <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-8">Related Products</h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {/* Reusing ProductCard for consistent design */}
-                        {[
-                            { id: '2', name: 'Dell XPS 15', brand: 'Dell', price: 1899, originalPrice: 2099, image: '', rating: 4.5 },
-                            { id: '3', name: 'ThinkPad X1 Carbon', brand: 'Lenovo', price: 1599, originalPrice: 1799, image: '', rating: 4.8 },
-                            { id: '4', name: 'HP Spectre x360', brand: 'HP', price: 1499, originalPrice: 1699, image: '', rating: 4.6 },
-                            { id: '5', name: 'Asus ROG Zephyrus', brand: 'Asus', price: 1999, originalPrice: 2199, image: '', rating: 4.7 }
-                        ].map((relatedProduct) => (
-                            // @ts-ignore - ProductCard expects specific props, mocking for UI demo
-                            <div key={relatedProduct.id} className="bg-white dark:bg-gray-900 rounded-xl shadow-sm hover:shadow-lg transition-shadow border border-gray-100 dark:border-gray-800 overflow-hidden group">
-                                <div className="relative aspect-square overflow-hidden bg-gray-100 dark:bg-gray-800">
-                                    <div className="w-full h-full flex items-center justify-center text-gray-400">
-                                        <span className="text-sm">Image</span>
-                                    </div>
-                                </div>
-                                <div className="p-4">
-                                    <p className="text-xs text-gray-500 mb-1">{relatedProduct.brand}</p>
-                                    <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 hover:text-blue-600 cursor-pointer">{relatedProduct.name}</h3>
-                                    <div className="flex items-center justify-between mt-3">
-                                        <span className="font-bold text-gray-900">${relatedProduct.price.toLocaleString()}</span>
-                                        <button className="p-2 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-colors">
-                                            <FiShoppingCart />
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+                    <p className="text-gray-500">Coming soon...</p>
                 </div>
 
             </div>
