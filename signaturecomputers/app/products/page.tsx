@@ -1,15 +1,44 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import SidebarFilters from '@/components/SidebarFilters';
 import ProductCard from '@/components/ProductCard';
 import CategorySection from '@/components/CategorySection';
 import { getAllProducts, Product } from '@/lib/products';
 
 export default function ProductsPage() {
+    const searchParams = useSearchParams();
+    const router = useRouter();
+
+    // State
     const [sortBy, setSortBy] = useState('newest');
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
+
+    // Filter State
+    const [selectedCategory, setSelectedCategory] = useState('all');
+    const [priceRange, setPriceRange] = useState(5000);
+
+    // Initialize from URL
+    useEffect(() => {
+        const categoryParam = searchParams.get('category');
+        if (categoryParam) {
+            setSelectedCategory(categoryParam.toLowerCase());
+        } else {
+            setSelectedCategory('all');
+        }
+    }, [searchParams]);
+
+    // Handle Category Change
+    const handleCategoryChange = (category: string) => {
+        setSelectedCategory(category);
+        if (category === 'all') {
+            router.push('/products', { scroll: false });
+        } else {
+            router.push(`/products?category=${category}`, { scroll: false });
+        }
+    };
 
     useEffect(() => {
         async function fetchProducts() {
@@ -21,8 +50,20 @@ export default function ProductsPage() {
         fetchProducts();
     }, []);
 
-    // Simple sorting
-    const sortedProducts = [...products].sort((a, b) => {
+    // Filter Logic
+    const filteredProducts = products.filter(product => {
+        // Category Filter
+        if (selectedCategory !== 'all' && product.category?.toLowerCase() !== selectedCategory.toLowerCase()) {
+            return false;
+        }
+        // Price Filter (assuming price is in USD/INR - simple check)
+        // If product.price > priceRange return false; 
+
+        return true;
+    });
+
+    // Sorting Logic
+    const sortedProducts = [...filteredProducts].sort((a, b) => {
         if (sortBy === 'price_low') return a.price - b.price;
         if (sortBy === 'price_high') return b.price - a.price;
         return 0; // newest not implemented yet (needs createdAt)
@@ -30,15 +71,20 @@ export default function ProductsPage() {
 
     return (
         <div className="bg-gray-50 dark:bg-black min-h-screen">
-            {/* Categories Display */}
-            <CategorySection />
+            {/* Show Category Cards ONLY when on 'All Products' view */}
+            {selectedCategory === 'all' && <CategorySection />}
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
                 <div className="flex flex-col md:flex-row gap-8">
                     {/* Sidebar */}
                     <aside className="w-full md:w-64 flex-shrink-0">
                         <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 sticky top-24">
-                            <SidebarFilters />
+                            <SidebarFilters
+                                selectedCategory={selectedCategory}
+                                onCategoryChange={handleCategoryChange}
+                                priceRange={priceRange}
+                                setPriceRange={setPriceRange}
+                            />
                         </div>
                     </aside>
 

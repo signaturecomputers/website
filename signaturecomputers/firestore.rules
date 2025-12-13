@@ -30,7 +30,15 @@ service cloud.firestore {
       allow read: if true;
       allow write: if false;
     }
-    match /components/{document=**} {
+    match /printers/{document=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /cartridges/{document=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /toners/{document=**} {
       allow read: if true;
       allow write: if false;
     }

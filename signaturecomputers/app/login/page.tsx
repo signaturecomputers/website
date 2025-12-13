@@ -3,14 +3,15 @@
 import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { auth, db } from '@/lib/firebase';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FcGoogle } from 'react-icons/fc';
 import { createFirestoreUser } from '@/lib/auth-helpers';
 import { useAuth } from '@/context/AuthContext';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 
 function LoginContent() {
-    const [email, setEmail] = useState('');
+    const [identifier, setIdentifier] = useState(''); // Email or Phone
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -18,29 +19,52 @@ function LoginContent() {
     const searchParams = useSearchParams();
     const { user, loading: authLoading } = useAuth();
 
+    // Handle redirect after login (e.g. from protected route)
+    const redirectUrl = searchParams.get('redirect') || '/';
+
     useEffect(() => {
         if (!authLoading && user) {
-            router.push('/');
+            router.push(redirectUrl === '/login' ? '/' : redirectUrl);
         }
-    }, [user, authLoading, router]);
-
-    const reason = searchParams.get('reason');
-    const redirectUrl = searchParams.get('redirect') || '/';
+    }, [user, authLoading, router, redirectUrl]);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
         setLoading(true);
+
         try {
-            const userCredential = await signInWithEmailAndPassword(auth, email, password);
-            await createFirestoreUser(userCredential.user, 'password');
-            router.push(redirectUrl);
+            let emailToLogin = identifier;
+
+            // 1. Detect if input is phone number (digits only or starts with +)
+            const isPhone = /^[+\d]/.test(identifier) && !identifier.includes('@');
+
+            if (isPhone) {
+                // 2. Lookup email from Firestore
+                const q = query(collection(db, 'users'), where('phoneNumber', '==', identifier));
+                const querySnapshot = await getDocs(q);
+
+                if (querySnapshot.empty) {
+                    throw new Error("No account found with this phone number.");
+                }
+
+                // Assume first match is the user
+                const userDoc = querySnapshot.docs[0].data();
+                if (!userDoc.email) {
+                    throw new Error("This account does not have a linked email for password login.");
+                }
+                emailToLogin = userDoc.email;
+            }
+
+            // 3. Login with Email/Password
+            await signInWithEmailAndPassword(auth, emailToLogin, password);
+            // Router will redirect via useEffect
         } catch (err: any) {
             console.error("Login Error:", err);
             if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
-                setError('Invalid email or password. Please try again.');
+                setError('Invalid email/phone or password.');
             } else {
-                setError('Failed to sign in. Please try again.');
+                setError(err.message || 'Failed to login.');
             }
             setLoading(false);
         }
@@ -48,18 +72,14 @@ function LoginContent() {
 
     const handleGoogleLogin = async () => {
         setError('');
-        // Don't set global loading here to allow retry if popup closed
         try {
             const provider = new GoogleAuthProvider();
             const result = await signInWithPopup(auth, provider);
             await createFirestoreUser(result.user, 'google');
-            router.push(redirectUrl);
         } catch (err: any) {
             console.error("Google Login Error:", err);
-            if (err.code === 'auth/popup-closed-by-user') {
-                return; // Ignore
-            }
-            setError('Failed to sign in with Google. Please try again.');
+            if (err.code === 'auth/popup-closed-by-user') return;
+            setError('Failed to login with Google.');
         }
     };
 
@@ -68,41 +88,33 @@ function LoginContent() {
             <div className="max-w-md w-full space-y-8 p-8 bg-white dark:bg-gray-900 rounded-2xl shadow-xl">
                 <div>
                     <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
-                        Sign in to your account
+                        Login
                     </h2>
-
-                    {/* Feedback Auth Message */}
-                    {reason === 'feedback' && (
-                        <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md text-blue-700 text-sm text-center font-medium">
-                            Please log in to submit your feedback.
-                        </div>
-                    )}
-
                     <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
-                        Or{' '}
+                        New here?{' '}
                         <Link href="/signup" className="font-medium text-blue-600 hover:text-blue-500">
-                            create a new account
+                            Create an account
                         </Link>
                     </p>
                 </div>
                 <form className="mt-8 space-y-6" onSubmit={handleLogin}>
-                    {error && <div className="text-red-500 text-sm text-center font-medium">{error}</div>}
+                    {error && <div className="p-3 bg-red-50 text-red-500 text-sm text-center font-medium rounded-lg">{error}</div>}
                     <div className="rounded-md shadow-sm -space-y-px">
                         <div>
                             <input
-                                type="email"
+                                type="text"
                                 required
-                                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-                                placeholder="Email address"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
+                                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-lg focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                                placeholder="Email ID / Phone Number"
+                                value={identifier}
+                                onChange={(e) => setIdentifier(e.target.value)}
                             />
                         </div>
                         <div>
                             <input
                                 type="password"
                                 required
-                                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-lg focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white"
                                 placeholder="Password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
@@ -113,7 +125,7 @@ function LoginContent() {
                     <div className="flex items-center justify-end">
                         <div className="text-sm">
                             <Link href="/forgot-password" className="font-medium text-blue-600 hover:text-blue-500">
-                                Forgot password?
+                                Forgot your password?
                             </Link>
                         </div>
                     </div>
@@ -122,10 +134,10 @@ function LoginContent() {
                         <button
                             type="submit"
                             disabled={loading}
-                            className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white ${loading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
-                                } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors`}
+                            className={`group relative w-full flex justify-center py-2.5 px-4 border border-transparent text-sm font-medium rounded-lg text-white ${loading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
+                                } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors shadow-sm`}
                         >
-                            {loading ? 'Signing in...' : 'Sign in'}
+                            {loading ? 'Logging in...' : 'Login'}
                         </button>
                     </div>
                 </form>
@@ -143,7 +155,7 @@ function LoginContent() {
                     <div className="mt-6">
                         <button
                             onClick={handleGoogleLogin}
-                            className="w-full flex items-center justify-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700 transition-colors"
+                            className="w-full flex items-center justify-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700 transition-colors"
                         >
                             <FcGoogle className="h-5 w-5 mr-2" />
                             Google

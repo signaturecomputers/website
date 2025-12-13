@@ -29,7 +29,9 @@ export default function ProductsPage() {
         { id: 'desktops', name: 'Desktops' },
         { id: 'monitors', name: 'Monitors' },
         { id: 'accessories', name: 'Accessories' },
-        { id: 'components', name: 'PC Components' },
+        { id: 'printers', name: 'Printers' },
+        { id: 'cartridges', name: 'Cartridges' },
+        { id: 'toners', name: 'Toners' },
     ];
 
     useEffect(() => {
@@ -46,8 +48,8 @@ export default function ProductsPage() {
             })) as Product[];
             setProducts(productsData);
         } catch (error) {
-            console.error('Error fetching products:', error);
-            toast.error('Failed to load products');
+            console.warn('Warning: Failed to fetch products (likely permissions):', error);
+            toast.error('Failed to load products (check rules)');
         } finally {
             setLoading(false);
         }

@@ -16,7 +16,7 @@ export default function Home() {
       <AboutSection />
       <HotDealsSection />
       <CustomerReviewsSection />
-      <div id="contact-footer"></div>
+      {/* Footer ID is handled in the Footer component itself */}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -35,12 +35,59 @@ export default function AddProductPage() {
         { id: 'desktops', name: 'Desktops' },
         { id: 'monitors', name: 'Monitors' },
         { id: 'accessories', name: 'Accessories' },
-        { id: 'components', name: 'PC Components' },
+        { id: 'printers', name: 'Printers' },
+        { id: 'cartridges', name: 'Cartridges' },
+        { id: 'toners', name: 'Toners' },
     ];
 
     // Handlers
+    // Handlers
+    const SPEC_TEMPLATES: Record<string, string[]> = {
+        desktops: ['Operating System', 'Processor Name', 'Ports', 'Graphics', 'Memory And Storage', 'Video Connector'],
+        laptops: ['Operating System', 'Processor Name', 'Ports', 'Graphics', 'Memory And Storage'],
+    };
+
+    // Auto-populate specs based on category
+    const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const newCategory = e.target.value;
+        setFormData(prev => ({ ...prev, category: newCategory }));
+
+        // Check if current specs match a "clean" state (empty) or one of our templates
+        const currentKeys = specs.map(s => s.key);
+        const isGenericDefault = specs.length === 3 && specs[0].key === 'Processor';
+        const isEmpty = specs.length === 0 || (specs.length === 1 && specs[0].key === '');
+
+        // Check if current form matches Laptop or Desktop keys (ignoring values, or check emptiness if safer)
+        const isLaptopTemplate = JSON.stringify(currentKeys) === JSON.stringify(SPEC_TEMPLATES['laptops']);
+        const isDesktopTemplate = JSON.stringify(currentKeys) === JSON.stringify(SPEC_TEMPLATES['desktops']);
+
+        // If we are in a "template" state (Generic, Empty, Laptop, or Desktop), allow switching to the new one
+        if (SPEC_TEMPLATES[newCategory] && (isEmpty || isGenericDefault || isLaptopTemplate || isDesktopTemplate)) {
+            // Preserve values if keys match, otherwise clear? 
+            // For simplicity and to ensure "Video Connector" appears, we'll reset to the new template with empty values.
+            // (User can fill them in. If they had data, it might be lost, but this is a setup step).
+            setSpecs(SPEC_TEMPLATES[newCategory].map(key => ({ key, value: '' })));
+        } else if (isGenericDefault && !SPEC_TEMPLATES[newCategory]) {
+            // Reset to generic default if moving away from a template category to a generic one
+            setSpecs([{ key: 'Processor', value: '' }, { key: 'RAM', value: '' }, { key: 'Storage', value: '' }]);
+        }
+    };
+
+    // Apply default template on mount if applicable
+    useEffect(() => {
+        // If default category is laptops and specs are generic, load laptop template
+        if (formData.category === 'laptops' && specs.length === 3 && specs[0].key === 'Processor' && specs[0].value === '') {
+            if (SPEC_TEMPLATES['laptops']) {
+                setSpecs(SPEC_TEMPLATES['laptops'].map(key => ({ key, value: '' })));
+            }
+        }
+    }, []);
+
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
+        if (name === 'category') {
+            // This branch is technically covered by the select onChange, logic split for clarity below
+        }
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
@@ -217,7 +264,7 @@ export default function AddProductPage() {
                         <select
                             name="category"
                             value={formData.category}
-                            onChange={handleInputChange}
+                            onChange={handleCategoryChange}
                             className="w-full p-2.5 rounded-lg border dark:bg-gray-900 dark:border-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500"
                         >
                             {categories.map(cat => (

@@ -2,11 +2,54 @@
 
 import { useState } from 'react';
 
-export default function SidebarFilters() {
-    const [priceRange, setPriceRange] = useState(1000);
+interface SidebarFiltersProps {
+    selectedCategory: string;
+    onCategoryChange: (category: string) => void;
+    priceRange: number;
+    setPriceRange: (range: number) => void;
+}
+
+export default function SidebarFilters({
+    selectedCategory,
+    onCategoryChange,
+    priceRange,
+    setPriceRange
+}: SidebarFiltersProps) {
+    const categories = [
+        { id: 'all', name: 'All Products' },
+        { id: 'laptops', name: 'Laptops' },
+        { id: 'desktops', name: 'Desktops' },
+        { id: 'monitors', name: 'Monitors' },
+        { id: 'printers', name: 'Printers' },
+        { id: 'accessories', name: 'Accessories' },
+        { id: 'cartridges', name: 'Cartridges' },
+        { id: 'toners', name: 'Toners' },
+    ];
 
     return (
         <div className="space-y-8">
+            {/* Category Filter */}
+            <div>
+                <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-4">Categories</h3>
+                <div className="space-y-2">
+                    {categories.map((cat) => (
+                        <label key={cat.id} className="flex items-center space-x-2 cursor-pointer group">
+                            <input
+                                type="radio"
+                                name="category"
+                                value={cat.id}
+                                checked={selectedCategory === cat.id} // Simple check
+                                onChange={() => onCategoryChange(cat.id)}
+                                className="text-blue-600 focus:ring-blue-500 border-gray-300"
+                            />
+                            <span className={`text-sm group-hover:text-blue-600 transition-colors ${selectedCategory === cat.id ? 'font-semibold text-blue-600' : 'text-gray-700 dark:text-gray-300'}`}>
+                                {cat.name}
+                            </span>
+                        </label>
+                    ))}
+                </div>
+            </div>
+
             {/* Price Filter */}
             <div>
                 <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-4">Price Range</h3>
@@ -23,6 +66,8 @@ export default function SidebarFilters() {
                     className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
                 />
             </div>
+            {/* ... brands/ram ... */}
+
 
             {/* Brand Filter */}
             <div>

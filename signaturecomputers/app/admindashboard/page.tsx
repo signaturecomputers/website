@@ -21,25 +21,30 @@ export default function AdminDashboardHome() {
                 // Simple count implementation using getCountFromServer (requires Firebase v9.11+)
                 // If getting "AggregateField not found", might need to fallback.
 
-                const productsColl = collection(db, "products");
+                const categories = ['laptops', 'desktops', 'monitors', 'accessories', 'printers', 'cartridges', 'toners'];
+                const productCounts = await Promise.all(
+                    categories.map(cat =>
+                        getCountFromServer(collection(db, cat))
+                            .then(snap => snap.data().count)
+                            .catch(() => 0)
+                    )
+                );
+
+                const totalProducts = productCounts.reduce((a, b) => a + b, 0);
+
                 const ordersColl = collection(db, "orders");
                 const usersColl = collection(db, "users");
 
-                const [prodSnap, ordersSnap, usersSnap] = await Promise.all([
-                    // Fallback to getting docs size if aggregation not enabled/supported or just use it.
-                    // For robust dashboard, we often need data logic. I'll stick to 0 placeholders if error.
-                    getCountFromServer(productsColl).catch(() => ({ data: () => ({ count: 0 }) })),
+                const [ordersSnap, usersSnap] = await Promise.all([
                     getCountFromServer(ordersColl).catch(() => ({ data: () => ({ count: 0 }) })),
                     getCountFromServer(usersColl).catch(() => ({ data: () => ({ count: 0 }) })),
                 ]);
 
-                // Revenue requires iterating orders. Skipping for MVP, showing 0 or mock.
-
                 setStats({
-                    products: prodSnap.data().count,
+                    products: totalProducts,
                     orders: ordersSnap.data().count,
                     users: usersSnap.data().count,
-                    revenue: 0, // Placeholder
+                    revenue: 0,
                 });
             } catch (err) {
                 console.error("Error fetching stats:", err);

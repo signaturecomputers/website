@@ -1,7 +1,7 @@
 import { collection, getDocs, doc, getDoc, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
-const COLLECTIONS = ['laptops', 'desktops', 'monitors', 'accessories', 'components'];
+const COLLECTIONS = ['laptops', 'desktops', 'monitors', 'accessories', 'printers', 'cartridges', 'toners'];
 
 export interface Product {
     id: string;
@@ -22,44 +22,60 @@ export interface Product {
 export async function getAllProducts(): Promise<Product[]> {
     try {
         const promises = COLLECTIONS.map(col => getDocs(collection(db, col)));
-        const snapshots = await Promise.all(promises);
-
-        let allProducts: Product[] = [];
-
-        snapshots.forEach((snap, index) => {
-            const category = COLLECTIONS[index];
-            const products = snap.docs.map(doc => {
-                const data = doc.data();
-                return {
-                    id: doc.id,
-                    ...data,
-                    category,
-                    image: data.images?.[0] || '',
-                    rating: 4.5,
-                } as Product;
-            });
-            allProducts = [...allProducts, ...products];
+        const productPromises = COLLECTIONS.map(async (collectionName) => {
+            try {
+                const querySnapshot = await getDocs(collection(db, collectionName));
+                return querySnapshot.docs.map(doc => {
+                    const data = doc.data();
+                    return {
+                        id: doc.id,
+                        ...data,
+                        category: collectionName, // Add category for filtering
+                        image: data.images?.[0] || '',
+                        rating: 4.5,
+                    } as Product;
+                });
+            } catch (err) {
+                console.warn(`Failed to fetch ${collectionName}:`, err);
+                return []; // Return empty array on failure (e.g. permission error)
+            }
         });
 
-        return allProducts;
+        const results = await Promise.all(productPromises);
+
+        // Flatten the array of arrays
+        return results.flat();
     } catch (error) {
-        console.error('Error fetching all products:', error);
+        console.warn('Warning: Some collections could not be fetched (likely due to missing permissions):', error);
         return [];
     }
 }
 
 export async function getProductById(id: string): Promise<Product | null> {
     try {
-        const promises = COLLECTIONS.map(col => getDoc(doc(db, col, id)));
+        const promises = COLLECTIONS.map(async (col) => {
+            try {
+                const snap = await getDoc(doc(db, col, id));
+                return snap;
+            } catch (err) {
+                // If permission denied or other error, return null-like
+                console.warn(`Error checking collection ${col}:`, err);
+                return null;
+            }
+        });
+
         const snapshots = await Promise.all(promises);
 
-        const foundSnap = snapshots.find(snap => snap.exists());
+        // Filter out nulls and check for existence
+        const foundSnap = snapshots.find(snap => snap && snap.exists());
 
         if (foundSnap) {
-            const data = foundSnap.data();
+            const data = foundSnap.data() || {};
+            const category = foundSnap.ref.parent.id; // Get collection name
             return {
                 id: foundSnap.id,
                 ...data,
+                category,
                 image: data.images?.[0] || '',
             } as Product;
         }

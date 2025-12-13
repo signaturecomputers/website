@@ -2,26 +2,37 @@ import { User } from "firebase/auth";
 import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "./firebase";
 
-export const createFirestoreUser = async (user: User, provider: 'google' | 'password', name?: string) => {
+export async function createFirestoreUser(
+    user: User,
+    provider: 'password' | 'google',
+    displayName?: string,
+    additionalData?: any
+) {
     if (!user) return;
 
-    const userRef = doc(db, "users", user.uid);
+    const userRef = doc(db, 'users', user.uid);
     const userSnap = await getDoc(userRef);
 
     if (!userSnap.exists()) {
-        // Create new user document
-        await setDoc(userRef, {
+        const userData = {
             uid: user.uid,
-            name: name || user.displayName || 'Anonymous',
             email: user.email,
+            displayName: displayName || user.displayName || 'User',
+            photoURL: user.photoURL || '',
             provider,
-            createdAt: new Date().toISOString(),
-            lastLogin: new Date().toISOString(),
-        });
+            role: 'customer',
+            createdAt: serverTimestamp(),
+            lastLogin: serverTimestamp(),
+            ...additionalData // Merge first name, last name, phone
+        };
+
+        try {
+            await setDoc(userRef, userData);
+        } catch (error) {
+            console.error("Error creating Firestore user:", error);
+        }
     } else {
         // Update last login
-        await updateDoc(userRef, {
-            lastLogin: new Date().toISOString(),
-        });
+        await setDoc(userRef, { lastLogin: serverTimestamp() }, { merge: true });
     }
 };
