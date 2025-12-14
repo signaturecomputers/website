@@ -19,6 +19,8 @@ export default function CategoryPage() {
     const params = useParams();
     const slug = params.slug;
     const [sortBy, setSortBy] = useState('newest');
+    const [selectedCategory, setSelectedCategory] = useState(typeof slug === 'string' ? slug : 'all');
+    const [priceRange, setPriceRange] = useState(5000);
 
     // Format slug for title
     const title = typeof slug === 'string'
@@ -32,7 +34,12 @@ export default function CategoryPage() {
                     {/* Sidebar */}
                     <aside className="w-full md:w-64 flex-shrink-0">
                         <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 sticky top-24">
-                            <SidebarFilters />
+                            <SidebarFilters
+                                selectedCategory={selectedCategory}
+                                onCategoryChange={setSelectedCategory}
+                                priceRange={priceRange}
+                                setPriceRange={setPriceRange}
+                            />
                         </div>
                     </aside>
 
