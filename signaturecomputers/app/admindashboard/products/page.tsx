@@ -26,14 +26,26 @@ export default function ProductsPage() {
     const [searchQuery, setSearchQuery] = useState('');
 
     const categories = [
-        { id: 'all', name: 'All Products' },
-        { id: 'laptops', name: 'Laptops' },
-        { id: 'desktops', name: 'Desktops' },
-        { id: 'monitors', name: 'Monitors' },
-        { id: 'accessories', name: 'Accessories' },
-        { id: 'printers', name: 'Printers' },
-        { id: 'cartridges', name: 'Cartridges' },
-        { id: 'toners', name: 'Toners' },
+        { id: 'all', name: 'All Products', group: null },
+        { id: 'laptops', name: 'Laptops', group: null },
+        { id: 'desktops', name: 'Desktops', group: null },
+        { id: 'monitors', name: 'Monitors', group: null },
+        // Printers group
+        { id: 'printers', name: 'All Printers', group: 'Printers' },
+        { id: 'toners', name: 'Toners', group: 'Printers' },
+        { id: 'cartridges', name: 'Cartridges', group: 'Printers' },
+        // Accessories group
+        { id: 'accessories', name: 'All Accessories', group: 'Accessories' },
+        { id: 'keyboards', name: 'Keyboards', group: 'Accessories' },
+        { id: 'headphones', name: 'Headphones', group: 'Accessories' },
+        { id: 'cables', name: 'Cables', group: 'Accessories' },
+        { id: 'power-adapters', name: 'Power Adapters', group: 'Accessories' },
+        { id: 'mouse', name: 'Mouse', group: 'Accessories' },
+        { id: 'keyboard-mouse-combo', name: 'Keyboard & Mouse Combo', group: 'Accessories' },
+        { id: 'bags', name: 'Bags', group: 'Accessories' },
+        { id: 'docks', name: 'Docks', group: 'Accessories' },
+        { id: 'usb-flashdrives', name: 'USB Flash Drives', group: 'Accessories' },
+        { id: 'dvd-writers', name: 'DVD Writers', group: 'Accessories' },
     ];
 
     useEffect(() => {
@@ -45,7 +57,7 @@ export default function ProductsPage() {
         try {
             if (selectedCategory === 'all') {
                 // Fetch from all categories
-                const allCategories = ['laptops', 'desktops', 'monitors', 'accessories', 'printers', 'cartridges', 'toners'];
+                const allCategories = categories.filter(c => c.id !== 'all').map(c => c.id);
                 const allProducts: Product[] = [];
 
                 await Promise.all(allCategories.map(async (category) => {
@@ -135,9 +147,24 @@ export default function ProductsPage() {
                         onChange={(e) => setSelectedCategory(e.target.value)}
                         className="p-2 pr-8 rounded-lg border dark:bg-gray-900 dark:border-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500"
                     >
-                        {categories.map(cat => (
+                        {/* Ungrouped items */}
+                        {categories.filter(c => !c.group).map(cat => (
                             <option key={cat.id} value={cat.id}>{cat.name}</option>
                         ))}
+
+                        {/* Printers group */}
+                        <optgroup label="Printers">
+                            {categories.filter(c => c.group === 'Printers').map(cat => (
+                                <option key={cat.id} value={cat.id}>{cat.name}</option>
+                            ))}
+                        </optgroup>
+
+                        {/* Accessories group */}
+                        <optgroup label="Accessories">
+                            {categories.filter(c => c.group === 'Accessories').map(cat => (
+                                <option key={cat.id} value={cat.id}>{cat.name}</option>
+                            ))}
+                        </optgroup>
                     </select>
                 </div>
             </div>

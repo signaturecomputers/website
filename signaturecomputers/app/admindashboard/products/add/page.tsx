@@ -34,13 +34,25 @@ export default function AddProductPage() {
     const [productInfo, setProductInfo] = useState<ProductInfo>({});
 
     const categories = [
-        { id: 'laptops', name: 'Laptops' },
-        { id: 'desktops', name: 'Desktops' },
-        { id: 'monitors', name: 'Monitors' },
-        { id: 'accessories', name: 'Accessories' },
-        { id: 'printers', name: 'Printers' },
-        { id: 'cartridges', name: 'Cartridges' },
-        { id: 'toners', name: 'Toners' },
+        { id: 'laptops', name: 'Laptops', group: null },
+        { id: 'desktops', name: 'Desktops', group: null },
+        { id: 'monitors', name: 'Monitors', group: null },
+        // Printers group
+        { id: 'printers', name: 'All Printers', group: 'Printers' },
+        { id: 'toners', name: 'Toners', group: 'Printers' },
+        { id: 'cartridges', name: 'Cartridges', group: 'Printers' },
+        // Accessories group
+        { id: 'accessories', name: 'All Accessories', group: 'Accessories' },
+        { id: 'keyboards', name: 'Keyboards', group: 'Accessories' },
+        { id: 'headphones', name: 'Headphones', group: 'Accessories' },
+        { id: 'cables', name: 'Cables', group: 'Accessories' },
+        { id: 'power-adapters', name: 'Power Adapters', group: 'Accessories' },
+        { id: 'mouse', name: 'Mouse', group: 'Accessories' },
+        { id: 'keyboard-mouse-combo', name: 'Keyboard & Mouse Combo', group: 'Accessories' },
+        { id: 'bags', name: 'Bags', group: 'Accessories' },
+        { id: 'docks', name: 'Docks', group: 'Accessories' },
+        { id: 'usb-flashdrives', name: 'USB Flash Drives', group: 'Accessories' },
+        { id: 'dvd-writers', name: 'DVD Writers', group: 'Accessories' },
     ];
 
     // Handlers
@@ -271,9 +283,24 @@ export default function AddProductPage() {
                             onChange={handleCategoryChange}
                             className="w-full p-2.5 rounded-lg border dark:bg-gray-900 dark:border-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500"
                         >
-                            {categories.map(cat => (
+                            {/* Ungrouped items */}
+                            {categories.filter(c => !c.group).map(cat => (
                                 <option key={cat.id} value={cat.id}>{cat.name}</option>
                             ))}
+
+                            {/* Printers group */}
+                            <optgroup label="Printers">
+                                {categories.filter(c => c.group === 'Printers').map(cat => (
+                                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                ))}
+                            </optgroup>
+
+                            {/* Accessories group */}
+                            <optgroup label="Accessories">
+                                {categories.filter(c => c.group === 'Accessories').map(cat => (
+                                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                ))}
+                            </optgroup>
                         </select>
                     </div>
 
@@ -381,7 +408,7 @@ export default function AddProductPage() {
                         )}
                     </button>
                 </div>
-            </form>
-        </div>
+            </form >
+        </div >
     );
 }

@@ -99,9 +99,21 @@ export default function ProductDetailsPage() {
                         </div>
 
                         <div className="space-y-6 border-t border-b border-gray-100 dark:border-gray-800 py-6 mb-8">
-                            <p className={`text-sm font-medium ${product.stock > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                {product.stock > 0 ? `In Stock (${product.stock} available)` : 'Out of Stock'}
-                            </p>
+                            {product.stock <= 0 ? (
+                                <p className="text-sm font-medium text-red-600">Out of Stock</p>
+                            ) : product.stock <= 5 ? (
+                                <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+                                    <span className="text-amber-600 dark:text-amber-400 text-lg">⚠️</span>
+                                    <div>
+                                        <p className="text-sm font-semibold text-amber-700 dark:text-amber-300">
+                                            Only {product.stock} left in stock!
+                                        </p>
+                                        <p className="text-xs text-amber-600 dark:text-amber-400">
+                                            Hurry, products are running out - order soon!
+                                        </p>
+                                    </div>
+                                </div>
+                            ) : null}
                         </div>
 
                         <div className="flex items-center gap-4 mb-8">
