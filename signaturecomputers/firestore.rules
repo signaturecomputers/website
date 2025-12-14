@@ -118,6 +118,12 @@ service cloud.firestore {
       allow read, write: if isAuthenticated() && isOwner(userId);
     }
 
+    // HOT DEALS - Public read, authenticated write
+    match /hot_deals/{dealId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
     // Default deny
     match /{document=**} {
       allow read, write: if false;

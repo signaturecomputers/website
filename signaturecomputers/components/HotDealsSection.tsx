@@ -5,7 +5,9 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FiShoppingCart, FiCheckCircle, FiPackage, FiTruck, FiChevronLeft, FiChevronRight, FiMinus, FiPlus } from 'react-icons/fi';
 import { useCart } from '@/context/CartContext';
-import { getAllProducts, Product } from '@/lib/products';
+import { getProductById, Product } from '@/lib/products';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 interface HotDealsProps {
     mode?: 'home' | 'page';
@@ -26,10 +28,21 @@ export default function HotDealsSection({ mode = 'home' }: HotDealsProps) {
     useEffect(() => {
         async function fetchDeals() {
             try {
-                const products = await getAllProducts();
-                // Filter for products with discounts (originalPrice > price) or just take first 5
-                const discounted = products.filter(p => p.originalPrice && p.originalPrice > p.price).slice(0, 5);
-                setDeals(discounted.length > 0 ? discounted : products.slice(0, 5));
+                // Fetch hot deals from Firestore collection
+                const hotDealsRef = collection(db, 'hot_deals');
+                const snapshot = await getDocs(hotDealsRef);
+
+                // Get product details for each hot deal
+                const dealProducts: Product[] = [];
+                for (const doc of snapshot.docs) {
+                    const dealData = doc.data();
+                    const product = await getProductById(dealData.productId);
+                    if (product) {
+                        dealProducts.push(product);
+                    }
+                }
+
+                setDeals(dealProducts);
             } catch (err) {
                 console.error("Failed to fetch deals", err);
             } finally {

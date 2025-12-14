@@ -13,7 +13,8 @@ import {
     Menu,
     X,
     LogOut,
-    Tag
+    Tag,
+    Zap
 } from "lucide-react";
 
 export default function AdminDashboardLayout({
@@ -40,6 +41,7 @@ export default function AdminDashboardLayout({
         { name: "Dashboard", href: "/admindashboard", icon: LayoutDashboard },
         { name: "Products", href: "/admindashboard/products", icon: Package },
         { name: "Orders", href: "/admindashboard/orders", icon: ShoppingCart },
+        { name: "Hot Deals", href: "/admindashboard/hot-deals", icon: Zap },
         { name: "Categories", href: "/admindashboard/categories", icon: Tag },
         { name: "Users", href: "/admindashboard/users", icon: Users },
         { name: "Settings", href: "/admindashboard/settings", icon: Settings },
@@ -78,8 +80,8 @@ export default function AdminDashboardLayout({
                                 key={item.href}
                                 href={item.href}
                                 className={`flex items-center rounded-lg px-4 py-3 text-sm font-medium transition-colors ${isActive
-                                        ? "bg-indigo-50 text-indigo-700 dark:bg-gray-700 dark:text-white"
-                                        : "text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-700"
+                                    ? "bg-indigo-50 text-indigo-700 dark:bg-gray-700 dark:text-white"
+                                    : "text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-700"
                                     }`}
                                 onClick={() => setSidebarOpen(false)}
                             >
