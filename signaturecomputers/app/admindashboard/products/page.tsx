@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { collection, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { deleteProduct } from '@/lib/admin-actions';
@@ -20,9 +21,12 @@ interface Product {
 }
 
 export default function ProductsPage() {
+    const searchParams = useSearchParams();
+    const categoryFromUrl = searchParams.get('category');
+
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
-    const [selectedCategory, setSelectedCategory] = useState('all');
+    const [selectedCategory, setSelectedCategory] = useState(categoryFromUrl || 'all');
     const [searchQuery, setSearchQuery] = useState('');
 
     const categories = [
