@@ -6,9 +6,10 @@ import { FiUpload, FiX, FiPlus, FiTrash2, FiSave, FiArrowLeft } from 'react-icon
 import { toast } from 'sonner';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { getProductById } from '@/lib/products';
+import { getProductById, ProductInfo } from '@/lib/products';
 import { updateProduct } from '@/lib/admin-actions';
 import Link from 'next/link';
+import ProductInfoFormSection from '@/components/admin/ProductInfoFormSection';
 
 export default function EditProductPage() {
     const router = useRouter();
@@ -38,6 +39,7 @@ export default function EditProductPage() {
     const [existingImages, setExistingImages] = useState<string[]>([]);
     const [newImages, setNewImages] = useState<File[]>([]);
     const [newImagePreviews, setNewImagePreviews] = useState<string[]>([]);
+    const [productInfo, setProductInfo] = useState<ProductInfo>({});
 
     // Fetch Product Data
     useEffect(() => {
@@ -63,6 +65,11 @@ export default function EditProductPage() {
                 }
 
                 setExistingImages(product.images || []);
+
+                // Load product info
+                if (product.productInfo) {
+                    setProductInfo(product.productInfo);
+                }
             } else {
                 toast.error('Product not found');
                 router.push('/admindashboard/products');
@@ -153,6 +160,7 @@ export default function EditProductPage() {
                 }, {} as Record<string, string>),
                 images: finalImages,
                 updatedAt: new Date().toISOString(),
+                productInfo: productInfo, // Include extended product info
             };
 
             // 3. Update via Server Action
@@ -367,6 +375,11 @@ export default function EditProductPage() {
                             <p className="text-sm mt-1">PNG, JPG up to 10MB</p>
                         </div>
                     </div>
+                </div>
+
+                {/* Extended Product Information */}
+                <div className="space-y-4 bg-gray-50 dark:bg-gray-800/50 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
+                    <ProductInfoFormSection productInfo={productInfo} setProductInfo={setProductInfo} />
                 </div>
 
                 <button

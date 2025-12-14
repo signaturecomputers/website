@@ -9,6 +9,8 @@ import { createProduct } from '@/lib/admin-actions';
 import { FiUpload, FiPlus, FiTrash2, FiSave, FiArrowLeft } from 'react-icons/fi';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import ProductInfoFormSection from '@/components/admin/ProductInfoFormSection';
+import { ProductInfo } from '@/lib/products';
 
 export default function AddProductPage() {
     const { adminUser } = useAdminAuth();
@@ -29,6 +31,7 @@ export default function AddProductPage() {
     const [specs, setSpecs] = useState([{ key: 'Processor', value: '' }, { key: 'RAM', value: '' }, { key: 'Storage', value: '' }]);
     const [images, setImages] = useState<File[]>([]);
     const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+    const [productInfo, setProductInfo] = useState<ProductInfo>({});
 
     const categories = [
         { id: 'laptops', name: 'Laptops' },
@@ -161,6 +164,7 @@ export default function AddProductPage() {
                 category: formData.category,
                 createdAt: new Date().toISOString(), // Use ISO string for Server Action serialization
                 createdBy: adminUser?.username || 'admin',
+                productInfo: productInfo, // Include extended product info
             };
 
             // 3. Save via Server Action
@@ -350,6 +354,11 @@ export default function AddProductPage() {
                             </div>
                         ))}
                     </div>
+                </div>
+
+                {/* Extended Product Information */}
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                    <ProductInfoFormSection productInfo={productInfo} setProductInfo={setProductInfo} />
                 </div>
 
                 {/* Submit */}

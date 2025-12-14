@@ -3,6 +3,168 @@ import { db } from '@/lib/firebase';
 
 const COLLECTIONS = ['laptops', 'desktops', 'monitors', 'accessories', 'printers', 'cartridges', 'toners'];
 
+export interface ProductInfo {
+    // Basic Info
+    title?: string;
+    partNo?: string;
+    series?: string;
+    recommendedUsage?: string;
+    idealFor?: string[];
+
+    // Appearance
+    appearance?: {
+        color?: string;
+        design?: string;
+        formFactor?: string;
+    };
+
+    // Operating System
+    operatingSystem?: {
+        os?: string;
+    };
+
+    // Processor
+    processor?: {
+        generation?: string;
+        brand?: string;
+        name?: string;
+        maxClockSpeed?: string;
+        cache?: string;
+        cores?: number;
+        threads?: number;
+        technology?: string;
+        chipset?: string;
+    };
+
+    // Memory
+    memory?: {
+        capacity?: string;
+        type?: string;
+        speed?: string;
+        layout?: string;
+    };
+
+    // Storage
+    storage?: {
+        primaryStorage?: {
+            type?: string;
+            capacity?: string;
+        };
+        cloudStorage?: {
+            service?: string;
+            capacity?: string;
+            duration?: string;
+        };
+    };
+
+    // Display
+    display?: {
+        size?: string;
+        diagonal?: string;
+        resolution?: string;
+        aspectRatio?: string;
+        panel?: string;
+        antiGlare?: boolean;
+        brightness?: string;
+        colorGamut?: string;
+        touchscreen?: boolean;
+        flickerFree?: boolean;
+        screenToBodyRatio?: string;
+    };
+
+    // Graphics
+    graphics?: {
+        gpu?: string;
+        dedicated?: boolean;
+    };
+
+    // Audio & Input
+    audioAndInput?: {
+        speakers?: string;
+        touchpad?: string;
+        keyboard?: {
+            type?: string;
+            backlit?: boolean;
+            color?: string;
+        };
+    };
+
+    // Connectivity
+    connectivity?: {
+        wifi?: string;
+        bluetooth?: string;
+        modernStandby?: boolean;
+    };
+
+    // Ports
+    ports?: {
+        usbTypeC?: string;
+        usbTypeA?: string;
+        hdmi?: {
+            version?: string;
+            count?: number;
+        };
+        audioJack?: string;
+        powerPort?: string;
+    };
+
+    // Camera
+    camera?: {
+        webcam?: string;
+        features?: string[];
+    };
+
+    // Battery & Power
+    batteryAndPower?: {
+        batteryType?: string;
+        capacity?: string;
+        charger?: string;
+        fastCharge?: string;
+    };
+
+    // Security
+    security?: {
+        micMuteKey?: boolean;
+        cameraPrivacyShutter?: boolean;
+        tpm?: string;
+    };
+
+    // Software
+    software?: {
+        preInstalled?: Array<{
+            name?: string;
+            trialPeriod?: string;
+        }>;
+    };
+
+    // Dimensions & Weight
+    dimensionsAndWeight?: {
+        dimensions?: {
+            front?: string;
+            rear?: string;
+        };
+        weight?: string;
+    };
+
+    // Warranty
+    warranty?: {
+        duration?: string;
+        coverage?: string;
+        onSiteService?: boolean;
+    };
+
+    // Certifications
+    certifications?: {
+        energyStar?: boolean;
+    };
+
+    // Environmental
+    environmental?: {
+        oceanBoundPlastic?: boolean;
+        recycledKeycaps?: boolean;
+    };
+}
+
 export interface Product {
     id: string;
     name: string;
@@ -17,6 +179,8 @@ export interface Product {
     // Map for UI
     image: string;  // Changed from optional to required for UI compatibility
     rating?: number;
+    // Structured product info
+    productInfo?: ProductInfo;
 }
 
 export async function getAllProducts(): Promise<Product[]> {

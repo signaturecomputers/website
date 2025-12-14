@@ -5,7 +5,7 @@ import { collection, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { deleteProduct } from '@/lib/admin-actions';
 import Link from 'next/link';
-import { FiPlus, FiTrash2, FiEdit2, FiSearch, FiFilter } from 'react-icons/fi';
+import { FiPlus, FiTrash2, FiEdit2, FiSearch, FiFilter, FiEye } from 'react-icons/fi';
 import { toast } from 'sonner';
 
 interface Product {
@@ -15,16 +15,18 @@ interface Product {
     price: number;
     stock: number;
     images: string[];
+    category?: string;
     [key: string]: any;
 }
 
 export default function ProductsPage() {
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
-    const [selectedCategory, setSelectedCategory] = useState('laptops');
+    const [selectedCategory, setSelectedCategory] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
 
     const categories = [
+        { id: 'all', name: 'All Products' },
         { id: 'laptops', name: 'Laptops' },
         { id: 'desktops', name: 'Desktops' },
         { id: 'monitors', name: 'Monitors' },
@@ -41,12 +43,36 @@ export default function ProductsPage() {
     const fetchProducts = async () => {
         setLoading(true);
         try {
-            const querySnapshot = await getDocs(collection(db, selectedCategory));
-            const productsData = querySnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            })) as Product[];
-            setProducts(productsData);
+            if (selectedCategory === 'all') {
+                // Fetch from all categories
+                const allCategories = ['laptops', 'desktops', 'monitors', 'accessories', 'printers', 'cartridges', 'toners'];
+                const allProducts: Product[] = [];
+
+                await Promise.all(allCategories.map(async (category) => {
+                    try {
+                        const querySnapshot = await getDocs(collection(db, category));
+                        querySnapshot.docs.forEach(doc => {
+                            allProducts.push({
+                                id: doc.id,
+                                category: category,
+                                ...doc.data()
+                            } as Product);
+                        });
+                    } catch (err) {
+                        console.warn(`Failed to fetch ${category}:`, err);
+                    }
+                }));
+
+                setProducts(allProducts);
+            } else {
+                const querySnapshot = await getDocs(collection(db, selectedCategory));
+                const productsData = querySnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    category: selectedCategory,
+                    ...doc.data()
+                })) as Product[];
+                setProducts(productsData);
+            }
         } catch (error) {
             console.warn('Warning: Failed to fetch products (likely permissions):', error);
             toast.error('Failed to load products (check rules)');
@@ -124,6 +150,8 @@ export default function ProductsPage() {
                             <tr>
                                 <th className="p-4 w-20">Image</th>
                                 <th className="p-4">Product Name</th>
+                                <th className="p-4">Part Number</th>
+                                {selectedCategory === 'all' && <th className="p-4">Category</th>}
                                 <th className="p-4">Brand</th>
                                 <th className="p-4">Price</th>
                                 <th className="p-4">Stock</th>
@@ -133,11 +161,11 @@ export default function ProductsPage() {
                         <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                             {loading ? (
                                 <tr>
-                                    <td colSpan={6} className="p-8 text-center text-gray-500">Loading products...</td>
+                                    <td colSpan={selectedCategory === 'all' ? 8 : 7} className="p-8 text-center text-gray-500">Loading products...</td>
                                 </tr>
                             ) : filteredProducts.length === 0 ? (
                                 <tr>
-                                    <td colSpan={6} className="p-8 text-center text-gray-500">No products found in {selectedCategory}.</td>
+                                    <td colSpan={selectedCategory === 'all' ? 8 : 7} className="p-8 text-center text-gray-500">No products found{selectedCategory !== 'all' ? ` in ${selectedCategory}` : ''}.</td>
                                 </tr>
                             ) : (
                                 filteredProducts.map((product) => (
@@ -152,6 +180,16 @@ export default function ProductsPage() {
                                             </div>
                                         </td>
                                         <td className="p-4 font-medium dark:text-gray-200">{product.name}</td>
+                                        <td className="p-4 text-gray-500 dark:text-gray-400 font-mono text-xs">
+                                            {product.productInfo?.partNo || '-'}
+                                        </td>
+                                        {selectedCategory === 'all' && (
+                                            <td className="p-4">
+                                                <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 capitalize">
+                                                    {product.category}
+                                                </span>
+                                            </td>
+                                        )}
                                         <td className="p-4 text-gray-500 dark:text-gray-400">{product.brand}</td>
                                         <td className="p-4 font-medium dark:text-gray-200">₹{product.price.toLocaleString()}</td>
                                         <td className="p-4">
@@ -166,6 +204,14 @@ export default function ProductsPage() {
                                         </td>
                                         <td className="p-4 text-right">
                                             <div className="flex items-center justify-end gap-2">
+                                                <Link
+                                                    href={`/product/${product.id}`}
+                                                    target="_blank"
+                                                    className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg dark:hover:bg-blue-900/20 transition-colors"
+                                                    title="View Product Page"
+                                                >
+                                                    <FiEye />
+                                                </Link>
                                                 <Link
                                                     href={`/admindashboard/products/edit/${product.id}`}
                                                     className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg dark:hover:bg-gray-700 transition-colors"

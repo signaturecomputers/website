@@ -5,10 +5,16 @@ import { useParams } from 'next/navigation';
 import { FiStar, FiShoppingCart, FiHeart, FiShare2 } from 'react-icons/fi';
 import { getProductById, Product } from '@/lib/products';
 import { toast } from 'sonner';
+import ProductInfoSection from '@/components/ProductInfoSection';
+import { useAdminAuth } from '@/context/AdminAuthContext';
 
 export default function ProductDetailsPage() {
     const params = useParams();
     const id = params.id as string;
+
+    // Get admin status from context (AdminAuthProvider wraps the entire app)
+    const { adminUser } = useAdminAuth();
+    const isAdmin = !!adminUser;
 
     const [product, setProduct] = useState<Product | null>(null);
     const [loading, setLoading] = useState(true);
@@ -121,7 +127,7 @@ export default function ProductDetailsPage() {
                 <div className="mt-16">
                     <div className="border-b border-gray-200 dark:border-gray-800">
                         <nav className="-mb-px flex space-x-8">
-                            {['description', 'specifications', 'reviews'].map((tab) => (
+                            {['description', 'specifications', 'product info'].map((tab) => (
                                 <button
                                     key={tab}
                                     onClick={() => setActiveTab(tab)}
@@ -153,10 +159,8 @@ export default function ProductDetailsPage() {
                                 </dl>
                             </div>
                         )}
-                        {activeTab === 'reviews' && (
-                            <div>
-                                <p className="text-gray-500">No reviews yet.</p>
-                            </div>
+                        {activeTab === 'product info' && (
+                            <ProductInfoSection productInfo={product.productInfo} isAdmin={isAdmin} />
                         )}
                     </div>
                 </div>
