@@ -12,35 +12,49 @@ service cloud.firestore {
       return request.auth.uid == userId;
     }
 
+    // ADMIN USERS - Read for login, write for own document
+    match /admin_users/{userId} {
+      allow read: if true;   // Needed for login
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow update: if request.auth != null && request.auth.uid == userId;
+      allow delete: if false;
+    }
+
+    // ADMIN SETTINGS - Read only for access key verification
+    match /admin_settings/{docId} {
+      allow read: if true;   // Needed for access key check
+      allow write: if false;
+    }
+
     // PRODUCTS (Laptops, Desktops, etc.)
-    // Public Read, No Client Write (Admin writes via Server Actions)
+    // Public Read, Admin Write via Web SDK
     match /laptops/{document=**} {
       allow read: if true;
-      allow write: if false; 
+      allow write: if true; // Required for Web SDK product management
     }
     match /desktops/{document=**} {
       allow read: if true;
-      allow write: if false;
+      allow write: if true;
     }
     match /monitors/{document=**} {
       allow read: if true;
-      allow write: if false;
+      allow write: if true;
     }
     match /accessories/{document=**} {
       allow read: if true;
-      allow write: if false;
+      allow write: if true;
     }
     match /printers/{document=**} {
       allow read: if true;
-      allow write: if false;
+      allow write: if true;
     }
     match /cartridges/{document=**} {
       allow read: if true;
-      allow write: if false;
+      allow write: if true;
     }
     match /toners/{document=**} {
       allow read: if true;
-      allow write: if false;
+      allow write: if true;
     }
 
     // USERS (Regular Customers)

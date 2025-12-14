@@ -3,13 +3,15 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAdminAuth } from "@/context/AdminAuthContext";
-import { loginAdmin } from "@/lib/admin-actions";
+import { adminAuth, adminDb } from "@/lib/firebaseAdmin";
+import { signInWithEmailAndPassword, signOut } from "firebase/auth";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 
 export default function AdminLogin() {
     const { gatewayVerified, login, loading: authLoading } = useAdminAuth();
     const router = useRouter();
-    const [username, setUsername] = useState("");
-    const [password, setPassword] = useState(""); // Note: In real app, hash password! User requested simple string match per prompt.
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
 
@@ -19,33 +21,98 @@ export default function AdminLogin() {
         }
     }, [gatewayVerified, authLoading, router]);
 
+    // Sign out from admin auth on mount to ensure clean state
+    useEffect(() => {
+        signOut(adminAuth).catch(() => { });
+    }, []);
+
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
         setLoading(true);
 
         try {
-            const result = await loginAdmin(username, password);
+            // Firebase Auth login
+            const userCredential = await signInWithEmailAndPassword(adminAuth, email, password);
+            const user = userCredential.user;
 
-            if (result.success && result.user) {
-                login({
-                    username: result.user.username,
-                    role: result.user.role as "admin" | "staff",
-                });
-                router.push("/admindashboard");
+            // Check if user exists in admin_users collection
+            const adminDocRef = doc(adminDb, "admin_users", user.uid);
+            const adminDocSnap = await getDoc(adminDocRef);
+
+            let role: "admin" | "staff" = "staff"; // Default role
+            let displayName = user.email?.split("@")[0] || "Admin";
+
+            if (adminDocSnap.exists()) {
+                // User exists, get their role
+                const adminData = adminDocSnap.data();
+                role = adminData.role || "staff";
+                displayName = adminData.username || displayName;
+
+                // Verify role is either admin or staff
+                if (role !== "admin" && role !== "staff") {
+                    await signOut(adminAuth);
+                    setError("Access denied. Invalid role assignment.");
+                    setLoading(false);
+                    return;
+                }
             } else {
-                setError(result.error || "Invalid credentials");
+                // New admin user - save to admin_users collection with default staff role
+                await setDoc(adminDocRef, {
+                    uid: user.uid,
+                    email: user.email,
+                    username: displayName,
+                    role: "staff", // Default role for new users
+                    createdAt: new Date().toISOString(),
+                });
             }
-        } catch (err) {
+
+
+            // Sign out from Firebase Auth immediately after validation
+            // We only use Firebase for credential verification, not for persistent auth state
+            await signOut(adminAuth);
+
+            // Update context (session-based, not Firebase auth state)
+            login({
+                username: displayName,
+                role: role as "admin" | "staff",
+            });
+
+            router.push("/admindashboard");
+
+        } catch (err: any) {
             console.error("Login error:", err);
-            setError("Login failed. Check console.");
+
+            // Make sure to sign out on any error
+            await signOut(adminAuth).catch(() => { });
+
+            // Handle specific Firebase Auth errors
+            switch (err.code) {
+                case "auth/invalid-email":
+                    setError("Invalid email address");
+                    break;
+                case "auth/user-not-found":
+                    setError("No account found with this email");
+                    break;
+                case "auth/wrong-password":
+                    setError("Incorrect password");
+                    break;
+                case "auth/invalid-credential":
+                    setError("Invalid email or password");
+                    break;
+                case "auth/too-many-requests":
+                    setError("Too many failed attempts. Try again later.");
+                    break;
+                default:
+                    setError(err.message || "Login failed");
+            }
         } finally {
             setLoading(false);
         }
     };
 
     if (authLoading || !gatewayVerified) {
-        return null; // Or loading spinner. Effect will redirect.
+        return null;
     }
 
     return (
@@ -61,13 +128,14 @@ export default function AdminLogin() {
 
                 <form onSubmit={handleLogin} className="space-y-6">
                     <div>
-                        <label className="block text-sm font-medium text-gray-400">Username</label>
+                        <label className="block text-sm font-medium text-gray-400">Email</label>
                         <input
-                            type="text"
+                            type="email"
                             required
-                            className="mt-1 block w-full rounded-md border border-gray-600 bg-gray-700 px-3 py-2 text-white focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
+                            placeholder="admin@example.com"
+                            className="mt-1 block w-full rounded-md border border-gray-600 bg-gray-700 px-3 py-2 text-white placeholder-gray-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
                         />
                     </div>
 
@@ -76,7 +144,8 @@ export default function AdminLogin() {
                         <input
                             type="password"
                             required
-                            className="mt-1 block w-full rounded-md border border-gray-600 bg-gray-700 px-3 py-2 text-white focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                            placeholder="••••••••"
+                            className="mt-1 block w-full rounded-md border border-gray-600 bg-gray-700 px-3 py-2 text-white placeholder-gray-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                         />
