@@ -1,26 +1,70 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
-import { FiStar, FiShoppingCart, FiHeart, FiShare2 } from 'react-icons/fi';
+import { useParams, useRouter } from 'next/navigation';
+import { FiStar, FiShoppingCart, FiHeart, FiShare2, FiCreditCard } from 'react-icons/fi';
 import { getProductById, Product } from '@/lib/products';
 import { toast } from 'sonner';
 import ProductInfoSection from '@/components/ProductInfoSection';
 import { useAdminAuth } from '@/context/AdminAuthContext';
+import { useAuth } from '@/context/AuthContext';
+import { useCart } from '@/context/CartContext';
 
 export default function ProductDetailsPage() {
     const params = useParams();
+    const router = useRouter();
     const id = params.id as string;
 
     // Get admin status from context (AdminAuthProvider wraps the entire app)
     const { adminUser } = useAdminAuth();
     const isAdmin = !!adminUser;
 
+    // Get user auth for checkout
+    const { user } = useAuth();
+
+    // Get cart for Buy Now
+    const { addToCart } = useCart();
+
     const [product, setProduct] = useState<Product | null>(null);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('description');
     const [quantity, setQuantity] = useState(1);
     const [activeImage, setActiveImage] = useState('');
+
+    // Handle Buy Now button
+    const handleBuyNow = () => {
+        if (!user) {
+            toast.error('Please login to checkout');
+            router.push('/login');
+            return;
+        }
+        if (product) {
+            // Add product to cart with selected quantity
+            addToCart({
+                id: product.id,
+                name: product.name,
+                price: product.price,
+                image: product.images?.[0] || '',
+                quantity: quantity
+            });
+            // Redirect to checkout
+            router.push('/checkout');
+        }
+    };
+
+    // Handle Add to Cart button
+    const handleAddToCart = () => {
+        if (product) {
+            addToCart({
+                id: product.id,
+                name: product.name,
+                price: product.price,
+                image: product.images?.[0] || '',
+                quantity: quantity
+            });
+            toast.success('Added to cart!');
+        }
+    };
 
     useEffect(() => {
         async function loadProduct() {
@@ -123,10 +167,18 @@ export default function ProductDetailsPage() {
                                 <button onClick={() => setQuantity(quantity + 1)} className="px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800">+</button>
                             </div>
                             <button
+                                onClick={handleAddToCart}
                                 disabled={product.stock <= 0}
                                 className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-md flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <FiShoppingCart className="mr-2" /> {product.stock > 0 ? 'Add to Cart' : 'Out of Stock'}
+                            </button>
+                            <button
+                                onClick={handleBuyNow}
+                                disabled={product.stock <= 0}
+                                className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-md flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <FiCreditCard className="mr-2" /> Buy Now
                             </button>
                             <button className="p-3 border border-gray-300 rounded-md hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800">
                                 <FiHeart className="text-xl" />
