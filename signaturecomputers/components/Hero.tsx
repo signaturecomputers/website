@@ -46,7 +46,7 @@ export default function Hero() {
                         <div className="flex-1 lg:flex-none lg:w-[42%] w-full relative flex items-start justify-start mt-6 lg:mt-0">
                             <div className="relative w-full max-w-lg lg:max-w-none h-auto">
                                 <Image
-                                    src="/hero-image-new.png"
+                                    src="/hero-image-v2.png"
                                     alt="Signature Computers Hero"
                                     width={800}
                                     height={600}
