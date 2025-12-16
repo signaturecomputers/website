@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import SidebarFilters from '@/components/SidebarFilters';
 import ProductCard from '@/components/ProductCard';
 import CategorySection from '@/components/CategorySection';
+import AccessoriesSubcategorySection from '@/components/AccessoriesSubcategorySection';
 import { getAllProducts, Product } from '@/lib/products';
 
 export default function ProductsPage() {
@@ -50,14 +51,30 @@ export default function ProductsPage() {
         fetchProducts();
     }, []);
 
+    // Accessory subcategory IDs
+    const accessorySubcategories = [
+        'keyboards', 'mouse', 'keyboard-mouse-combo', 'headphones', 'cables',
+        'power-adapters', 'bags', 'docks', 'usb-flashdrives', 'dvd-writers'
+    ];
+
     // Filter Logic
     const filteredProducts = products.filter(product => {
+        const productCategory = product.category?.toLowerCase();
+
         // Category Filter
-        if (selectedCategory !== 'all' && product.category?.toLowerCase() !== selectedCategory.toLowerCase()) {
+        if (selectedCategory === 'all') {
+            return true;
+        }
+
+        // If viewing 'accessories', show products from 'accessories' AND all accessory subcategories
+        if (selectedCategory === 'accessories') {
+            return productCategory === 'accessories' || accessorySubcategories.includes(productCategory || '');
+        }
+
+        // Otherwise, match exact category
+        if (productCategory !== selectedCategory.toLowerCase()) {
             return false;
         }
-        // Price Filter (assuming price is in USD/INR - simple check)
-        // If product.price > priceRange return false; 
 
         return true;
     });
@@ -69,10 +86,41 @@ export default function ProductsPage() {
         return 0; // newest not implemented yet (needs createdAt)
     });
 
+    // Category name mapping for display
+    const categoryNames: { [key: string]: string } = {
+        'all': 'All Products',
+        'laptops': 'Laptops',
+        'desktops': 'Desktops',
+        'workstations': 'Workstations',
+        'monitors': 'Monitors',
+        'printers': 'Printers',
+        'accessories': 'All Accessories',
+        'cartridges': 'Cartridges',
+        'toners': 'Toners',
+        'cctv': 'CCTV',
+        // Accessories subcategories
+        'keyboards': 'Keyboards',
+        'mouse': 'Mouse',
+        'keyboard-mouse-combo': 'Keyboard & Mouse Combo',
+        'headphones': 'Headphones',
+        'cables': 'Cables',
+        'power-adapters': 'Power Adapters',
+        'bags': 'Bags',
+        'docks': 'Docks',
+        'usb-flashdrives': 'USB Flash Drives',
+        'dvd-writers': 'DVD Writers',
+    };
+
+    // Get display title based on selected category
+    const pageTitle = categoryNames[selectedCategory] || selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1);
+
     return (
         <div className="bg-gray-50 dark:bg-black min-h-screen">
             {/* Show Category Cards ONLY when on 'All Products' view */}
             {selectedCategory === 'all' && <CategorySection />}
+
+            {/* Show Accessories Subcategory Cards when on 'Accessories' view */}
+            {selectedCategory === 'accessories' && <AccessoriesSubcategorySection />}
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
                 <div className="flex flex-col md:flex-row gap-8">
@@ -91,7 +139,7 @@ export default function ProductsPage() {
                     {/* Main Content */}
                     <div className="flex-1">
                         <div className="flex justify-between items-center mb-6">
-                            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">All Products</h1>
+                            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{pageTitle}</h1>
                             <div className="flex items-center gap-2">
                                 <span className="text-sm text-gray-500">Sort by:</span>
                                 <select

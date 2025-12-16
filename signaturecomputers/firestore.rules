@@ -96,6 +96,14 @@ service cloud.firestore {
       allow read: if true;
       allow write: if true;
     }
+    match /workstations/{document=**} {
+      allow read: if true;
+      allow write: if true;
+    }
+    match /cctv/{document=**} {
+      allow read: if true;
+      allow write: if true;
+    }
 
     // USERS - Public read for admin dashboard
     match /users/{userId} {

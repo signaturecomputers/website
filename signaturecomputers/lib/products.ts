@@ -1,7 +1,14 @@
 import { collection, getDocs, doc, getDoc, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
-const COLLECTIONS = ['laptops', 'desktops', 'monitors', 'accessories', 'printers', 'cartridges', 'toners'];
+const COLLECTIONS = [
+    'laptops', 'desktops', 'monitors', 'accessories', 'printers', 'cartridges', 'toners',
+    // Accessories subcategories
+    'keyboards', 'mouse', 'keyboard-mouse-combo', 'headphones', 'cables',
+    'power-adapters', 'bags', 'docks', 'usb-flashdrives', 'dvd-writers',
+    // Additional categories
+    'workstations', 'cctv'
+];
 
 export interface ProductInfo {
     // Basic Info
