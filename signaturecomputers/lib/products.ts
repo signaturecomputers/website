@@ -257,3 +257,69 @@ export async function getProductById(id: string): Promise<Product | null> {
         return null;
     }
 }
+
+// Category display names for search results
+export const CATEGORY_NAMES: Record<string, string> = {
+    'laptops': 'Laptops',
+    'desktops': 'Desktops',
+    'workstations': 'Workstations',
+    'monitors': 'Monitors',
+    'printers': 'Printers',
+    'accessories': 'Accessories',
+    'cartridges': 'Cartridges',
+    'toners': 'Toners',
+    'cctv': 'CCTV',
+    'keyboards': 'Keyboards',
+    'mouse': 'Mouse',
+    'keyboard-mouse-combo': 'Keyboard & Mouse Combo',
+    'headphones': 'Headphones',
+    'cables': 'Cables',
+    'power-adapters': 'Power Adapters',
+    'bags': 'Bags',
+    'docks': 'Docks',
+    'usb-flashdrives': 'USB Flash Drives',
+    'dvd-writers': 'DVD Writers',
+};
+
+export interface SearchResults {
+    products: Product[];
+    categories: { id: string; name: string }[];
+}
+
+export async function searchProducts(query: string): Promise<SearchResults> {
+    if (!query || query.trim().length < 2) {
+        return { products: [], categories: [] };
+    }
+
+    const searchTerm = query.toLowerCase().trim();
+
+    try {
+        // Fetch all products
+        const allProducts = await getAllProducts();
+
+        // Filter products by name or brand
+        const matchingProducts = allProducts.filter(product => {
+            const name = product.name?.toLowerCase() || '';
+            const brand = product.brand?.toLowerCase() || '';
+            return name.includes(searchTerm) || brand.includes(searchTerm);
+        }).slice(0, 5); // Limit to 5 products
+
+        // Find matching categories
+        const matchingCategories = Object.entries(CATEGORY_NAMES)
+            .filter(([id, name]) =>
+                name.toLowerCase().includes(searchTerm) ||
+                id.toLowerCase().includes(searchTerm)
+            )
+            .map(([id, name]) => ({ id, name }))
+            .slice(0, 3); // Limit to 3 categories
+
+        return {
+            products: matchingProducts,
+            categories: matchingCategories,
+        };
+    } catch (error) {
+        console.error('Error searching products:', error);
+        return { products: [], categories: [] };
+    }
+}
+

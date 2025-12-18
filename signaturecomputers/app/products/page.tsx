@@ -20,15 +20,20 @@ export default function ProductsPage() {
     // Filter State
     const [selectedCategory, setSelectedCategory] = useState('all');
     const [priceRange, setPriceRange] = useState(5000);
+    const [searchQueryText, setSearchQueryText] = useState('');
 
     // Initialize from URL
     useEffect(() => {
         const categoryParam = searchParams.get('category');
+        const searchParam = searchParams.get('search');
+
         if (categoryParam) {
             setSelectedCategory(categoryParam.toLowerCase());
         } else {
             setSelectedCategory('all');
         }
+
+        setSearchQueryText(searchParam || '');
     }, [searchParams]);
 
     // Handle Category Change
@@ -60,6 +65,16 @@ export default function ProductsPage() {
     // Filter Logic
     const filteredProducts = products.filter(product => {
         const productCategory = product.category?.toLowerCase();
+        const productName = product.name?.toLowerCase() || '';
+        const productBrand = product.brand?.toLowerCase() || '';
+
+        // Search Filter (if search query exists)
+        if (searchQueryText) {
+            const searchTerm = searchQueryText.toLowerCase();
+            if (!productName.includes(searchTerm) && !productBrand.includes(searchTerm)) {
+                return false;
+            }
+        }
 
         // Category Filter
         if (selectedCategory === 'all') {
@@ -111,8 +126,10 @@ export default function ProductsPage() {
         'dvd-writers': 'DVD Writers',
     };
 
-    // Get display title based on selected category
-    const pageTitle = categoryNames[selectedCategory] || selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1);
+    // Get display title based on selected category or search query
+    const pageTitle = searchQueryText
+        ? `Search results for "${searchQueryText}"`
+        : (categoryNames[selectedCategory] || selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1));
 
     return (
         <div className="bg-gray-50 dark:bg-black min-h-screen">

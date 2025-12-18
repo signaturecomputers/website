@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
 import { useSmoothScroll } from '@/hooks/useSmoothScroll';
+import SearchDropdown from '@/components/SearchDropdown';
 
 export default function Navbar() {
     const [isOpen, setIsOpen] = useState(false);
@@ -17,6 +18,7 @@ export default function Navbar() {
     const router = useRouter();
     const { smoothScrollTo } = useSmoothScroll();
     const [searchQuery, setSearchQuery] = useState('');
+    const [isSearchFocused, setIsSearchFocused] = useState(false);
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
@@ -32,8 +34,8 @@ export default function Navbar() {
     };
 
     return (
-        // NAVBAR STYLE: Static, White, Shadow (No Sticky/Fixed)
-        <nav className="relative bg-white border-b border-gray-100 shadow-sm h-20 flex flex-col justify-center">
+        // NAVBAR STYLE: Sticky, White, Shadow
+        <nav className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm h-20 flex flex-col justify-center">
             <div className="w-full px-4 sm:px-8 lg:px-12">
                 <div className="flex items-center">
 
@@ -66,10 +68,17 @@ export default function Navbar() {
                                 placeholder="Search products..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
+                                onFocus={() => setIsSearchFocused(true)}
                             />
                             <button type="submit" className="absolute inset-y-0 right-0 pr-4 flex items-center cursor-pointer text-gray-400 hover:text-blue-600 transition-colors">
                                 <FiSearch className="h-5 w-5" />
                             </button>
+                            <SearchDropdown
+                                searchQuery={searchQuery}
+                                setSearchQuery={setSearchQuery}
+                                isOpen={isSearchFocused}
+                                onClose={() => setIsSearchFocused(false)}
+                            />
                         </form>
                     </div>
 
@@ -148,13 +157,20 @@ export default function Navbar() {
             {isOpen && (
                 <div className="lg:hidden bg-white border-t border-gray-100 pb-4 shadow-lg absolute top-20 left-0 w-full">
                     <div className="px-4 pt-4 pb-2">
-                        <form onSubmit={handleSearch}>
+                        <form onSubmit={handleSearch} className="relative">
                             <input
                                 type="text"
                                 className="block w-full pl-4 pr-3 py-2 border border-gray-300 rounded-lg bg-gray-50 placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 sm:text-sm"
                                 placeholder="Search products..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
+                                onFocus={() => setIsSearchFocused(true)}
+                            />
+                            <SearchDropdown
+                                searchQuery={searchQuery}
+                                setSearchQuery={setSearchQuery}
+                                isOpen={isSearchFocused}
+                                onClose={() => { setIsSearchFocused(false); setIsOpen(false); }}
                             />
                         </form>
                     </div>
