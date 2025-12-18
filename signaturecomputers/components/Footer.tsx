@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { FiFacebook, FiInstagram, FiStar } from 'react-icons/fi';
+import { FaWhatsapp } from 'react-icons/fa';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
 import { useSmoothScroll } from '@/hooks/useSmoothScroll';
@@ -155,27 +156,45 @@ export default function Footer() {
                         <ul className="space-y-3 text-sm mb-6">
                             <li className="flex items-start gap-2">
                                 <span className="font-semibold text-white w-14 shrink-0">Address:</span>
-                                <span className="text-gray-400">
+                                <a
+                                    href="https://www.google.com/maps/place/Signature+Computers/@13.0710033,80.2585252,17z/data=!4m6!3m5!1s0x3a52675efd7779d9:0x420c995a1a14c9d9!8m2!3d13.0709244!4d80.2586496!16s%2Fg%2F11q581pf3v"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-gray-400 hover:text-white hover:underline transition-colors"
+                                >
                                     Ground Floor, Sri Kalyan Square, 83/52 Pantheon Rd, Egmore, Chennai, Tamil Nadu 600008
-                                </span>
+                                </a>
                             </li>
                             <li className="flex items-center gap-2">
                                 <span className="font-semibold text-white w-14 shrink-0">Phone:</span>
-                                <span className="text-gray-400">+91 98842 85858</span>
+                                <a
+                                    href="tel:+919884285858"
+                                    className="text-gray-400 hover:text-white hover:underline transition-colors"
+                                >
+                                    +91 98842 85858
+                                </a>
                             </li>
                             <li className="flex items-center gap-2">
                                 <span className="font-semibold text-white w-14 shrink-0">Email:</span>
-                                <span className="text-gray-400">sales@signaturecomputers.com</span>
+                                <a
+                                    href="mailto:sales@signaturecomputers.com"
+                                    className="text-gray-400 hover:text-white hover:underline transition-colors"
+                                >
+                                    sales@signaturecomputers.com
+                                </a>
                             </li>
                         </ul>
 
                         {/* Social Icons */}
                         <div className="flex space-x-4">
-                            <a href="#" className="text-gray-400 hover:text-white transition-colors transform hover:scale-110 duration-200">
+                            <a href="https://www.instagram.com/signaturecomputers2/" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors transform hover:scale-110 duration-200">
                                 <FiInstagram size={18} />
                             </a>
-                            <a href="#" className="text-gray-400 hover:text-white transition-colors transform hover:scale-110 duration-200">
+                            <a href="https://www.facebook.com/profile.php?id=100089983478161" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors transform hover:scale-110 duration-200">
                                 <FiFacebook size={18} />
+                            </a>
+                            <a href="https://wa.me/919884285858" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-green-500 transition-colors transform hover:scale-110 duration-200">
+                                <FaWhatsapp size={18} />
                             </a>
                         </div>
                     </div>

@@ -1,4 +1,7 @@
+'use client';
+
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { FiShoppingCart, FiHeart } from 'react-icons/fi';
 
 interface Product {
@@ -16,8 +19,21 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
+    const router = useRouter();
+
+    const handleCardClick = () => {
+        router.push(`/product/${product.id}`);
+    };
+
+    const handleButtonClick = (e: React.MouseEvent) => {
+        e.stopPropagation(); // Prevent card click when clicking buttons
+    };
+
     return (
-        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm hover:shadow-lg transition-shadow border border-gray-100 dark:border-gray-800 overflow-hidden group">
+        <div
+            onClick={handleCardClick}
+            className="bg-white dark:bg-gray-900 rounded-xl shadow-sm hover:shadow-lg transition-shadow border border-gray-100 dark:border-gray-800 overflow-hidden group cursor-pointer"
+        >
             <div className="relative aspect-square overflow-hidden bg-gray-100 dark:bg-gray-800">
                 {/* Image Placeholder managed via CSS or Next/Image later */}
                 <div className="w-full h-full flex items-center justify-center text-gray-400">
@@ -28,18 +44,19 @@ export default function ProductCard({ product }: ProductCardProps) {
                     )}
                 </div>
 
-                <button className="absolute top-2 right-2 p-2 rounded-full bg-white/80 hover:bg-white text-gray-500 hover:text-red-500 transition-colors shadow-sm dark:bg-black/50 dark:text-white">
+                <button
+                    onClick={handleButtonClick}
+                    className="absolute top-2 right-2 p-2 rounded-full bg-white/80 hover:bg-white text-gray-500 hover:text-red-500 transition-colors shadow-sm dark:bg-black/50 dark:text-white"
+                >
                     <FiHeart />
                 </button>
             </div>
 
             <div className="p-4">
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{product.brand}</p>
-                <Link href={`/product/${product.id}`}>
-                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2 hover:text-blue-600 transition-colors">
-                        {product.name}
-                    </h3>
-                </Link>
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
+                    {product.name}
+                </h3>
                 <div className="flex items-center justify-between mt-4">
                     <div className="flex flex-col">
                         <span className="text-lg font-bold text-gray-900 dark:text-white">${product.price.toLocaleString()}</span>
@@ -47,7 +64,10 @@ export default function ProductCard({ product }: ProductCardProps) {
                             <span className="text-xs text-gray-500 line-through">${product.originalPrice.toLocaleString()}</span>
                         )}
                     </div>
-                    <button className="p-2 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white transition-colors dark:bg-blue-900 dark:text-blue-200">
+                    <button
+                        onClick={handleButtonClick}
+                        className="p-2 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white transition-colors dark:bg-blue-900 dark:text-blue-200"
+                    >
                         <FiShoppingCart />
                     </button>
                 </div>

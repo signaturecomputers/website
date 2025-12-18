@@ -13,35 +13,57 @@ interface CartItem {
     quantity: number;
 }
 
+interface SavedItem {
+    id: string;
+    name: string;
+    price: number;
+    image: string;
+}
+
 interface CartContextType {
     cart: CartItem[];
+    savedItems: SavedItem[];
     addToCart: (item: CartItem) => void;
     removeFromCart: (itemId: string) => void;
     updateQuantity: (itemId: string, quantity: number) => void;
     clearCart: () => void;
+    saveForLater: (item: SavedItem) => void;
+    removeFromSaved: (itemId: string) => void;
+    moveToCart: (item: SavedItem) => void;
+    isInSaved: (itemId: string) => boolean;
     cartTotal: number;
     cartCount: number;
 }
 
 const CartContext = createContext<CartContextType>({
     cart: [],
+    savedItems: [],
     addToCart: () => { },
     removeFromCart: () => { },
     updateQuantity: () => { },
     clearCart: () => { },
+    saveForLater: () => { },
+    removeFromSaved: () => { },
+    moveToCart: () => { },
+    isInSaved: () => false,
     cartTotal: 0,
     cartCount: 0,
 });
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
     const [cart, setCart] = useState<CartItem[]>([]);
+    const [savedItems, setSavedItems] = useState<SavedItem[]>([]);
     const { user } = useAuth();
 
-    // Load cart from local storage on mount
+    // Load cart and saved items from local storage on mount
     useEffect(() => {
         const savedCart = localStorage.getItem('cart');
+        const savedForLater = localStorage.getItem('savedItems');
         if (savedCart) {
             setCart(JSON.parse(savedCart));
+        }
+        if (savedForLater) {
+            setSavedItems(JSON.parse(savedForLater));
         }
     }, []);
 
@@ -64,11 +86,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     // Save to local storage on change
     useEffect(() => {
         localStorage.setItem('cart', JSON.stringify(cart));
+        localStorage.setItem('savedItems', JSON.stringify(savedItems));
         if (user) {
             // Save to Firestore
-            setDoc(doc(db, 'carts', user.uid), { items: cart }, { merge: true });
+            setDoc(doc(db, 'carts', user.uid), {
+                items: cart,
+                savedItems: savedItems
+            }, { merge: true });
         }
-    }, [cart, user]);
+    }, [cart, savedItems, user]);
 
     const addToCart = (item: CartItem) => {
         setCart((prev) => {
@@ -96,11 +122,47 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         setCart([]);
     };
 
+    const saveForLater = (item: SavedItem) => {
+        setSavedItems((prev) => {
+            const existing = prev.find((i) => i.id === item.id);
+            if (existing) return prev;
+            return [...prev, item];
+        });
+    };
+
+    const removeFromSaved = (itemId: string) => {
+        setSavedItems((prev) => prev.filter((i) => i.id !== itemId));
+    };
+
+    const moveToCart = (item: SavedItem) => {
+        // Remove from saved
+        setSavedItems((prev) => prev.filter((i) => i.id !== item.id));
+        // Add to cart
+        addToCart({ ...item, quantity: 1 });
+    };
+
+    const isInSaved = (itemId: string) => {
+        return savedItems.some((i) => i.id === itemId);
+    };
+
     const cartTotal = cart.reduce((total, item) => total + item.price * item.quantity, 0);
     const cartCount = cart.reduce((count, item) => count + item.quantity, 0);
 
     return (
-        <CartContext.Provider value={{ cart, addToCart, removeFromCart, updateQuantity, clearCart, cartTotal, cartCount }}>
+        <CartContext.Provider value={{
+            cart,
+            savedItems,
+            addToCart,
+            removeFromCart,
+            updateQuantity,
+            clearCart,
+            saveForLater,
+            removeFromSaved,
+            moveToCart,
+            isInSaved,
+            cartTotal,
+            cartCount
+        }}>
             {children}
         </CartContext.Provider>
     );
