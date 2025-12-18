@@ -1,7 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-import { FiChevronDown, FiChevronUp, FiCpu, FiMonitor, FiHardDrive, FiWifi, FiBattery, FiShield, FiPackage, FiAward, FiBox, FiCamera, FiSpeaker, FiSettings } from 'react-icons/fi';
+import { FiCpu, FiMonitor, FiHardDrive, FiWifi, FiBattery, FiShield, FiPackage, FiAward, FiBox, FiCamera, FiSpeaker, FiSettings } from 'react-icons/fi';
 import { ProductInfo } from '@/lib/products';
 
 interface ProductInfoSectionProps {
@@ -26,37 +25,25 @@ const formatBoolean = (val: boolean | undefined): string => {
     return val ? 'Yes' : 'No';
 };
 
-// Collapsible section component
+// Section component without dropdown - always open
 function InfoSection({
     title,
     icon: Icon,
     children,
-    defaultOpen = false
 }: {
     title: string;
     icon: React.ElementType;
     children: React.ReactNode;
-    defaultOpen?: boolean;
 }) {
-    const [isOpen, setIsOpen] = useState(defaultOpen);
-
     return (
-        <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden mb-3">
-            <button
-                onClick={() => setIsOpen(!isOpen)}
-                className="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-            >
-                <div className="flex items-center gap-3">
-                    <Icon className="w-5 h-5 text-blue-500" />
-                    <span className="font-semibold text-gray-900 dark:text-white">{title}</span>
-                </div>
-                {isOpen ? <FiChevronUp className="w-5 h-5 text-gray-500" /> : <FiChevronDown className="w-5 h-5 text-gray-500" />}
-            </button>
-            {isOpen && (
-                <div className="p-4 bg-white dark:bg-gray-900">
-                    {children}
-                </div>
-            )}
+        <div className="mb-6">
+            <div className="flex items-center gap-3 mb-3 pb-2 border-b border-gray-200 dark:border-gray-700">
+                <Icon className="w-5 h-5 text-blue-500" />
+                <span className="font-semibold text-gray-900 dark:text-white">{title}</span>
+            </div>
+            <div className="pl-8">
+                {children}
+            </div>
         </div>
     );
 }
@@ -85,10 +72,10 @@ export default function ProductInfoSection({ productInfo, isAdmin = false }: Pro
     }
 
     return (
-        <div className="space-y-2">
+        <div className="space-y-4">
             {/* Basic Info */}
             {(productInfo.title || productInfo.series || productInfo.recommendedUsage || productInfo.idealFor?.length || (isAdmin && productInfo.partNo)) && (
-                <InfoSection title="Product Overview" icon={FiPackage} defaultOpen={true}>
+                <InfoSection title="Product Overview" icon={FiPackage}>
                     <dl>
                         <InfoRow label="Title" value={productInfo.title} />
                         {isAdmin && productInfo.partNo && (
@@ -125,7 +112,7 @@ export default function ProductInfoSection({ productInfo, isAdmin = false }: Pro
 
             {/* Processor */}
             {hasContent(productInfo.processor) && (
-                <InfoSection title="Processor" icon={FiCpu} defaultOpen={true}>
+                <InfoSection title="Processor" icon={FiCpu}>
                     <dl>
                         <InfoRow label="Processor Name" value={productInfo.processor?.name} />
                         <InfoRow label="Brand" value={productInfo.processor?.brand} />
@@ -175,7 +162,7 @@ export default function ProductInfoSection({ productInfo, isAdmin = false }: Pro
 
             {/* Display */}
             {hasContent(productInfo.display) && (
-                <InfoSection title="Display" icon={FiMonitor} defaultOpen={true}>
+                <InfoSection title="Display" icon={FiMonitor}>
                     <dl>
                         <InfoRow label="Size" value={productInfo.display?.size} />
                         <InfoRow label="Diagonal" value={productInfo.display?.diagonal} />

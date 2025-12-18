@@ -258,6 +258,77 @@ export async function getProductById(id: string): Promise<Product | null> {
     }
 }
 
+// Get related products from same category
+export async function getRelatedProducts(category: string, excludeId: string, limit: number = 4): Promise<Product[]> {
+    try {
+        const colRef = collection(db, category);
+        const snapshot = await getDocs(colRef);
+
+        const products = snapshot.docs
+            .filter(doc => doc.id !== excludeId)
+            .slice(0, limit)
+            .map(doc => {
+                const data = doc.data();
+                return {
+                    id: doc.id,
+                    ...data,
+                    category,
+                    image: data.images?.[0] || '',
+                } as Product;
+            });
+
+        return products;
+    } catch (error) {
+        console.error('Error fetching related products:', error);
+        return [];
+    }
+}
+
+// Get suggested accessories based on product category
+export async function getSuggestedAccessories(productCategory: string): Promise<{ category: string; categoryName: string; products: Product[] }[]> {
+    try {
+        const suggestions: { category: string; categoryName: string; products: Product[] }[] = [];
+
+        if (productCategory === 'laptops') {
+            // For laptops: suggest bags and mouse
+            const bagsSnapshot = await getDocs(collection(db, 'bags'));
+            const mouseSnapshot = await getDocs(collection(db, 'mouse'));
+
+            if (bagsSnapshot.docs.length > 0) {
+                const bags = bagsSnapshot.docs.slice(0, 2).map(doc => {
+                    const data = doc.data();
+                    return { id: doc.id, ...data, category: 'bags', image: data.images?.[0] || '' } as Product;
+                });
+                suggestions.push({ category: 'bags', categoryName: 'Laptop Bags', products: bags });
+            }
+
+            if (mouseSnapshot.docs.length > 0) {
+                const mice = mouseSnapshot.docs.slice(0, 2).map(doc => {
+                    const data = doc.data();
+                    return { id: doc.id, ...data, category: 'mouse', image: data.images?.[0] || '' } as Product;
+                });
+                suggestions.push({ category: 'mouse', categoryName: 'Mouse', products: mice });
+            }
+        } else if (productCategory === 'desktops' || productCategory === 'workstations') {
+            // For desktops/workstations: suggest monitors
+            const monitorsSnapshot = await getDocs(collection(db, 'monitors'));
+
+            if (monitorsSnapshot.docs.length > 0) {
+                const monitors = monitorsSnapshot.docs.slice(0, 2).map(doc => {
+                    const data = doc.data();
+                    return { id: doc.id, ...data, category: 'monitors', image: data.images?.[0] || '' } as Product;
+                });
+                suggestions.push({ category: 'monitors', categoryName: 'Monitors', products: monitors });
+            }
+        }
+
+        return suggestions;
+    } catch (error) {
+        console.error('Error fetching suggested accessories:', error);
+        return [];
+    }
+}
+
 // Category display names for search results
 export const CATEGORY_NAMES: Record<string, string> = {
     'laptops': 'Laptops',

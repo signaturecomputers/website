@@ -56,10 +56,10 @@ export default function AddProductPage() {
     ];
 
     // Handlers
-    // Handlers
+    // Spec templates with specific order
     const SPEC_TEMPLATES: Record<string, string[]> = {
-        desktops: ['Operating System', 'Processor Name', 'Ports', 'Graphics', 'Memory And Storage', 'Video Connector'],
-        laptops: ['Operating System', 'Processor Name', 'Ports', 'Graphics', 'Memory And Storage'],
+        laptops: ['Processor', 'Operating System', 'Display Size', 'Graphics', 'RAM', 'Storage'],
+        desktops: ['Processor', 'Operating System', 'Display Size', 'Graphics', 'RAM', 'Storage'],
     };
 
     // Auto-populate specs based on category

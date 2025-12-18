@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { FiStar, FiShoppingCart, FiHeart, FiCreditCard, FiChevronDown } from 'react-icons/fi';
-import { getProductById, Product } from '@/lib/products';
+import { getProductById, getRelatedProducts, getSuggestedAccessories, Product } from '@/lib/products';
 import { toast } from 'sonner';
 import ProductInfoSection from '@/components/ProductInfoSection';
 import { useAdminAuth } from '@/context/AdminAuthContext';
@@ -21,6 +21,8 @@ export default function ProductDetailsPage() {
     const { addToCart, saveForLater, isInSaved } = useCart();
 
     const [product, setProduct] = useState<Product | null>(null);
+    const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
+    const [suggestedAccessories, setSuggestedAccessories] = useState<{ category: string; categoryName: string; products: Product[] }[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('description');
     const [quantity, setQuantity] = useState(1);
@@ -78,17 +80,33 @@ export default function ProductDetailsPage() {
     };
 
     const scrollToSpecs = () => {
-        setActiveTab('specifications');
+        setActiveTab('description');
         const specsSection = document.getElementById('product-tabs');
         if (specsSection) {
-            specsSection.scrollIntoView({ behavior: 'smooth' });
+            const offset = 80; // Offset for navbar
+            const elementPosition = specsSection.getBoundingClientRect().top;
+            const offsetPosition = elementPosition + window.pageYOffset - offset;
+
+            window.scrollTo({
+                top: offsetPosition,
+                behavior: 'smooth'
+            });
         }
     };
 
+    // Preferred spec order for display
+    const SPEC_ORDER = ['Processor', 'Operating System', 'Display Size', 'Graphics', 'RAM', 'Storage'];
+
     const getKeySpecs = () => {
         if (!product?.specs) return [];
-        const entries = Object.entries(product.specs);
-        return entries.slice(0, 5);
+        // Return specs in preferred order
+        const orderedSpecs: [string, string][] = [];
+        SPEC_ORDER.forEach(key => {
+            if (product.specs && product.specs[key]) {
+                orderedSpecs.push([key, product.specs[key]]);
+            }
+        });
+        return orderedSpecs.slice(0, 5);
     };
 
     useEffect(() => {
@@ -98,6 +116,14 @@ export default function ProductDetailsPage() {
             if (data) {
                 setProduct(data);
                 setActiveImage(data.images?.[0] || '');
+
+                // Fetch related products from same category
+                const related = await getRelatedProducts(data.category, data.id, 4);
+                setRelatedProducts(related);
+
+                // Fetch suggested accessories
+                const accessories = await getSuggestedAccessories(data.category);
+                setSuggestedAccessories(accessories);
             } else {
                 toast.error('Product not found');
             }
@@ -175,9 +201,6 @@ export default function ProductDetailsPage() {
                                 </div>
                             )}
 
-                            <div className="mb-2">
-                                <span className="text-blue-600 font-medium">{product.brand}</span>
-                            </div>
                             <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">{product.name}</h1>
 
                             <div className="flex items-center mb-4">
@@ -195,16 +218,16 @@ export default function ProductDetailsPage() {
                                 )}
                             </div>
 
-                            {/* Key Specifications Preview */}
+                            {/* Key Specifications Preview with bullet points */}
                             {keySpecs.length > 0 && (
                                 <div className="border-t border-gray-100 dark:border-gray-800 pt-4 mb-4">
-                                    <div className="space-y-1.5">
+                                    <ul className="space-y-1.5 list-disc list-inside">
                                         {keySpecs.map(([key, value]) => (
-                                            <p key={key} className="text-sm text-gray-500 dark:text-gray-400">
+                                            <li key={key} className="text-sm text-gray-600 dark:text-gray-400">
                                                 {value}
-                                            </p>
+                                            </li>
                                         ))}
-                                    </div>
+                                    </ul>
                                     <button
                                         onClick={scrollToSpecs}
                                         className="mt-3 text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1 transition-colors"
@@ -275,7 +298,7 @@ export default function ProductDetailsPage() {
                 <div id="product-tabs" className="mt-16">
                     <div className="border-b border-gray-200 dark:border-gray-800">
                         <nav className="-mb-px flex space-x-8">
-                            {['description', 'specifications', 'product info'].map((tab) => (
+                            {['description', 'product info'].map((tab) => (
                                 <button
                                     key={tab}
                                     onClick={() => setActiveTab(tab)}
@@ -291,20 +314,37 @@ export default function ProductDetailsPage() {
                     </div>
                     <div className="mt-8">
                         {activeTab === 'description' && (
-                            <div className="prose dark:prose-invert max-w-none whitespace-pre-wrap">
-                                <p>{product.description}</p>
-                            </div>
-                        )}
-                        {activeTab === 'specifications' && (
-                            <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-6">
-                                <dl className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
-                                    {product.specs && Object.entries(product.specs).map(([key, value]) => (
-                                        <div key={key}>
-                                            <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">{key}</dt>
-                                            <dd className="mt-1 text-sm text-gray-900 dark:text-white font-semibold">{value}</dd>
+                            <div className="space-y-8">
+                                {/* Description Section */}
+                                <div>
+                                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Description</h3>
+                                    <div className="prose dark:prose-invert max-w-none whitespace-pre-wrap">
+                                        <p>{product.description}</p>
+                                    </div>
+                                </div>
+
+                                {/* Specifications Section */}
+                                {product.specs && Object.keys(product.specs).length > 0 && (
+                                    <div>
+                                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Specifications</h3>
+                                        <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-6">
+                                            <dl className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
+                                                {(() => {
+                                                    const orderedKeys = [...SPEC_ORDER];
+                                                    const remainingKeys = Object.keys(product.specs!).filter(k => !orderedKeys.includes(k));
+                                                    const allKeys = [...orderedKeys.filter(k => product.specs && product.specs[k]), ...remainingKeys];
+
+                                                    return allKeys.map(key => (
+                                                        <div key={key}>
+                                                            <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">{key}</dt>
+                                                            <dd className="mt-1 text-sm text-gray-900 dark:text-white font-semibold">{product.specs![key]}</dd>
+                                                        </div>
+                                                    ));
+                                                })()}
+                                            </dl>
                                         </div>
-                                    ))}
-                                </dl>
+                                    </div>
+                                )}
                             </div>
                         )}
                         {activeTab === 'product info' && (
@@ -313,11 +353,89 @@ export default function ProductDetailsPage() {
                     </div>
                 </div>
 
+                {/* Suggested Accessories Section */}
+                {suggestedAccessories.length > 0 && (
+                    <div className="mt-16 border-t border-gray-200 dark:border-gray-800 pt-12">
+                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-8">Suggested Accessories</h2>
+                        <div className="space-y-8">
+                            {suggestedAccessories.map((group) => (
+                                <div key={group.category}>
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{group.categoryName}</h3>
+                                        <button
+                                            onClick={() => router.push(`/products/${group.category}`)}
+                                            className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                                        >
+                                            See more options →
+                                        </button>
+                                    </div>
+                                    <div className="space-y-3">
+                                        {group.products.map((accessory) => (
+                                            <div
+                                                key={accessory.id}
+                                                onClick={() => router.push(`/product/${accessory.id}`)}
+                                                className="flex items-center gap-4 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                                            >
+                                                <div className="w-16 h-16 bg-white dark:bg-gray-800 rounded-lg flex items-center justify-center p-2 flex-shrink-0">
+                                                    <img
+                                                        src={accessory.images?.[0] || accessory.image}
+                                                        alt={accessory.name}
+                                                        className="max-w-full max-h-full object-contain"
+                                                    />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <h4 className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                                                        {accessory.name}
+                                                    </h4>
+                                                    <p className="text-sm font-bold text-blue-600">
+                                                        ₹{accessory.price.toLocaleString()}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {/* Related Products Section */}
-                <div className="mt-20 border-t border-gray-200 dark:border-gray-800 pt-16">
-                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-8">Related Products</h2>
-                    <p className="text-gray-500">Coming soon...</p>
-                </div>
+                {relatedProducts.length > 0 && (
+                    <div className="mt-16 border-t border-gray-200 dark:border-gray-800 pt-12">
+                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-8">Related Products</h2>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                            {relatedProducts.map((relatedProduct) => (
+                                <div
+                                    key={relatedProduct.id}
+                                    onClick={() => router.push(`/product/${relatedProduct.id}`)}
+                                    className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden cursor-pointer hover:shadow-lg transition-shadow group"
+                                >
+                                    <div className="aspect-square bg-gray-100 dark:bg-gray-800 flex items-center justify-center p-4">
+                                        <img
+                                            src={relatedProduct.images?.[0] || relatedProduct.image}
+                                            alt={relatedProduct.name}
+                                            className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform"
+                                        />
+                                    </div>
+                                    <div className="p-4">
+                                        <h3 className="text-sm font-medium text-gray-900 dark:text-white line-clamp-2 mb-2">
+                                            {relatedProduct.name}
+                                        </h3>
+                                        <p className="text-lg font-bold text-gray-900 dark:text-white">
+                                            ₹{relatedProduct.price.toLocaleString()}
+                                        </p>
+                                        {relatedProduct.originalPrice && (
+                                            <p className="text-sm text-gray-500 line-through">
+                                                ₹{relatedProduct.originalPrice.toLocaleString()}
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
