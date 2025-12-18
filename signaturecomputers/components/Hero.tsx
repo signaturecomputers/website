@@ -1,8 +1,40 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { FiShoppingCart } from 'react-icons/fi';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+
+interface HeroImageData {
+    imageUrl: string;
+    alt: string;
+}
 
 export default function Hero() {
+    const [heroImage, setHeroImage] = useState<HeroImageData>({
+        imageUrl: '/hero-image-v2.png',
+        alt: 'Signature Computers Hero'
+    });
+
+    useEffect(() => {
+        async function fetchHeroImage() {
+            try {
+                const heroDoc = await getDoc(doc(db, 'header_settings', 'hero_image'));
+                if (heroDoc.exists()) {
+                    const data = heroDoc.data() as HeroImageData;
+                    if (data.imageUrl) {
+                        setHeroImage(data);
+                    }
+                }
+            } catch (error) {
+                console.warn('Failed to fetch hero image, using default:', error);
+            }
+        }
+        fetchHeroImage();
+    }, []);
+
     return (
         <div className="relative bg-white overflow-hidden">
             <div className="w-full">
@@ -46,8 +78,8 @@ export default function Hero() {
                         <div className="flex-1 lg:flex-none lg:w-[42%] w-full relative flex items-start justify-start mt-6 lg:mt-0">
                             <div className="relative w-full max-w-lg lg:max-w-none h-auto">
                                 <Image
-                                    src="/hero-image-v2.png"
-                                    alt="Signature Computers Hero"
+                                    src={heroImage.imageUrl}
+                                    alt={heroImage.alt}
                                     width={800}
                                     height={600}
                                     priority

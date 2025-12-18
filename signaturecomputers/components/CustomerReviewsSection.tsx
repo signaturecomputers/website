@@ -3,30 +3,60 @@
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { FiChevronLeft, FiChevronRight, FiStar } from 'react-icons/fi';
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
-// MOCK DATA: 15 Realistic Reviews
-const REVIEWS = [
-    { id: 1, name: "Arjun Verma", role: "IT Manager", product: "HP EliteBook 840 G8", image: "/hero-image-v2.png", rating: 5, text: "We procured 50 units for our sales team. The battery life is phenomenal, and the performance handling heavy CRM software is smooth. Signature Computers delivered on time with excellent packaging." },
-    { id: 2, name: "Sneha Reddy", role: "Graphic Designer", product: "HP ZBook Firefly", image: "/hero-image-v2.png", rating: 5, text: "Finally found a workstation that handles 4K rendering without heating up. The color accuracy on the display is exactly what I needed for my design work. Highly recommended!" },
-    { id: 3, name: "Rajesh Kumar", role: "Small Business Owner", product: "HP ProDesk 400", image: "/hero-image-v2.png", rating: 4, text: "Great value for money for office desktops. Compact form factor saved us a lot of desk space. One unit had a minor scratch, but support replaced it immediately." },
-    { id: 4, name: "Meera Iyer", role: "Freelancer", product: "HP Envy 13", image: "/hero-image-v2.png", rating: 5, text: "Sleek, lightweight, and powerful. I travel a lot, and this laptop is perfect. The keyboard travel is just right for long typing sessions. Love the premium build quality." },
-    { id: 5, name: "Vikram Singh", role: "CTO", product: "HPE ProLiant Server", image: "/hero-image-v2.png", rating: 5, text: "Setting up our local server with Signature Computers was a breeze. They guided us on the exact specs needed for our workload. The server has been running 24/7 with zero downtime." },
-    { id: 6, name: "Ananya Gupta", role: "Student", product: "HP Pavilion 15", image: "/hero-image-v2.png", rating: 4, text: "Perfect for college assignments and light gaming. The screen is bright and clear. Delivery was super fast, got it the very next day!" },
-    { id: 7, name: "Karthik Nair", role: "Software Engineer", product: "HP Omen 16", image: "/hero-image-v2.png", rating: 5, text: "Beast of a machine! Compiles my code in seconds and handles AAA games easily. The cooling system is impressive. Best purchase I've made this year." },
-    { id: 8, name: "Priya Sharma", role: "Architect", product: "HP DesignJet Plotter", image: "/hero-image-v2.png", rating: 5, text: "Crucial for our architectural prints. The line precision is unmatched. Signature Computers handled the installation and provided a great demo for our team." },
-    { id: 9, name: "Amit Patel", role: "Retail Store Owner", product: "HP POS System", image: "/hero-image-v2.png", rating: 5, text: "Transformed our checkout process. It's fast, responsive, and looks professional on the counter. Inventory management has become so much easier." },
-    { id: 10, name: "Zoya Khan", role: "Content Creator", product: "HP Spectre x360", image: "/hero-image-v2.png", rating: 5, text: "The versatility of the 2-in-1 is a game changer for editing on the go. The pen response is instant. Fits perfectly in my tote bag. Premium feel throughout." },
-    { id: 11, name: "Rahul Deshmukh", role: "Operations Head", product: "CCTV Security Setup", image: "/hero-image-v2.png", rating: 4, text: "Installed 16 cameras across our warehouse. The night vision clarity is excellent. The app integration works well for remote monitoring." },
-    { id: 12, name: "Sara Thomas", role: "HR Executive", product: "HP All-in-One", image: "/hero-image-v2.png", rating: 5, text: "Such a clean setup! No messy wires. The camera pop-up feature is great for privacy. Screen size is perfect for split-screen multitasking." },
-    { id: 13, name: "David Fernandez", role: "Music Producer", product: "HP Workstation Z2", image: "/hero-image-v2.png", rating: 5, text: "Handles my heavy DAW projects with tons of plugins effortlessly. Extremely quiet even under load, which is critical for my recording studio environment." },
-    { id: 14, name: "Lakshmi Narayanan", role: "School Principal", product: "HP ChromeBook x360", image: "/hero-image-v2.png", rating: 4, text: "We bought these for our digital library. Very durable and easy for students to use. Battery lasts the entire school day without charging." },
-    { id: 15, name: "Oman Al-Fayed", role: "Procurement Officer", product: "Bulk Accessories", image: "/hero-image-v2.png", rating: 5, text: "Ordered keyboards, mice, and headsets in bulk. Corporate pricing was competitive, and everything arrived well-packaged. Will definitely reorder." }
+interface Review {
+    id: string;
+    name: string;
+    role: string;
+    product: string;
+    image: string;
+    rating: number;
+    text: string;
+    order?: number;
+}
+
+// Default reviews (used as fallback if Firestore is empty)
+const DEFAULT_REVIEWS: Review[] = [
+    { id: '1', name: "Arjun Verma", role: "IT Manager", product: "HP EliteBook 840 G8", image: "/hero-image-v2.png", rating: 5, text: "We procured 50 units for our sales team. The battery life is phenomenal, and the performance handling heavy CRM software is smooth. Signature Computers delivered on time with excellent packaging." },
+    { id: '2', name: "Sneha Reddy", role: "Graphic Designer", product: "HP ZBook Firefly", image: "/hero-image-v2.png", rating: 5, text: "Finally found a workstation that handles 4K rendering without heating up. The color accuracy on the display is exactly what I needed for my design work. Highly recommended!" },
+    { id: '3', name: "Rajesh Kumar", role: "Small Business Owner", product: "HP ProDesk 400", image: "/hero-image-v2.png", rating: 4, text: "Great value for money for office desktops. Compact form factor saved us a lot of desk space. One unit had a minor scratch, but support replaced it immediately." },
+    { id: '4', name: "Meera Iyer", role: "Freelancer", product: "HP Envy 13", image: "/hero-image-v2.png", rating: 5, text: "Sleek, lightweight, and powerful. I travel a lot, and this laptop is perfect. The keyboard travel is just right for long typing sessions. Love the premium build quality." },
+    { id: '5', name: "Vikram Singh", role: "CTO", product: "HPE ProLiant Server", image: "/hero-image-v2.png", rating: 5, text: "Setting up our local server with Signature Computers was a breeze. They guided us on the exact specs needed for our workload. The server has been running 24/7 with zero downtime." },
+    { id: '6', name: "Ananya Gupta", role: "Student", product: "HP Pavilion 15", image: "/hero-image-v2.png", rating: 4, text: "Perfect for college assignments and light gaming. The screen is bright and clear. Delivery was super fast, got it the very next day!" },
+    { id: '7', name: "Karthik Nair", role: "Software Engineer", product: "HP Omen 16", image: "/hero-image-v2.png", rating: 5, text: "Beast of a machine! Compiles my code in seconds and handles AAA games easily. The cooling system is impressive. Best purchase I've made this year." },
+    { id: '8', name: "Priya Sharma", role: "Architect", product: "HP DesignJet Plotter", image: "/hero-image-v2.png", rating: 5, text: "Crucial for our architectural prints. The line precision is unmatched. Signature Computers handled the installation and provided a great demo for our team." },
 ];
 
 export default function CustomerReviewsSection() {
+    const [reviews, setReviews] = useState<Review[]>(DEFAULT_REVIEWS);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [itemsPerScreen, setItemsPerScreen] = useState(3);
     const [isPaused, setIsPaused] = useState(false);
+
+    // Fetch reviews from Firestore
+    useEffect(() => {
+        async function fetchReviews() {
+            try {
+                const reviewsQuery = query(
+                    collection(db, 'display_reviews'),
+                    orderBy('order', 'asc')
+                );
+                const snapshot = await getDocs(reviewsQuery);
+                if (!snapshot.empty) {
+                    const fetchedReviews = snapshot.docs.map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    })) as Review[];
+                    setReviews(fetchedReviews);
+                }
+            } catch (error) {
+                console.warn('Failed to fetch reviews, using defaults:', error);
+            }
+        }
+        fetchReviews();
+    }, []);
 
     // Responsive items per screen
     useEffect(() => {
@@ -50,23 +80,15 @@ export default function CustomerReviewsSection() {
     }, [isPaused, currentIndex, itemsPerScreen]);
 
     const nextSlide = useCallback(() => {
-        setCurrentIndex((prev) => (prev + 1) % REVIEWS.length);
-    }, []);
+        setCurrentIndex((prev) => (prev + 1) % reviews.length);
+    }, [reviews.length]);
 
     const prevSlide = useCallback(() => {
-        setCurrentIndex((prev) => (prev - 1 + REVIEWS.length) % REVIEWS.length);
-    }, []);
-
-    // Visible Items Logic (Circular Buffer simplified for sticking to index)
-    // We want to show 'itemsPerScreen' starting from 'currentIndex'
-    // To handle wrapping smoothly, we can render a subset or translate a long strip.
-    // For this carousel, let's use a translation approach for smoothness (optional) 
-    // OR a simpler "slice" approach. Given "Loop continuously", translation is better.
-    // But for simplicity and robustness in React state without complex animation libraries:
-    // We will compute the visible indices.
+        setCurrentIndex((prev) => (prev - 1 + reviews.length) % reviews.length);
+    }, [reviews.length]);
 
     const getVisibleReview = (offset: number) => {
-        return REVIEWS[(currentIndex + offset) % REVIEWS.length];
+        return reviews[(currentIndex + offset) % reviews.length];
     };
 
     return (
@@ -114,6 +136,7 @@ export default function CustomerReviewsSection() {
                                 {/* We render 'itemsPerScreen' Items */}
                                 {Array.from({ length: itemsPerScreen }).map((_, idx) => {
                                     const review = getVisibleReview(idx);
+                                    if (!review) return null;
                                     return (
                                         <div
                                             key={`${review.id}-${idx}`}
@@ -174,7 +197,7 @@ export default function CustomerReviewsSection() {
 
                         {/* Mobile Swipe Indicators (Dots) */}
                         <div className="flex justify-center gap-2 mt-8 md:hidden">
-                            {REVIEWS.slice(0, 5).map((_, i) => ( // Show max 5 dots for sanity
+                            {reviews.slice(0, 5).map((_, i) => ( // Show max 5 dots for sanity
                                 <button
                                     key={i}
                                     className={`w-2 h-2 rounded-full transition-all ${i === currentIndex % 5 ? 'bg-blue-600 w-4' : 'bg-gray-300'

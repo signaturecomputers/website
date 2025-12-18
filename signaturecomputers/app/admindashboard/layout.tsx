@@ -14,7 +14,10 @@ import {
     X,
     LogOut,
     Tag,
-    Zap
+    Zap,
+    Image as ImageIcon,
+    MessageSquare,
+    Eye
 } from "lucide-react";
 
 export default function AdminDashboardLayout({
@@ -43,6 +46,9 @@ export default function AdminDashboardLayout({
         { name: "Orders", href: "/admindashboard/orders", icon: ShoppingCart },
         { name: "Hot Deals", href: "/admindashboard/hot-deals", icon: Zap },
         { name: "Categories", href: "/admindashboard/categories", icon: Tag },
+        { name: "Header Images", href: "/admindashboard/header-images", icon: ImageIcon },
+        { name: "Feedback", href: "/admindashboard/feedback", icon: MessageSquare },
+        { name: "Display Reviews", href: "/admindashboard/display-reviews", icon: Eye },
         { name: "Users", href: "/admindashboard/users", icon: Users },
         { name: "Settings", href: "/admindashboard/settings", icon: Settings },
     ];

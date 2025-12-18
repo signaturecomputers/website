@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
-import { FiFacebook, FiTwitter, FiInstagram, FiLinkedin, FiStar } from 'react-icons/fi';
+import { FiFacebook, FiInstagram, FiStar } from 'react-icons/fi';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
 import { useSmoothScroll } from '@/hooks/useSmoothScroll';
@@ -17,6 +17,7 @@ export default function Footer() {
 
     const [rating, setRating] = useState(0);
     const [review, setReview] = useState('');
+    const [productName, setProductName] = useState('');
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [hoveredStar, setHoveredStar] = useState(0);
     const [validationError, setValidationError] = useState('');
@@ -44,7 +45,7 @@ export default function Footer() {
         }
     }, [user, loading]);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setValidationError('');
 
@@ -57,20 +58,40 @@ export default function Footer() {
         // 2. Auth Check
         if (!user) {
             // Save draft
-            sessionStorage.setItem('review_draft', JSON.stringify({ rating, review }));
+            sessionStorage.setItem('review_draft', JSON.stringify({ rating, review, productName }));
             // Redirect to login
             const redirectUrl = encodeURIComponent(`${pathname}#contact-footer`);
             router.push(`/login?reason=feedback&redirect=${redirectUrl}`);
             return;
         }
 
-        // 3. Submit (Mock)
-        setIsSubmitted(true);
-        sessionStorage.removeItem('review_draft'); // Clear draft on success
-        setTimeout(() => {
-            // Reset state? Or keep success message.
-            // setRating(0); setReview(''); setIsSubmitted(false);
-        }, 3000);
+        // 3. Submit to Firestore
+        try {
+            const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
+            const { db } = await import('@/lib/firebase');
+
+            await addDoc(collection(db, 'feedbacks'), {
+                userId: user.uid,
+                userName: user.displayName || user.email?.split('@')[0] || 'Anonymous',
+                userEmail: user.email || '',
+                rating: rating,
+                productName: productName.trim() || null,
+                review: review.trim(),
+                createdAt: serverTimestamp(),
+            });
+
+            setIsSubmitted(true);
+            sessionStorage.removeItem('review_draft'); // Clear draft on success
+            // Reset form after delay
+            setTimeout(() => {
+                setRating(0);
+                setReview('');
+                setProductName('');
+            }, 3000);
+        } catch (error) {
+            console.error('Error submitting feedback:', error);
+            setValidationError('Failed to submit feedback. Please try again.');
+        }
     };
 
     return (
@@ -156,12 +177,6 @@ export default function Footer() {
                             <a href="#" className="text-gray-400 hover:text-white transition-colors transform hover:scale-110 duration-200">
                                 <FiFacebook size={18} />
                             </a>
-                            <a href="#" className="text-gray-400 hover:text-white transition-colors transform hover:scale-110 duration-200">
-                                <FiTwitter size={18} />
-                            </a>
-                            <a href="#" className="text-gray-400 hover:text-white transition-colors transform hover:scale-110 duration-200">
-                                <FiLinkedin size={18} />
-                            </a>
                         </div>
                     </div>
 
@@ -199,6 +214,15 @@ export default function Footer() {
                                         </button>
                                     ))}
                                 </div>
+
+                                {/* Product Name (Optional) */}
+                                <input
+                                    type="text"
+                                    className="w-full bg-gray-800/50 border border-gray-700 rounded-md p-2 text-sm text-gray-300 placeholder-gray-500 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50"
+                                    placeholder="Product name (optional)"
+                                    value={productName}
+                                    onChange={(e) => setProductName(e.target.value)}
+                                />
 
                                 {/* Text Area */}
                                 <textarea

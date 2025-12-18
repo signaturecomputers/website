@@ -1,9 +1,65 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { FiClock, FiUsers, FiAward } from 'react-icons/fi';
+import { doc, getDoc, collection, getCountFromServer } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+
+interface AboutImageData {
+    imageUrl: string;
+    alt: string;
+}
 
 export default function AboutSection() {
+    const [aboutImage, setAboutImage] = useState<AboutImageData>({
+        imageUrl: '/about-us-workspace.png',
+        alt: 'Professional IT Workspace - Signature Computers'
+    });
+
+    useEffect(() => {
+        async function fetchAboutImage() {
+            try {
+                const aboutDoc = await getDoc(doc(db, 'header_settings', 'about_image'));
+                if (aboutDoc.exists()) {
+                    const data = aboutDoc.data() as AboutImageData;
+                    if (data.imageUrl) {
+                        setAboutImage(data);
+                    }
+                }
+            } catch (error) {
+                console.warn('Failed to fetch about image, using default:', error);
+            }
+        }
+        fetchAboutImage();
+    }, []);
+
+    // Happy Customers calculation: Base 5000 + (every 50 users = +1000)
+    const [happyCustomers, setHappyCustomers] = useState(5000);
+
+    useEffect(() => {
+        async function fetchUserCount() {
+            try {
+                const usersRef = collection(db, 'users');
+                const snapshot = await getCountFromServer(usersRef);
+                const userCount = snapshot.data().count;
+                // Calculate: base 5000 + (floor(users/50) * 1000)
+                const calculatedCustomers = 5000 + Math.floor(userCount / 50) * 1000;
+                setHappyCustomers(calculatedCustomers);
+            } catch (error) {
+                console.warn('Failed to fetch user count, using default:', error);
+            }
+        }
+        fetchUserCount();
+    }, []);
+
+    // Calculate years of experience from company start date (April 20, 2022)
+    const companyStartDate = new Date(2022, 3, 20); // Month is 0-indexed, so 3 = April
+    const today = new Date();
+    const yearsOfExperience = Math.floor(
+        (today.getTime() - companyStartDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25)
+    );
+
     return (
         // REMOVED: overflow-hidden to prevent cutting off left-shifted text if screen is tight
         <section id="about-us" className="relative bg-white py-8 scroll-mt-24">
@@ -50,8 +106,8 @@ export default function AboutSection() {
                             <div className="flex-1 lg:flex-none lg:w-[40%] lg:ml-auto w-full relative flex items-start justify-center lg:justify-start mt-6 lg:mt-8">
                                 <div className="relative w-full aspect-[4/3] rounded-2xl overflow-hidden shadow-lg border border-gray-100">
                                     <Image
-                                        src="/about-us-workspace.png"
-                                        alt="Professional IT Workspace - Signature Computers"
+                                        src={aboutImage.imageUrl}
+                                        alt={aboutImage.alt}
                                         fill
                                         className="object-cover"
                                     />
@@ -68,7 +124,7 @@ export default function AboutSection() {
                                         <div className="w-8 h-8 flex items-center justify-center rounded-full bg-blue-50">
                                             <FiAward className="w-5 h-5 text-blue-600" />
                                         </div>
-                                        <h3 className="text-lg font-bold text-gray-900">4+ Years</h3>
+                                        <h3 className="text-lg font-bold text-gray-900">{yearsOfExperience}+ Years</h3>
                                     </div>
                                     <p className="text-sm text-gray-500">Experience</p>
                                 </div>
@@ -77,7 +133,7 @@ export default function AboutSection() {
                                         <div className="w-8 h-8 flex items-center justify-center rounded-full bg-blue-50">
                                             <FiUsers className="w-5 h-5 text-blue-600" />
                                         </div>
-                                        <h3 className="text-lg font-bold text-gray-900">5000+</h3>
+                                        <h3 className="text-lg font-bold text-gray-900">{happyCustomers.toLocaleString()}+</h3>
                                     </div>
                                     <p className="text-sm text-gray-500">Happy Customers</p>
                                 </div>

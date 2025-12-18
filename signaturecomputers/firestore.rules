@@ -132,6 +132,25 @@ service cloud.firestore {
       allow write: if true;
     }
 
+    // HEADER SETTINGS - Hero image and brand logos
+    match /header_settings/{docId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // FEEDBACKS - Authenticated users can create, public read for admin
+    match /feedbacks/{feedbackId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update, delete: if true;
+    }
+
+    // DISPLAY REVIEWS - Public read for carousel, write for admin
+    match /display_reviews/{reviewId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
     // Default deny
     match /{document=**} {
       allow read, write: if false;
