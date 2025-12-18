@@ -2,12 +2,12 @@
 
 import { useCart } from '@/context/CartContext';
 import Link from 'next/link';
-import { FiTrash2, FiArrowLeft, FiShoppingCart, FiHeart } from 'react-icons/fi';
+import { FiTrash2, FiArrowLeft, FiShoppingCart, FiHeart, FiBookmark } from 'react-icons/fi';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
 export default function CartPage() {
-    const { cart, savedItems, removeFromCart, updateQuantity, cartTotal, cartCount, removeFromSaved, moveToCart } = useCart();
+    const { cart, savedItems, removeFromCart, updateQuantity, cartTotal, cartCount, removeFromSaved, moveToCart, saveForLater } = useCart();
     const router = useRouter();
 
     const handleMoveToCart = (item: { id: string; name: string; price: number; image: string }) => {
@@ -20,6 +20,14 @@ export default function CartPage() {
     const handleRemoveFromSaved = (itemId: string) => {
         removeFromSaved(itemId);
         toast.success('Removed from saved items');
+    };
+
+    const handleSaveForLater = (item: { id: string; name: string; price: number; image: string }) => {
+        saveForLater(item);
+        removeFromCart(item.id);
+        toast.success('Saved for later!', {
+            description: item.name,
+        });
     };
 
     if (cart.length === 0 && savedItems.length === 0) {
@@ -69,9 +77,19 @@ export default function CartPage() {
                                                 <span className="px-3 py-1 text-sm font-medium">{item.quantity}</span>
                                                 <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="px-3 py-1 hover:bg-gray-200 dark:hover:bg-gray-800">+</button>
                                             </div>
-                                            <button onClick={() => removeFromCart(item.id)} className="text-red-500 hover:text-red-700">
-                                                <FiTrash2 />
-                                            </button>
+                                            <div className="flex items-center gap-3">
+                                                <button
+                                                    onClick={() => handleSaveForLater({ id: item.id, name: item.name, price: item.price, image: item.image })}
+                                                    className="flex items-center gap-1 text-sm text-gray-600 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-500 transition-colors"
+                                                    title="Save for Later"
+                                                >
+                                                    <FiBookmark size={16} />
+                                                    <span className="hidden sm:inline">Save for Later</span>
+                                                </button>
+                                                <button onClick={() => removeFromCart(item.id)} className="text-red-500 hover:text-red-700">
+                                                    <FiTrash2 />
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
