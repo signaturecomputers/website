@@ -5,7 +5,8 @@ import { useAuth } from '@/context/AuthContext';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { db } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp, doc, setDoc, getDoc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, setDoc, getDoc, updateDoc, increment } from 'firebase/firestore';
+import { getProductById } from '@/lib/products';
 import { toast } from 'sonner';
 
 export default function CheckoutPage() {
@@ -89,13 +90,31 @@ export default function CheckoutPage() {
             // Format address
             const fullAddress = `${formData.address}, ${formData.city}, ${formData.state} - ${formData.zip}`;
 
-            // Create order for each cart item
+            // Create order for each cart item and deduct stock
             for (const item of cart) {
+                // Get product details to find its category for stock deduction
+                const product = await getProductById(item.id);
+
+                if (!product) {
+                    toast.error(`Product ${item.name} not found. Please refresh and try again.`);
+                    setLoading(false);
+                    return;
+                }
+
+                // Check if sufficient stock is available
+                if (product.stock < item.quantity) {
+                    toast.error(`Insufficient stock for ${item.name}. Only ${product.stock} available.`);
+                    setLoading(false);
+                    return;
+                }
+
                 const orderData = {
                     orderId: `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                     productId: item.id,
                     productName: item.name,
-                    partNumber: (item as any).partNumber || '',
+                    productImage: item.image || '',
+                    productCategory: product.category,
+                    partNumber: (item as any).partNumber || product.productInfo?.partNo || '',
                     quantity: item.quantity,
                     unitPrice: item.price,
                     totalAmount: item.price * item.quantity,
@@ -117,7 +136,14 @@ export default function CheckoutPage() {
                     updatedAt: serverTimestamp()
                 };
 
+                // Create the order
                 await addDoc(collection(db, 'orders'), orderData);
+
+                // Deduct stock from the product
+                const productRef = doc(db, product.category, item.id);
+                await updateDoc(productRef, {
+                    stock: increment(-item.quantity)
+                });
             }
 
             // Save address for future orders

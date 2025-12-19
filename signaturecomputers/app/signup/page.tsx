@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import { FcGoogle } from 'react-icons/fc';
 import { createFirestoreUser } from '@/lib/auth-helpers';
 import { useAuth } from '@/context/AuthContext';
+import { isValidPhoneNumber, isValidName, isValidEmail, validatePassword } from '@/lib/form-validation';
 
 export default function Signup() {
     const [firstName, setFirstName] = useState('');
@@ -33,12 +34,29 @@ export default function Signup() {
         setError('');
 
         // 1. Validation
+        if (!isValidName(firstName)) {
+            setError('Please enter a valid first name (letters only, min 2 characters)');
+            return;
+        }
+        if (!isValidName(lastName)) {
+            setError('Please enter a valid last name (letters only, min 2 characters)');
+            return;
+        }
+        if (!isValidEmail(email)) {
+            setError('Please enter a valid email address');
+            return;
+        }
+        if (phone && !isValidPhoneNumber(phone)) {
+            setError('Please enter a valid 10-digit phone number');
+            return;
+        }
         if (password !== confirmPassword) {
             setError('Passwords do not match');
             return;
         }
-        if (password.length < 6) {
-            setError('Password must be at least 6 characters');
+        const passwordCheck = validatePassword(password);
+        if (!passwordCheck.isValid) {
+            setError(passwordCheck.message);
             return;
         }
 

@@ -34,8 +34,8 @@ export default function Navbar() {
     };
 
     return (
-        // NAVBAR STYLE: Sticky, White, Shadow
-        <nav className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm h-20 flex flex-col justify-center">
+        // NAVBAR STYLE: Sticky, Glassmorphism (transparent + blur)
+        <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md h-20 flex flex-col justify-center">
             <div className="w-full px-4 sm:px-8 lg:px-12">
                 <div className="flex items-center">
 
@@ -93,20 +93,22 @@ export default function Navbar() {
                             <a href="#contact-footer" onClick={(e) => smoothScrollTo(e, 'contact-footer')} className="text-sm font-semibold text-gray-700 hover:text-blue-600 transition-colors cursor-pointer">Contact</a>
                         </nav>
 
-                        <div className="flex items-center space-x-4 border-l border-gray-200 pl-4">
+                        <div className="flex items-center space-x-3 ml-6">
                             <div className="relative">
                                 {user ? (
                                     <button
                                         onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                                        className="flex items-center text-gray-700 hover:text-blue-600 focus:outline-none transition-transform active:scale-95"
+                                        className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-50 text-blue-600 font-bold hover:bg-blue-100 focus:outline-none transition-all duration-200 shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(59,130,246,0.15)] active:scale-95"
                                     >
-                                        <div className="h-8 w-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-bold border border-blue-100 shadow-sm">
-                                            {user.displayName ? user.displayName[0].toUpperCase() : <FiUser />}
-                                        </div>
+                                        {user.displayName ? user.displayName[0].toUpperCase() : <FiUser className="text-lg" />}
                                     </button>
                                 ) : (
-                                    <Link href="/login" className="text-gray-600 hover:text-blue-600 transition-colors p-1.5 rounded-full hover:bg-gray-100" title="Login">
-                                        <FiUser className="text-xl" />
+                                    <Link
+                                        href="/login"
+                                        className="flex items-center justify-center w-10 h-10 rounded-full bg-gray-50 text-gray-600 hover:bg-blue-50 hover:text-blue-600 transition-all duration-200 shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(59,130,246,0.15)]"
+                                        title="Login"
+                                    >
+                                        <FiUser className="text-lg" />
                                     </Link>
                                 )}
 
@@ -132,10 +134,13 @@ export default function Navbar() {
                                 )}
                             </div>
 
-                            <Link href="/cart" className="relative text-gray-600 hover:text-blue-600 transition-colors p-1.5 rounded-full hover:bg-gray-100">
-                                <FiShoppingCart className="text-xl" />
+                            <Link
+                                href="/cart"
+                                className="relative flex items-center justify-center w-10 h-10 rounded-full bg-gray-50 text-gray-600 hover:bg-blue-50 hover:text-blue-600 transition-all duration-200 shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(59,130,246,0.15)]"
+                            >
+                                <FiShoppingCart className="text-lg" />
                                 {cartCount > 0 && (
-                                    <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center shadow-sm ring-2 ring-white">
+                                    <span className="absolute -top-0.5 -right-0.5 bg-blue-600 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center shadow-sm ring-2 ring-white">
                                         {cartCount}
                                     </span>
                                 )}

@@ -140,11 +140,22 @@ export default function ProductDetailsPage() {
     useEffect(() => {
         if (product) {
             setIsSaved(isInSaved(product.id));
+            // Update page title for SEO
+            document.title = `${product.name} | Signature Computers`;
         }
+        // Reset title on unmount
+        return () => {
+            document.title = 'Signature Computers | Premium Tech Store';
+        };
     }, [product, isInSaved]);
 
     if (loading) {
-        return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center bg-white dark:bg-black">
+                <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+                <p className="text-gray-500">Loading product...</p>
+            </div>
+        );
     }
 
     if (!product) {

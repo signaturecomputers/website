@@ -34,22 +34,15 @@ export default function UsersPage() {
         setLoading(true);
         try {
             const usersRef = collection(db, 'users');
-            // Removed orderBy to avoid index requirement
             const querySnapshot = await getDocs(usersRef);
-            console.log('Fetched users count:', querySnapshot.docs.length);
-            const usersData = querySnapshot.docs.map(doc => {
-                console.log('User doc:', doc.id, doc.data());
-                return {
-                    id: doc.id,
-                    ...doc.data()
-                };
-            }) as User[];
+            const usersData = querySnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            })) as User[];
             setUsers(usersData);
         } catch (error: any) {
             console.error('Failed to fetch users:', error);
-            console.error('Error code:', error?.code);
-            console.error('Error message:', error?.message);
-            toast.error('Failed to load users: ' + (error?.message || 'Unknown error'));
+            toast.error('Failed to load users');
         } finally {
             setLoading(false);
         }

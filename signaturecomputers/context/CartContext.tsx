@@ -144,9 +144,21 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                     setIsLoading(false);
                 });
             } else {
-                // Guest user on first mount
+                // Guest user on first mount - load from localStorage
                 console.log('[Cart] Initial mount as guest');
-                setCart([]);
+                try {
+                    const guestCart = localStorage.getItem('guest_cart');
+                    if (guestCart) {
+                        const parsedCart = JSON.parse(guestCart);
+                        setCart(parsedCart);
+                        console.log('[Cart] Loaded guest cart from localStorage:', parsedCart.length, 'items');
+                    } else {
+                        setCart([]);
+                    }
+                } catch (error) {
+                    console.error('[Cart] Error loading guest cart:', error);
+                    setCart([]);
+                }
                 setSavedItems([]);
                 initialLoadDone.current = true;
                 setIsLoading(false);
@@ -160,8 +172,32 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             prevUserIdRef.current = currentUserId;
             setIsLoading(true);
             isSyncing.current = true;
+
+            // Get the current guest cart before it gets cleared
+            const guestCart = [...cart];
+
             loadCart(currentUserId).then(({ items, savedItems: saved }) => {
-                setCart(items);
+                // Merge guest cart with user's saved cart
+                let mergedCart = [...items];
+
+                if (guestCart.length > 0) {
+                    console.log('[Cart] Merging guest cart with user cart');
+                    guestCart.forEach(guestItem => {
+                        const existingIndex = mergedCart.findIndex(item => item.id === guestItem.id);
+                        if (existingIndex >= 0) {
+                            // Item exists, add quantities
+                            mergedCart[existingIndex].quantity += guestItem.quantity;
+                        } else {
+                            // New item, add to cart
+                            mergedCart.push(guestItem);
+                        }
+                    });
+
+                    // Clear guest cart from localStorage after merge
+                    localStorage.removeItem('guest_cart');
+                }
+
+                setCart(mergedCart);
                 setSavedItems(saved);
                 isSyncing.current = false;
                 setIsLoading(false);
@@ -175,26 +211,38 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             prevUserIdRef.current = null;
             setCart([]);
             setSavedItems([]);
+            // Also clear any lingering guest cart
+            localStorage.removeItem('guest_cart');
             setIsLoading(false);
             return;
         }
 
         prevUserIdRef.current = currentUserId;
-    }, [user, loadCart]);
+    }, [user, loadCart, cart]);
 
-    // Save cart to Firestore whenever it changes (only for logged-in users)
+    // Save cart to Firestore (logged-in users) or localStorage (guests)
     useEffect(() => {
         // Don't save if:
         // - Initial load not done
         // - Currently syncing (loading from Firestore)
-        // - Not logged in
         // - Still loading
-        if (!initialLoadDone.current || isSyncing.current || !user || isLoading) {
+        if (!initialLoadDone.current || isSyncing.current || isLoading) {
             return;
         }
 
-        console.log('[Cart] Cart changed, saving to Firestore...');
-        saveCart(user.uid, cart, savedItems);
+        if (user) {
+            // Logged-in user: save to Firestore
+            console.log('[Cart] Cart changed, saving to Firestore...');
+            saveCart(user.uid, cart, savedItems);
+        } else {
+            // Guest user: save to localStorage
+            console.log('[Cart] Guest cart changed, saving to localStorage...');
+            try {
+                localStorage.setItem('guest_cart', JSON.stringify(cart));
+            } catch (error) {
+                console.error('[Cart] Error saving guest cart:', error);
+            }
+        }
     }, [cart, savedItems, user, isLoading, saveCart]);
 
     const addToCart = useCallback((item: CartItem) => {

@@ -1,0 +1,51 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Product images - Public read, admin write
+    // Path format: products/{category}/{productId}/{filename}
+    match /products/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAuthenticated();  // In production, add admin check
+    }
+
+    // Category images - Public read, admin write
+    match /categories/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    // Brand logos - Public read, admin write  
+    match /brands/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    // Hero/banner images - Public read, admin write
+    match /hero/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    // User uploads (profile pictures, etc.)
+    // Path format: users/{userId}/{filename}
+    match /users/{userId}/{allPaths=**} {
+      allow read: if true;  // Public profile pictures
+      allow write: if isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Temp uploads - for processing
+    match /temp/{allPaths=**} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Default deny
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

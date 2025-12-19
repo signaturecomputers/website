@@ -6,7 +6,9 @@ import SidebarFilters from '@/components/SidebarFilters';
 import ProductCard from '@/components/ProductCard';
 import CategorySection from '@/components/CategorySection';
 import AccessoriesSubcategorySection from '@/components/AccessoriesSubcategorySection';
+import PrinterSubcategorySection from '@/components/PrinterSubcategorySection';
 import { getAllProducts, Product } from '@/lib/products';
+
 
 export default function ProductsPage() {
     const searchParams = useSearchParams();
@@ -62,6 +64,9 @@ export default function ProductsPage() {
         'power-adapters', 'bags', 'docks', 'usb-flashdrives', 'dvd-writers'
     ];
 
+    // Printer subcategory IDs
+    const printerSubcategories = ['printers', 'cartridges', 'toners'];
+
     // Filter Logic
     const filteredProducts = products.filter(product => {
         const productCategory = product.category?.toLowerCase();
@@ -84,6 +89,11 @@ export default function ProductsPage() {
         // If viewing 'accessories', show products from 'accessories' AND all accessory subcategories
         if (selectedCategory === 'accessories') {
             return productCategory === 'accessories' || accessorySubcategories.includes(productCategory || '');
+        }
+
+        // If viewing 'printers-all', show products from printers, cartridges, and toners
+        if (selectedCategory === 'printers-all') {
+            return printerSubcategories.includes(productCategory || '');
         }
 
         // Otherwise, match exact category
@@ -138,6 +148,10 @@ export default function ProductsPage() {
 
             {/* Show Accessories Subcategory Cards when on 'Accessories' view */}
             {selectedCategory === 'accessories' && <AccessoriesSubcategorySection />}
+
+            {/* Show Printers Subcategory Cards when on 'Printers' view */}
+            {selectedCategory === 'printers' && <PrinterSubcategorySection />}
+
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
                 <div className="flex flex-col md:flex-row gap-8">

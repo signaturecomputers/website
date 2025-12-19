@@ -12,9 +12,13 @@ service cloud.firestore {
       return request.auth.uid == userId;
     }
 
+    // ============================================
+    // ADMIN COLLECTIONS
+    // ============================================
+
     // ADMIN USERS - Read for login, write for own document
     match /admin_users/{userId} {
-      allow read: if true;   // Needed for login
+      allow read: if true;
       allow create: if request.auth != null && request.auth.uid == userId;
       allow update: if request.auth != null && request.auth.uid == userId;
       allow delete: if false;
@@ -22,98 +26,154 @@ service cloud.firestore {
 
     // ADMIN SETTINGS - Read only for access key verification
     match /admin_settings/{docId} {
-      allow read: if true;   // Needed for access key check
-      allow write: if false;
+      allow read: if true;
+      allow write: if true;
     }
 
-    // PRODUCTS - All categories (Public Read, Authenticated Write)
+    // ============================================
+    // PRODUCT CATEGORIES (Main Categories)
+    // ============================================
+
     match /laptops/{document=**} {
       allow read: if true;
       allow write: if true;
     }
+    
     match /desktops/{document=**} {
       allow read: if true;
       allow write: if true;
     }
-    match /monitors/{document=**} {
-      allow read: if true;
-      allow write: if true;
-    }
-    match /accessories/{document=**} {
-      allow read: if true;
-      allow write: if true;
-    }
-    match /printers/{document=**} {
-      allow read: if true;
-      allow write: if true;
-    }
-    match /cartridges/{document=**} {
-      allow read: if true;
-      allow write: if true;
-    }
-    match /toners/{document=**} {
-      allow read: if true;
-      allow write: if true;
-    }
-    // Additional accessory subcategories
-    match /keyboards/{document=**} {
-      allow read: if true;
-      allow write: if true;
-    }
-    match /headphones/{document=**} {
-      allow read: if true;
-      allow write: if true;
-    }
-    match /cables/{document=**} {
-      allow read: if true;
-      allow write: if true;
-    }
-    match /power-adapters/{document=**} {
-      allow read: if true;
-      allow write: if true;
-    }
-    match /mouse/{document=**} {
-      allow read: if true;
-      allow write: if true;
-    }
-    match /keyboard-mouse-combo/{document=**} {
-      allow read: if true;
-      allow write: if true;
-    }
-    match /bags/{document=**} {
-      allow read: if true;
-      allow write: if true;
-    }
-    match /docks/{document=**} {
-      allow read: if true;
-      allow write: if true;
-    }
-    match /usb-flashdrives/{document=**} {
-      allow read: if true;
-      allow write: if true;
-    }
-    match /dvd-writers/{document=**} {
-      allow read: if true;
-      allow write: if true;
-    }
+    
     match /workstations/{document=**} {
       allow read: if true;
       allow write: if true;
     }
+    
+    match /monitors/{document=**} {
+      allow read: if true;
+      allow write: if true;
+    }
+    
+    match /printers/{document=**} {
+      allow read: if true;
+      allow write: if true;
+    }
+    
+    match /accessories/{document=**} {
+      allow read: if true;
+      allow write: if true;
+    }
+    
     match /cctv/{document=**} {
       allow read: if true;
       allow write: if true;
     }
 
-    // USERS - Public read for admin dashboard
+    // ============================================
+    // PRINTER SUBCATEGORIES
+    // ============================================
+
+    match /cartridges/{document=**} {
+      allow read: if true;
+      allow write: if true;
+    }
+    
+    match /toners/{document=**} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // ============================================
+    // ACCESSORY SUBCATEGORIES
+    // ============================================
+
+    match /keyboards/{document=**} {
+      allow read: if true;
+      allow write: if true;
+    }
+    
+    match /mouse/{document=**} {
+      allow read: if true;
+      allow write: if true;
+    }
+    
+    match /keyboard-mouse-combo/{document=**} {
+      allow read: if true;
+      allow write: if true;
+    }
+    
+    match /headphones/{document=**} {
+      allow read: if true;
+      allow write: if true;
+    }
+    
+    match /cables/{document=**} {
+      allow read: if true;
+      allow write: if true;
+    }
+    
+    match /power-adapters/{document=**} {
+      allow read: if true;
+      allow write: if true;
+    }
+    
+    match /bags/{document=**} {
+      allow read: if true;
+      allow write: if true;
+    }
+    
+    match /docks/{document=**} {
+      allow read: if true;
+      allow write: if true;
+    }
+    
+    match /usb-flashdrives/{document=**} {
+      allow read: if true;
+      allow write: if true;
+    }
+    
+    match /dvd-writers/{document=**} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // ============================================
+    // CATEGORY MANAGEMENT (NEW)
+    // ============================================
+
+    // Category Metadata - Stores custom images and descriptions for categories
+    match /category_metadata/{categoryId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Custom Categories - Admin-created categories and subcategories
+    match /custom_categories/{categoryId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Categories collection (legacy/alternative)
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // ============================================
+    // USER MANAGEMENT
+    // ============================================
+
     match /users/{userId} {
       allow read: if true;
       allow create: if isAuthenticated() && isOwner(userId);
       allow update: if isAuthenticated() && isOwner(userId);
-      allow delete: if false; 
+      allow delete: if false;
     }
-    
-    // ORDERS - Public read for admin dashboard
+
+    // ============================================
+    // ORDERS
+    // ============================================
+
     match /orders/{orderId} {
       allow read: if true;
       allow create: if isAuthenticated();
@@ -121,37 +181,50 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // CARTS
+    // ============================================
+    // CART
+    // ============================================
+
     match /carts/{userId} {
       allow read, write: if isAuthenticated() && isOwner(userId);
     }
 
-    // HOT DEALS - Public read, authenticated write
+    // ============================================
+    // MARKETING & CONTENT
+    // ============================================
+
+    // Hot Deals
     match /hot_deals/{dealId} {
       allow read: if true;
       allow write: if true;
     }
 
-    // HEADER SETTINGS - Hero image and brand logos
+    // Header Settings - Hero images and brand logos
     match /header_settings/{docId} {
       allow read: if true;
       allow write: if true;
     }
 
-    // FEEDBACKS - Authenticated users can create, public read for admin
+    // Display Reviews - Testimonials shown on homepage
+    match /display_reviews/{reviewId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // ============================================
+    // FEEDBACK
+    // ============================================
+
     match /feedbacks/{feedbackId} {
       allow read: if true;
       allow create: if request.auth != null;
       allow update, delete: if true;
     }
 
-    // DISPLAY REVIEWS - Public read for carousel, write for admin
-    match /display_reviews/{reviewId} {
-      allow read: if true;
-      allow write: if true;
-    }
+    // ============================================
+    // DEFAULT DENY (Must be last)
+    // ============================================
 
-    // Default deny
     match /{document=**} {
       allow read, write: if false;
     }

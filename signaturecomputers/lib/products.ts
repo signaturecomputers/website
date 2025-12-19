@@ -192,7 +192,6 @@ export interface Product {
 
 export async function getAllProducts(): Promise<Product[]> {
     try {
-        const promises = COLLECTIONS.map(col => getDocs(collection(db, col)));
         const productPromises = COLLECTIONS.map(async (collectionName) => {
             try {
                 const querySnapshot = await getDocs(collection(db, collectionName));
