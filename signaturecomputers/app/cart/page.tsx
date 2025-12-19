@@ -2,12 +2,12 @@
 
 import { useCart } from '@/context/CartContext';
 import Link from 'next/link';
-import { FiTrash2, FiArrowLeft, FiShoppingCart, FiHeart, FiBookmark } from 'react-icons/fi';
+import { FiTrash2, FiArrowLeft, FiShoppingCart, FiHeart, FiBookmark, FiLoader } from 'react-icons/fi';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
 export default function CartPage() {
-    const { cart, savedItems, removeFromCart, updateQuantity, cartTotal, cartCount, removeFromSaved, moveToCart, saveForLater } = useCart();
+    const { cart, savedItems, removeFromCart, updateQuantity, cartTotal, cartCount, removeFromSaved, moveToCart, saveForLater, isLoading } = useCart();
     const router = useRouter();
 
     const handleMoveToCart = (item: { id: string; name: string; price: number; image: string }) => {
@@ -23,12 +23,25 @@ export default function CartPage() {
     };
 
     const handleSaveForLater = (item: { id: string; name: string; price: number; image: string }) => {
-        saveForLater(item);
-        removeFromCart(item.id);
-        toast.success('Saved for later!', {
-            description: item.name,
-        });
+        const success = saveForLater(item);
+        if (success) {
+            removeFromCart(item.id);
+            toast.success('Saved for later!', {
+                description: item.name,
+            });
+        }
+        // If not successful, toast error is already shown by CartContext
     };
+
+    // Show loading state while cart is being loaded from Firestore
+    if (isLoading) {
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-black py-12 px-4 sm:px-6 lg:px-8">
+                <FiLoader className="text-4xl text-blue-600 animate-spin mb-4" />
+                <p className="text-gray-500">Loading your cart...</p>
+            </div>
+        );
+    }
 
     if (cart.length === 0 && savedItems.length === 0) {
         return (

@@ -1,9 +1,10 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { toast } from 'sonner';
 
 interface CartItem {
     id: string;
@@ -27,12 +28,14 @@ interface CartContextType {
     removeFromCart: (itemId: string) => void;
     updateQuantity: (itemId: string, quantity: number) => void;
     clearCart: () => void;
-    saveForLater: (item: SavedItem) => void;
+    saveForLater: (item: SavedItem) => boolean;
     removeFromSaved: (itemId: string) => void;
     moveToCart: (item: SavedItem) => void;
     isInSaved: (itemId: string) => boolean;
     cartTotal: number;
     cartCount: number;
+    isLoggedIn: boolean;
+    isLoading: boolean;
 }
 
 const CartContext = createContext<CartContextType>({
@@ -42,61 +45,159 @@ const CartContext = createContext<CartContextType>({
     removeFromCart: () => { },
     updateQuantity: () => { },
     clearCart: () => { },
-    saveForLater: () => { },
+    saveForLater: () => false,
     removeFromSaved: () => { },
     moveToCart: () => { },
     isInSaved: () => false,
     cartTotal: 0,
     cartCount: 0,
+    isLoggedIn: false,
+    isLoading: true,
 });
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
     const [cart, setCart] = useState<CartItem[]>([]);
     const [savedItems, setSavedItems] = useState<SavedItem[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     const { user } = useAuth();
 
-    // Load cart and saved items from local storage on mount
-    useEffect(() => {
-        const savedCart = localStorage.getItem('cart');
-        const savedForLater = localStorage.getItem('savedItems');
-        if (savedCart) {
-            setCart(JSON.parse(savedCart));
-        }
-        if (savedForLater) {
-            setSavedItems(JSON.parse(savedForLater));
+    // Track the previous user ID to detect login/logout transitions
+    const prevUserIdRef = useRef<string | null | undefined>(undefined);
+    // Track if initial load is done
+    const initialLoadDone = useRef(false);
+    // Track if we're currently syncing to avoid infinite loops
+    const isSyncing = useRef(false);
+
+    // Load cart from Firestore for the current user
+    const loadCart = useCallback(async (userId: string) => {
+        console.log('[Cart] Loading cart from Firestore for user:', userId);
+        try {
+            const docRef = doc(db, 'carts', userId);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                console.log('[Cart] Loaded from Firestore:', {
+                    itemCount: data.items?.length || 0,
+                    savedCount: data.savedItems?.length || 0
+                });
+                return {
+                    items: data.items || [],
+                    savedItems: data.savedItems || []
+                };
+            } else {
+                console.log('[Cart] No cart found in Firestore, starting fresh');
+                return { items: [], savedItems: [] };
+            }
+        } catch (error) {
+            console.error('[Cart] Error loading from Firestore:', error);
+            return { items: [], savedItems: [] };
         }
     }, []);
 
-    // Sync with Firestore when user logs in (simplified)
-    useEffect(() => {
-        if (user) {
-            const syncCart = async () => {
-                const docRef = doc(db, 'carts', user.uid);
-                const docSnap = await getDoc(docRef);
-                if (docSnap.exists()) {
-                    // Merge or replace logic here. For now, we'll just keep local if exists? 
-                    // Better: fetch remote cart.
-                    // setCart(docSnap.data().items); 
-                }
-            };
-            syncCart();
+    // Save cart to Firestore
+    const saveCart = useCallback(async (userId: string, items: CartItem[], saved: SavedItem[]) => {
+        if (isSyncing.current) {
+            console.log('[Cart] Skipping save - sync in progress');
+            return;
         }
-    }, [user]);
-
-    // Save to local storage on change
-    useEffect(() => {
-        localStorage.setItem('cart', JSON.stringify(cart));
-        localStorage.setItem('savedItems', JSON.stringify(savedItems));
-        if (user) {
-            // Save to Firestore
-            setDoc(doc(db, 'carts', user.uid), {
-                items: cart,
-                savedItems: savedItems
-            }, { merge: true });
+        console.log('[Cart] Saving cart to Firestore for user:', userId, {
+            itemCount: items.length,
+            savedCount: saved.length
+        });
+        try {
+            await setDoc(doc(db, 'carts', userId), {
+                items: items,
+                savedItems: saved,
+                updatedAt: new Date().toISOString()
+            });
+            console.log('[Cart] Saved to Firestore successfully');
+        } catch (error) {
+            console.error('[Cart] Error saving to Firestore:', error);
         }
-    }, [cart, savedItems, user]);
+    }, []);
 
-    const addToCart = (item: CartItem) => {
+    // Handle user authentication state changes
+    useEffect(() => {
+        const currentUserId = user?.uid || null;
+        const prevUserId = prevUserIdRef.current;
+
+        console.log('[Cart] Auth state changed:', {
+            currentUserId: currentUserId ? currentUserId.substring(0, 8) + '...' : null,
+            prevUserId: prevUserId === undefined ? 'undefined' : (prevUserId ? prevUserId.substring(0, 8) + '...' : null),
+            initialLoadDone: initialLoadDone.current
+        });
+
+        // First mount - determine initial state
+        if (prevUserId === undefined) {
+            prevUserIdRef.current = currentUserId;
+
+            if (currentUserId) {
+                // User is logged in on first mount (page refresh while logged in)
+                console.log('[Cart] Initial mount with logged-in user');
+                setIsLoading(true);
+                isSyncing.current = true;
+                loadCart(currentUserId).then(({ items, savedItems: saved }) => {
+                    setCart(items);
+                    setSavedItems(saved);
+                    initialLoadDone.current = true;
+                    isSyncing.current = false;
+                    setIsLoading(false);
+                });
+            } else {
+                // Guest user on first mount
+                console.log('[Cart] Initial mount as guest');
+                setCart([]);
+                setSavedItems([]);
+                initialLoadDone.current = true;
+                setIsLoading(false);
+            }
+            return;
+        }
+
+        // User just logged in (transition from null to userId)
+        if (currentUserId && prevUserId === null) {
+            console.log('[Cart] User just logged in, loading their cart...');
+            prevUserIdRef.current = currentUserId;
+            setIsLoading(true);
+            isSyncing.current = true;
+            loadCart(currentUserId).then(({ items, savedItems: saved }) => {
+                setCart(items);
+                setSavedItems(saved);
+                isSyncing.current = false;
+                setIsLoading(false);
+            });
+            return;
+        }
+
+        // User just logged out (transition from userId to null)
+        if (!currentUserId && prevUserId) {
+            console.log('[Cart] User just logged out, clearing cart...');
+            prevUserIdRef.current = null;
+            setCart([]);
+            setSavedItems([]);
+            setIsLoading(false);
+            return;
+        }
+
+        prevUserIdRef.current = currentUserId;
+    }, [user, loadCart]);
+
+    // Save cart to Firestore whenever it changes (only for logged-in users)
+    useEffect(() => {
+        // Don't save if:
+        // - Initial load not done
+        // - Currently syncing (loading from Firestore)
+        // - Not logged in
+        // - Still loading
+        if (!initialLoadDone.current || isSyncing.current || !user || isLoading) {
+            return;
+        }
+
+        console.log('[Cart] Cart changed, saving to Firestore...');
+        saveCart(user.uid, cart, savedItems);
+    }, [cart, savedItems, user, isLoading, saveCart]);
+
+    const addToCart = useCallback((item: CartItem) => {
         setCart((prev) => {
             const existing = prev.find((i) => i.id === item.id);
             if (existing) {
@@ -106,44 +207,56 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             }
             return [...prev, item];
         });
-    };
+    }, []);
 
-    const removeFromCart = (itemId: string) => {
+    const removeFromCart = useCallback((itemId: string) => {
         setCart((prev) => prev.filter((i) => i.id !== itemId));
-    };
+    }, []);
 
-    const updateQuantity = (itemId: string, quantity: number) => {
+    const updateQuantity = useCallback((itemId: string, quantity: number) => {
         setCart((prev) =>
             prev.map((i) => (i.id === itemId ? { ...i, quantity: Math.max(1, quantity) } : i))
         );
-    };
+    }, []);
 
-    const clearCart = () => {
+    const clearCart = useCallback(() => {
         setCart([]);
-    };
+    }, []);
 
-    const saveForLater = (item: SavedItem) => {
+    // Save for Later - ONLY works for logged-in users
+    const saveForLater = useCallback((item: SavedItem): boolean => {
+        if (!user) {
+            toast.error('Please login to save items for later');
+            return false;
+        }
         setSavedItems((prev) => {
             const existing = prev.find((i) => i.id === item.id);
             if (existing) return prev;
             return [...prev, item];
         });
-    };
+        return true;
+    }, [user]);
 
-    const removeFromSaved = (itemId: string) => {
+    const removeFromSaved = useCallback((itemId: string) => {
         setSavedItems((prev) => prev.filter((i) => i.id !== itemId));
-    };
+    }, []);
 
-    const moveToCart = (item: SavedItem) => {
-        // Remove from saved
+    const moveToCart = useCallback((item: SavedItem) => {
         setSavedItems((prev) => prev.filter((i) => i.id !== item.id));
-        // Add to cart
-        addToCart({ ...item, quantity: 1 });
-    };
+        setCart((prev) => {
+            const existing = prev.find((i) => i.id === item.id);
+            if (existing) {
+                return prev.map((i) =>
+                    i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
+                );
+            }
+            return [...prev, { ...item, quantity: 1 }];
+        });
+    }, []);
 
-    const isInSaved = (itemId: string) => {
+    const isInSaved = useCallback((itemId: string) => {
         return savedItems.some((i) => i.id === itemId);
-    };
+    }, [savedItems]);
 
     const cartTotal = cart.reduce((total, item) => total + item.price * item.quantity, 0);
     const cartCount = cart.reduce((count, item) => count + item.quantity, 0);
@@ -161,7 +274,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             moveToCart,
             isInSaved,
             cartTotal,
-            cartCount
+            cartCount,
+            isLoggedIn: !!user,
+            isLoading
         }}>
             {children}
         </CartContext.Provider>

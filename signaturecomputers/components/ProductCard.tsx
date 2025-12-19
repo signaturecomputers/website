@@ -45,15 +45,18 @@ export default function ProductCard({ product }: ProductCardProps) {
 
     const handleSaveForLater = (e: React.MouseEvent) => {
         e.stopPropagation();
-        saveForLater({
+        const success = saveForLater({
             id: product.id,
             name: product.name,
             price: product.price,
             image: product.image,
         });
-        toast.success(isSaved ? 'Already saved!' : 'Saved for later!', {
-            description: product.name,
-        });
+        if (success) {
+            toast.success(isSaved ? 'Already saved!' : 'Saved for later!', {
+                description: product.name,
+            });
+        }
+        // If not successful, toast error is already shown by CartContext
     };
 
     return (
@@ -73,8 +76,8 @@ export default function ProductCard({ product }: ProductCardProps) {
                 <button
                     onClick={handleSaveForLater}
                     className={`absolute top-2 right-2 p-2 rounded-full transition-colors shadow-sm ${isSaved
-                            ? 'bg-red-500 text-white hover:bg-red-600'
-                            : 'bg-white/80 hover:bg-white text-gray-500 hover:text-red-500 dark:bg-black/50 dark:text-white'
+                        ? 'bg-red-500 text-white hover:bg-red-600'
+                        : 'bg-white/80 hover:bg-white text-gray-500 hover:text-red-500 dark:bg-black/50 dark:text-white'
                         }`}
                 >
                     <FiHeart className={isSaved ? 'fill-current' : ''} />

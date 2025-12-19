@@ -65,17 +65,20 @@ export default function ProductDetailsPage() {
 
     const handleSaveForLater = () => {
         if (product) {
-            saveForLater({
+            const success = saveForLater({
                 id: product.id,
                 name: product.name,
                 price: product.price,
                 image: product.images?.[0] || '',
             });
-            setIsSaved(true);
-            toast.success('Saved for later!', {
-                description: 'View in your cart under "Saved Items"',
-                duration: 3000,
-            });
+            if (success) {
+                setIsSaved(true);
+                toast.success('Saved for later!', {
+                    description: 'View in your cart under "Saved Items"',
+                    duration: 3000,
+                });
+            }
+            // If not successful, toast error is already shown by CartContext
         }
     };
 
