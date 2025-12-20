@@ -103,7 +103,7 @@ export default function HotDealsSection({ mode = 'home' }: HotDealsProps) {
     const handleBuyNow = (e: React.MouseEvent) => {
         e.stopPropagation();
         handleAddToCart(e);
-        router.push('/cart');
+        router.push('/checkout');
     };
 
     // Pause auto-play on hover

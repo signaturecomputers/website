@@ -2,10 +2,12 @@
 
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { FiPackage, FiUser, FiLogOut, FiLoader, FiShoppingBag } from 'react-icons/fi';
+import { FiPackage, FiUser, FiLogOut, FiLoader, FiShoppingBag, FiPhone, FiMail, FiMapPin, FiEdit2, FiCalendar, FiCheck, FiX } from 'react-icons/fi';
 import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs, orderBy, doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, orderBy, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { toast } from 'sonner';
 
 interface Order {
     id: string;
@@ -27,8 +29,16 @@ interface UserProfile {
     displayName?: string;
     email?: string;
     phoneNumber?: string;
+    phone?: string;
     firstName?: string;
     lastName?: string;
+    shippingAddress?: {
+        addressLine1?: string;
+        city?: string;
+        state?: string;
+        pincode?: string;
+    };
+    createdAt?: any;
 }
 
 export default function ProfilePage() {
@@ -38,6 +48,17 @@ export default function ProfilePage() {
     const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
     const [loadingOrders, setLoadingOrders] = useState(true);
     const [loadingProfile, setLoadingProfile] = useState(true);
+
+    // Address editing state
+    const [isEditingAddress, setIsEditingAddress] = useState(false);
+    const [savingAddress, setSavingAddress] = useState(false);
+    const [addressForm, setAddressForm] = useState({
+        phone: '',
+        addressLine1: '',
+        city: '',
+        state: '',
+        pincode: '',
+    });
 
     // Redirect if not logged in
     useEffect(() => {
@@ -141,6 +162,64 @@ export default function ProfilePage() {
         router.push('/');
     };
 
+    const startEditingAddress = () => {
+        setAddressForm({
+            phone: userProfile?.phone || userProfile?.phoneNumber || '',
+            addressLine1: userProfile?.shippingAddress?.addressLine1 || '',
+            city: userProfile?.shippingAddress?.city || '',
+            state: userProfile?.shippingAddress?.state || '',
+            pincode: userProfile?.shippingAddress?.pincode || '',
+        });
+        setIsEditingAddress(true);
+    };
+
+    const cancelEditingAddress = () => {
+        setIsEditingAddress(false);
+    };
+
+    const saveAddress = async () => {
+        if (!user) return;
+
+        if (!addressForm.addressLine1 || !addressForm.city || !addressForm.state || !addressForm.pincode) {
+            toast.error('Please fill in all address fields');
+            return;
+        }
+
+        setSavingAddress(true);
+        try {
+            const userRef = doc(db, 'users', user.uid);
+            await setDoc(userRef, {
+                phone: addressForm.phone,
+                shippingAddress: {
+                    addressLine1: addressForm.addressLine1,
+                    city: addressForm.city,
+                    state: addressForm.state,
+                    pincode: addressForm.pincode,
+                }
+            }, { merge: true });
+
+            // Update local state
+            setUserProfile(prev => prev ? {
+                ...prev,
+                phone: addressForm.phone,
+                shippingAddress: {
+                    addressLine1: addressForm.addressLine1,
+                    city: addressForm.city,
+                    state: addressForm.state,
+                    pincode: addressForm.pincode,
+                }
+            } : null);
+
+            toast.success('Address updated successfully!');
+            setIsEditingAddress(false);
+        } catch (error) {
+            console.error('Error saving address:', error);
+            toast.error('Failed to save address');
+        } finally {
+            setSavingAddress(false);
+        }
+    };
+
     const formatDate = (timestamp: any) => {
         if (!timestamp) return 'N/A';
         try {
@@ -180,41 +259,224 @@ export default function ProfilePage() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">My Account</h1>
 
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-                    {/* Sidebar Info */}
-                    <div className="md:col-span-1">
-                        <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 text-center">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    {/* Profile Info Card */}
+                    <div className="lg:col-span-1 space-y-6">
+                        {/* User Avatar & Basic Info */}
+                        <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800">
                             {loadingProfile ? (
                                 <div className="flex justify-center py-8">
                                     <FiLoader className="text-2xl text-blue-600 animate-spin" />
                                 </div>
                             ) : (
                                 <>
-                                    <div className="w-24 h-24 bg-blue-100 dark:bg-blue-900/30 rounded-full mx-auto mb-4 flex items-center justify-center text-3xl font-bold text-blue-600">
-                                        {displayName[0]?.toUpperCase() || <FiUser />}
+                                    <div className="text-center mb-6">
+                                        <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full mx-auto mb-4 flex items-center justify-center text-3xl font-bold text-white shadow-lg">
+                                            {displayName[0]?.toUpperCase() || <FiUser />}
+                                        </div>
+                                        <h2 className="text-xl font-bold text-gray-900 dark:text-white">{displayName}</h2>
+                                        <p className="text-sm text-gray-500 dark:text-gray-400">Customer</p>
                                     </div>
-                                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">{displayName}</h2>
-                                    <p className="text-sm text-gray-500 mb-2">{userProfile?.email || user.email}</p>
-                                    {userProfile?.phoneNumber && (
-                                        <p className="text-sm text-gray-500 mb-4">{userProfile.phoneNumber}</p>
-                                    )}
+
+                                    {/* Contact Details */}
+                                    <div className="space-y-3 border-t border-gray-100 dark:border-gray-800 pt-4">
+                                        <div className="flex items-center gap-3 text-sm">
+                                            <FiMail className="text-gray-400 w-4 h-4 flex-shrink-0" />
+                                            <span className="text-gray-700 dark:text-gray-300 truncate">{userProfile?.email || user.email}</span>
+                                        </div>
+                                        {(userProfile?.phone || userProfile?.phoneNumber) && (
+                                            <div className="flex items-center gap-3 text-sm">
+                                                <FiPhone className="text-gray-400 w-4 h-4 flex-shrink-0" />
+                                                <span className="text-gray-700 dark:text-gray-300">{userProfile.phone || userProfile.phoneNumber}</span>
+                                            </div>
+                                        )}
+                                        {userProfile?.createdAt && (
+                                            <div className="flex items-center gap-3 text-sm">
+                                                <FiCalendar className="text-gray-400 w-4 h-4 flex-shrink-0" />
+                                                <span className="text-gray-700 dark:text-gray-300">
+                                                    Member since {userProfile.createdAt?.toDate ?
+                                                        userProfile.createdAt.toDate().toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }) :
+                                                        'N/A'
+                                                    }
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+
                                     <button
                                         onClick={handleLogout}
-                                        className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-red-200 text-red-600 rounded-md hover:bg-red-50 dark:border-red-900 dark:hover:bg-red-900/20 transition-colors mt-4"
+                                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 dark:border-red-900 dark:hover:bg-red-900/20 transition-colors mt-6"
                                     >
                                         <FiLogOut /> Sign Out
                                     </button>
                                 </>
                             )}
                         </div>
+
+                        {/* Shipping Address Card */}
+                        <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                    <FiMapPin className="text-blue-600" />
+                                    Shipping Address
+                                </h3>
+                                {!isEditingAddress && !loadingProfile && (
+                                    <button
+                                        onClick={startEditingAddress}
+                                        className="text-blue-600 hover:text-blue-700 p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                                        title="Edit Address"
+                                    >
+                                        <FiEdit2 className="w-4 h-4" />
+                                    </button>
+                                )}
+                            </div>
+
+                            {loadingProfile ? (
+                                <div className="flex justify-center py-4">
+                                    <FiLoader className="text-xl text-blue-600 animate-spin" />
+                                </div>
+                            ) : isEditingAddress ? (
+                                /* Edit Address Form */
+                                <div className="space-y-3">
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Phone Number</label>
+                                        <input
+                                            type="tel"
+                                            value={addressForm.phone}
+                                            onChange={(e) => setAddressForm({ ...addressForm, phone: e.target.value })}
+                                            placeholder="Enter phone number"
+                                            className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Address *</label>
+                                        <input
+                                            type="text"
+                                            value={addressForm.addressLine1}
+                                            onChange={(e) => setAddressForm({ ...addressForm, addressLine1: e.target.value })}
+                                            placeholder="House/Flat No., Street, Area"
+                                            className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">City *</label>
+                                            <input
+                                                type="text"
+                                                value={addressForm.city}
+                                                onChange={(e) => setAddressForm({ ...addressForm, city: e.target.value })}
+                                                placeholder="City"
+                                                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">State *</label>
+                                            <input
+                                                type="text"
+                                                value={addressForm.state}
+                                                onChange={(e) => setAddressForm({ ...addressForm, state: e.target.value })}
+                                                placeholder="State"
+                                                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Pincode *</label>
+                                        <input
+                                            type="text"
+                                            value={addressForm.pincode}
+                                            onChange={(e) => setAddressForm({ ...addressForm, pincode: e.target.value })}
+                                            placeholder="Pincode"
+                                            maxLength={6}
+                                            className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        />
+                                    </div>
+                                    <div className="flex gap-2 pt-2">
+                                        <button
+                                            onClick={saveAddress}
+                                            disabled={savingAddress}
+                                            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-medium rounded-lg transition-colors"
+                                        >
+                                            {savingAddress ? (
+                                                <FiLoader className="animate-spin" />
+                                            ) : (
+                                                <FiCheck />
+                                            )}
+                                            Save
+                                        </button>
+                                        <button
+                                            onClick={cancelEditingAddress}
+                                            disabled={savingAddress}
+                                            className="flex items-center justify-center gap-2 px-3 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                                        >
+                                            <FiX />
+                                            Cancel
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : userProfile?.shippingAddress ? (
+                                <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                                    <p className="font-medium text-gray-900 dark:text-white">{displayName}</p>
+                                    {(userProfile.phone || userProfile.phoneNumber) && (
+                                        <p>{userProfile.phone || userProfile.phoneNumber}</p>
+                                    )}
+                                    <p>{userProfile.shippingAddress.addressLine1}</p>
+                                    <p>
+                                        {userProfile.shippingAddress.city}
+                                        {userProfile.shippingAddress.state && `, ${userProfile.shippingAddress.state}`}
+                                        {userProfile.shippingAddress.pincode && ` - ${userProfile.shippingAddress.pincode}`}
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="text-center py-4">
+                                    <FiMapPin className="text-3xl text-gray-300 dark:text-gray-600 mx-auto mb-2" />
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">No shipping address saved</p>
+                                    <button
+                                        onClick={startEditingAddress}
+                                        className="mt-3 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+                                    >
+                                        Add Address
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Quick Links */}
+                        <div className="bg-white dark:bg-gray-900 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800">
+                            <Link
+                                href="/orders"
+                                className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                            >
+                                <span className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
+                                    <FiPackage className="text-blue-600" />
+                                    My Orders
+                                </span>
+                                <span className="text-gray-400">→</span>
+                            </Link>
+                            <Link
+                                href="/cart"
+                                className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                            >
+                                <span className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
+                                    <FiShoppingBag className="text-blue-600" />
+                                    Shopping Cart
+                                </span>
+                                <span className="text-gray-400">→</span>
+                            </Link>
+                        </div>
                     </div>
 
                     {/* Orders & Main Content */}
-                    <div className="md:col-span-3">
+                    <div className="lg:col-span-2">
                         <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800">
-                            <div className="flex items-center gap-2 mb-6 border-b border-gray-100 dark:border-gray-800 pb-4">
-                                <FiPackage className="text-blue-600 text-xl" />
-                                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Order History</h2>
+                            <div className="flex items-center justify-between mb-6 border-b border-gray-100 dark:border-gray-800 pb-4">
+                                <div className="flex items-center gap-2">
+                                    <FiPackage className="text-blue-600 text-xl" />
+                                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">Order History</h2>
+                                </div>
+                                <Link href="/orders" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
+                                    View All →
+                                </Link>
                             </div>
 
                             {loadingOrders ? (
