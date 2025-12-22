@@ -67,7 +67,7 @@ export default function Hero() {
                                     </Link>
                                 </div>
                                 <div className="mt-3 sm:mt-0 sm:ml-3">
-                                    <Link href="/contact" className="w-full flex items-center justify-center px-8 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 md:py-4 md:text-lg md:px-10 transition-colors">
+                                    <Link href="/get-quote" className="w-full flex items-center justify-center px-8 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 md:py-4 md:text-lg md:px-10 transition-colors">
                                         Get Quote
                                     </Link>
                                 </div>

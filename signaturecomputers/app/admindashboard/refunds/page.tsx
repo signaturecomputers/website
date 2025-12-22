@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { collection, getDocs, query, orderBy, doc, updateDoc, where } from 'firebase/firestore';
+import { collection, getDocs, query, where, doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import {
     FiSearch, FiFilter, FiCheck, FiX, FiRefreshCw, FiDollarSign,
@@ -64,35 +64,20 @@ export default function RefundsPage() {
     const fetchData = async () => {
         setLoading(true);
         try {
-            if (activeTab === 'cancellations') {
-                const snapshot = await getDocs(
-                    query(collection(db, 'cancellation_requests'), orderBy('requestedAt', 'desc'))
-                );
-                const data = snapshot.docs.map(doc => ({
-                    id: doc.id,
-                    type: 'cancellation' as const,
-                    ...doc.data()
-                })) as RefundRequest[];
-                setCancellations(data);
-            } else if (activeTab === 'returns') {
-                const snapshot = await getDocs(
-                    query(collection(db, 'return_requests'), orderBy('requestedAt', 'desc'))
-                );
-                const data = snapshot.docs.map(doc => ({
-                    id: doc.id,
-                    type: 'return' as const,
-                    ...doc.data()
-                })) as RefundRequest[];
-                setReturns(data);
+            const response = await fetch(`/api/refund-requests?type=${activeTab}`);
+            const result = await response.json();
+
+            if (response.ok) {
+                if (activeTab === 'cancellations') {
+                    setCancellations(result.data || []);
+                } else if (activeTab === 'returns') {
+                    setReturns(result.data || []);
+                } else {
+                    setRefunds(result.data || []);
+                }
             } else {
-                const snapshot = await getDocs(
-                    query(collection(db, 'refunds'), orderBy('initiatedAt', 'desc'))
-                );
-                const data = snapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                })) as RefundRecord[];
-                setRefunds(data);
+                console.error('Error fetching data:', result.error);
+                toast.error(result.error || 'Failed to fetch data');
             }
         } catch (error) {
             console.error('Error fetching data:', error);

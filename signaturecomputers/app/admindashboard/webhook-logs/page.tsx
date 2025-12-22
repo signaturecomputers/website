@@ -1,8 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 import { FiRefreshCw, FiCheck, FiX, FiClock, FiDollarSign, FiCreditCard, FiAlertCircle } from 'react-icons/fi';
 import { toast } from 'sonner';
 
@@ -10,9 +8,9 @@ interface WebhookLog {
     id: string;
     type: string;
     data: any;
-    receivedAt: any;
+    receivedAt: string;
     processed: boolean;
-    processedAt?: any;
+    processedAt?: string;
 }
 
 export default function WebhookLogsPage() {
@@ -27,14 +25,15 @@ export default function WebhookLogsPage() {
     const fetchLogs = async () => {
         setLoading(true);
         try {
-            const snapshot = await getDocs(
-                query(collection(db, 'webhook_logs'), orderBy('receivedAt', 'desc'), limit(50))
-            );
-            const data = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            })) as WebhookLog[];
-            setLogs(data);
+            const response = await fetch('/api/webhook-logs');
+            const data = await response.json();
+
+            if (response.ok) {
+                setLogs(data.logs || []);
+            } else {
+                console.error('Error fetching webhook logs:', data.error);
+                toast.error(data.error || 'Failed to fetch webhook logs');
+            }
         } catch (error) {
             console.error('Error fetching webhook logs:', error);
             toast.error('Failed to fetch webhook logs. The collection may not exist yet.');
@@ -43,9 +42,9 @@ export default function WebhookLogsPage() {
         }
     };
 
-    const formatDate = (timestamp: any) => {
+    const formatDate = (timestamp: string | null | undefined) => {
         if (!timestamp) return '-';
-        const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+        const date = new Date(timestamp);
         return date.toLocaleString('en-IN', {
             day: '2-digit',
             month: 'short',
@@ -140,10 +139,10 @@ export default function WebhookLogsPage() {
                                         </td>
                                         <td className="px-4 py-3">
                                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${log.data?.payment?.payment_status === 'SUCCESS' || log.data?.refund?.refund_status === 'SUCCESS'
-                                                    ? 'bg-green-100 text-green-700'
-                                                    : log.data?.payment?.payment_status === 'FAILED'
-                                                        ? 'bg-red-100 text-red-700'
-                                                        : 'bg-gray-100 text-gray-700'
+                                                ? 'bg-green-100 text-green-700'
+                                                : log.data?.payment?.payment_status === 'FAILED'
+                                                    ? 'bg-red-100 text-red-700'
+                                                    : 'bg-gray-100 text-gray-700'
                                                 }`}>
                                                 {log.data?.payment?.payment_status || log.data?.refund?.refund_status || '-'}
                                             </span>

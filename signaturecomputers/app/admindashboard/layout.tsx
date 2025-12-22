@@ -18,7 +18,6 @@ import {
     Image as ImageIcon,
     MessageSquare,
     Eye,
-    RefreshCcw,
     Webhook
 } from "lucide-react";
 
@@ -31,6 +30,7 @@ export default function AdminDashboardLayout({
     const router = useRouter();
     const pathname = usePathname();
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [profileOpen, setProfileOpen] = useState(false);
 
     useEffect(() => {
         if (!loading && !adminUser) {
@@ -46,13 +46,14 @@ export default function AdminDashboardLayout({
         { name: "Dashboard", href: "/admindashboard", icon: LayoutDashboard },
         { name: "Products", href: "/admindashboard/products", icon: Package },
         { name: "Orders", href: "/admindashboard/orders", icon: ShoppingCart },
-        { name: "Refunds & Returns", href: "/admindashboard/refunds", icon: RefreshCcw },
+        { name: "Quote Requests", href: "/admindashboard/quotes", icon: MessageSquare },
         { name: "Webhook Logs", href: "/admindashboard/webhook-logs", icon: Webhook },
         { name: "Hot Deals", href: "/admindashboard/hot-deals", icon: Zap },
         { name: "Categories", href: "/admindashboard/categories", icon: Tag },
         { name: "Header Images", href: "/admindashboard/header-images", icon: ImageIcon },
         { name: "Feedback", href: "/admindashboard/feedback", icon: MessageSquare },
         { name: "Display Reviews", href: "/admindashboard/display-reviews", icon: Eye },
+        { name: "Legal Pages", href: "/admindashboard/legal-pages", icon: Settings },
         { name: "Users", href: "/admindashboard/users", icon: Users },
         { name: "Settings", href: "/admindashboard/settings", icon: Settings },
     ];
@@ -101,16 +102,6 @@ export default function AdminDashboardLayout({
                         );
                     })}
                 </nav>
-
-                <div className="absolute bottom-0 w-full border-t dark:border-gray-700 p-4">
-                    <button
-                        onClick={logout}
-                        className="flex w-full items-center justify-center rounded-lg border border-red-500/20 bg-red-50 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-100 transition-colors dark:bg-red-900/10 dark:text-red-400"
-                    >
-                        <LogOut className="mr-2 h-4 w-4" />
-                        Logout
-                    </button>
-                </div>
             </aside>
 
             {/* Main Content */}
@@ -123,14 +114,46 @@ export default function AdminDashboardLayout({
                         <Menu size={24} />
                     </button>
 
-                    <div className="flex items-center space-x-4 ml-auto">
-                        <div className="text-sm text-right">
-                            <p className="font-medium text-gray-900 dark:text-white">{adminUser.username}</p>
-                            <p className="text-xs text-gray-500 capitalize">{adminUser.role}</p>
+                    {/* Profile Dropdown */}
+                    <div className="flex items-center space-x-4 ml-auto relative">
+                        <div
+                            className="flex items-center gap-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg px-3 py-2 transition-colors"
+                            onClick={() => setProfileOpen(!profileOpen)}
+                        >
+                            <div className="text-sm text-right">
+                                <p className="font-medium text-gray-900 dark:text-white">{adminUser.username}</p>
+                                <p className="text-xs text-gray-500 capitalize">{adminUser.role}</p>
+                            </div>
+                            <div className="h-9 w-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold shadow-lg">
+                                {adminUser.username.charAt(0).toUpperCase()}
+                            </div>
                         </div>
-                        <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold">
-                            {adminUser.username.charAt(0).toUpperCase()}
-                        </div>
+
+                        {/* Dropdown Menu */}
+                        {profileOpen && (
+                            <>
+                                <div
+                                    className="fixed inset-0 z-10"
+                                    onClick={() => setProfileOpen(false)}
+                                />
+                                <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-xl border dark:border-gray-700 py-2 z-20">
+                                    <div className="px-4 py-2 border-b dark:border-gray-700">
+                                        <p className="font-medium text-gray-900 dark:text-white text-sm">{adminUser.username}</p>
+                                        <p className="text-xs text-gray-500">{adminUser.role === 'admin' ? 'Administrator' : 'Staff'}</p>
+                                    </div>
+                                    <button
+                                        onClick={() => {
+                                            setProfileOpen(false);
+                                            logout();
+                                        }}
+                                        className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                                    >
+                                        <LogOut className="h-4 w-4" />
+                                        Logout
+                                    </button>
+                                </div>
+                            </>
+                        )}
                     </div>
                 </header>
 
@@ -141,3 +164,4 @@ export default function AdminDashboardLayout({
         </div>
     );
 }
+
