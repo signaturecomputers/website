@@ -48,6 +48,9 @@ interface Order {
     refundId?: string;
     cfRefundId?: string;
     refundArn?: string;
+    // Cancellation request fields
+    cancellationRequested?: boolean;
+    cancellationRequestedAt?: any;
     cancellationReason?: string;
     cancelledBy?: string;
     // Legacy status field for migration
@@ -109,6 +112,9 @@ export default function OrdersPage() {
                 let orderStatus: OrderStatus = data.orderStatus || 'placed';
                 let refundStatus: RefundStatus = data.refundStatus || 'none';
 
+                // Check for cancellation request - either boolean or legacy status
+                let cancellationRequested = data.cancellationRequested || false;
+
                 // Handle legacy status values
                 if (data.status && !data.orderStatus) {
                     const legacyStatus = data.status.toLowerCase();
@@ -116,7 +122,12 @@ export default function OrdersPage() {
                     else if (legacyStatus === 'confirmed') orderStatus = 'confirmed';
                     else if (legacyStatus === 'shipped') orderStatus = 'shipped';
                     else if (legacyStatus === 'delivered') orderStatus = 'delivered';
-                    else if (legacyStatus === 'cancelled' || legacyStatus === 'cancellation_requested') orderStatus = 'cancelled';
+                    else if (legacyStatus === 'cancellation_requested') {
+                        // Customer requested cancellation - order NOT cancelled yet!
+                        orderStatus = data.previousStatus || 'placed'; // Keep previous status
+                        cancellationRequested = true;
+                    }
+                    else if (legacyStatus === 'cancelled') orderStatus = 'cancelled';
                     else if (legacyStatus === 'refund_initiated') {
                         orderStatus = 'cancelled';
                         refundStatus = 'initiated';
@@ -125,6 +136,11 @@ export default function OrdersPage() {
                         orderStatus = 'cancelled';
                         refundStatus = 'completed';
                     }
+                }
+
+                // If legacy status is cancellation_requested, set the flag
+                if (data.status === 'cancellation_requested') {
+                    cancellationRequested = true;
                 }
 
                 return {
@@ -153,6 +169,8 @@ export default function OrdersPage() {
                     refundId: data.refundId,
                     cfRefundId: data.cfRefundId,
                     refundArn: data.refundArn,
+                    cancellationRequested,  // Use our computed value
+                    cancellationRequestedAt: data.cancellationRequestedAt,
                     cancellationReason: data.cancellationReason,
                     cancelledBy: data.cancelledBy,
                     timeline: data.timeline || [],
@@ -182,6 +200,9 @@ export default function OrdersPage() {
                 break;
             case 'delivered':
                 filtered = orders.filter(o => o.orderStatus === 'delivered');
+                break;
+            case 'cancellation_requests':
+                filtered = orders.filter(o => o.cancellationRequested && o.orderStatus !== 'cancelled');
                 break;
             case 'cancelled':
                 filtered = orders.filter(o => o.orderStatus === 'cancelled');
@@ -359,6 +380,41 @@ export default function OrdersPage() {
         }
     };
 
+    // Reject cancellation request - order continues processing
+    const rejectCancellationRequest = async (order: Order) => {
+        setUpdatingStatus(order.id);
+        try {
+            const timelineEvent = {
+                timestamp: new Date(),
+                event: 'Cancellation Rejected',
+                description: 'Cancellation request was rejected by admin. Order will continue processing.',
+                actor: 'admin'
+            };
+
+            await updateDoc(doc(db, 'orders', order.id), {
+                cancellationRequested: false,
+                cancellationReason: null,
+                updatedAt: new Date(),
+                timeline: arrayUnion(timelineEvent)
+            });
+
+            setOrders(prev => prev.map(o =>
+                o.id === order.id ? {
+                    ...o,
+                    cancellationRequested: false,
+                    timeline: [...(o.timeline || []), timelineEvent]
+                } : o
+            ));
+
+            toast.success('Cancellation rejected. Order will continue processing.');
+        } catch (error) {
+            console.error('Failed to reject cancellation:', error);
+            toast.error('Failed to reject cancellation');
+        } finally {
+            setUpdatingStatus(null);
+        }
+    };
+
     // Check refund status from Cashfree
     const checkRefundStatus = async (order: Order) => {
         if (!order.cfOrderId) {
@@ -466,6 +522,7 @@ export default function OrdersPage() {
         all: orders.length,
         active: orders.filter(o => ['placed', 'confirmed', 'shipped'].includes(o.orderStatus)).length,
         delivered: orders.filter(o => o.orderStatus === 'delivered').length,
+        cancellation_requests: orders.filter(o => o.cancellationRequested && o.orderStatus !== 'cancelled').length,
         cancelled: orders.filter(o => o.orderStatus === 'cancelled').length,
         refunds: orders.filter(o => o.refundStatus !== 'none').length,
     };
@@ -522,11 +579,12 @@ export default function OrdersPage() {
                     <select
                         value={activeTab}
                         onChange={(e) => { setActiveTab(e.target.value); setCurrentPage(1); }}
-                        className="appearance-none pl-4 pr-10 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-800 dark:text-white font-medium cursor-pointer focus:ring-2 focus:ring-blue-500 min-w-[180px]"
+                        className="appearance-none pl-4 pr-10 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-800 dark:text-white font-medium cursor-pointer focus:ring-2 focus:ring-blue-500 min-w-[220px]"
                     >
                         <option value="all">All Orders ({tabCounts.all})</option>
                         <option value="active">Active ({tabCounts.active})</option>
                         <option value="delivered">Delivered ({tabCounts.delivered})</option>
+                        <option value="cancellation_requests">⚠️ Cancel Requests ({tabCounts.cancellation_requests})</option>
                         <option value="cancelled">Cancelled ({tabCounts.cancelled})</option>
                         <option value="refunds">Refunds ({tabCounts.refunds})</option>
                     </select>
@@ -590,6 +648,11 @@ export default function OrdersPage() {
                                                 <div className="flex items-center gap-2">
                                                     <FiChevronDown className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                                                     <span className="font-mono text-sm font-medium">{order.orderId}</span>
+                                                    {order.cancellationRequested && order.orderStatus !== 'cancelled' && (
+                                                        <span className="px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs font-medium rounded" title="Customer requested cancellation">
+                                                            Cancel Request
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </td>
                                             <td className="px-4 py-3 text-sm text-gray-500">
@@ -637,22 +700,34 @@ export default function OrdersPage() {
                                             </td>
                                             <td className="px-4 py-3 text-right" onClick={e => e.stopPropagation()}>
                                                 <div className="flex items-center justify-end gap-1">
-                                                    {/* Cancel button for non-cancelled orders */}
-                                                    {order.orderStatus !== 'cancelled' && order.orderStatus !== 'delivered' && (
-                                                        <button
-                                                            onClick={() => {
-                                                                const reason = prompt('Enter cancellation reason:');
-                                                                if (reason) handleCancelOrder(order, reason);
-                                                            }}
-                                                            disabled={updatingStatus === order.id}
-                                                            className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg disabled:opacity-50"
-                                                            title="Cancel Order"
-                                                        >
-                                                            <FiX />
-                                                        </button>
+                                                    {/* Approve/Reject buttons - ONLY when customer requested cancellation */}
+                                                    {order.cancellationRequested && order.orderStatus !== 'cancelled' && (
+                                                        <>
+                                                            <button
+                                                                onClick={() => {
+                                                                    if (confirm(`Approve cancellation?${order.paymentStatus === 'paid' ? '\n\nRefund will be initiated automatically.' : ''}`)) {
+                                                                        handleCancelOrder(order, order.cancellationReason || 'Customer requested');
+                                                                    }
+                                                                }}
+                                                                disabled={updatingStatus === order.id}
+                                                                className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg disabled:opacity-50"
+                                                                title="Approve Cancellation"
+                                                            >
+                                                                <FiCheck />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => rejectCancellationRequest(order)}
+                                                                disabled={updatingStatus === order.id}
+                                                                className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg disabled:opacity-50"
+                                                                title="Reject Cancellation"
+                                                            >
+                                                                <FiX />
+                                                            </button>
+                                                        </>
                                                     )}
+
                                                     {/* Check refund status */}
-                                                    {order.refundStatus === 'initiated' || order.refundStatus === 'processing' ? (
+                                                    {(order.refundStatus === 'initiated' || order.refundStatus === 'processing') && (
                                                         <button
                                                             onClick={() => checkRefundStatus(order)}
                                                             disabled={updatingStatus === order.id}
@@ -661,7 +736,8 @@ export default function OrdersPage() {
                                                         >
                                                             <FiRefreshCw className={updatingStatus === order.id ? 'animate-spin' : ''} />
                                                         </button>
-                                                    ) : null}
+                                                    )}
+
                                                     <button
                                                         onClick={() => {/* Print logic */ }}
                                                         className="p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg"

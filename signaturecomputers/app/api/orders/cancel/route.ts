@@ -117,6 +117,8 @@ export async function POST(request: NextRequest) {
         // Update order status
         await adminDb.collection("orders").doc(body.orderId).update({
             status: 'cancellation_requested',
+            cancellationRequested: true,
+            cancellationRequestedAt: new Date(),
             cancellationRequestId: cancellationId,
             cancellationReason: body.reason,
             updatedAt: new Date(),
