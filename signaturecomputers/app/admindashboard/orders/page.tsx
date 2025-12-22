@@ -1,27 +1,36 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { collection, getDocs, query, orderBy, doc, updateDoc } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, doc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { FiSearch, FiFilter, FiPrinter, FiEye, FiCheck, FiX, FiCalendar, FiChevronLeft, FiChevronRight, FiChevronDown, FiMapPin, FiPhone, FiMail, FiPackage, FiCreditCard, FiTruck, FiClock, FiUser } from 'react-icons/fi';
+import {
+    FiSearch, FiPrinter, FiCheck, FiX, FiCalendar,
+    FiChevronLeft, FiChevronRight, FiChevronDown,
+    FiMapPin, FiPhone, FiMail, FiPackage, FiCreditCard,
+    FiTruck, FiClock, FiUser, FiRefreshCw, FiDollarSign
+} from 'react-icons/fi';
 import { toast } from 'sonner';
-import Link from 'next/link';
+import {
+    OrderStatus, RefundStatus, PaymentStatus,
+    getDisplayStatus, orderStatusColors, refundStatusColors
+} from '@/types/order';
 
+// Order interface using proper types
 interface Order {
     id: string;
-    orderNo: string;
     orderId: string;
     cfOrderId?: string;
     partNumber: string;
     productName: string;
     productCategory?: string;
+    productImage?: string;
     quantity: number;
     unitPrice: number;
     totalAmount: number;
-    paymentId: string;
-    cfPaymentId?: string;
-    paymentStatus?: string;
-    paymentMethod?: string;
+    customerId?: string;
+    customerName: string;
+    customerEmail?: string;
+    phone?: string;
     address: string;
     shippingAddress?: {
         addressLine1?: string;
@@ -29,71 +38,59 @@ interface Order {
         state?: string;
         pincode?: string;
     };
-    customerName: string;
-    customerEmail?: string;
-    phone?: string;
+    // Status fields
+    orderStatus: OrderStatus;
+    paymentStatus: PaymentStatus;
+    paymentMethod?: string | object;
+    cfPaymentId?: string;
+    refundStatus: RefundStatus;
+    refundAmount?: number;
+    refundId?: string;
+    cfRefundId?: string;
+    refundArn?: string;
+    cancellationReason?: string;
+    cancelledBy?: string;
+    // Legacy status field for migration
+    status?: string;
+    // Timeline
+    timeline?: Array<{
+        timestamp: any;
+        event: string;
+        description: string;
+        actor?: string;
+    }>;
+    // Timestamps
     createdAt?: any;
     updatedAt?: any;
-    status?: string;
     [key: string]: any;
 }
+
+// Order status options for dropdown
+const orderStatusOptions: { value: OrderStatus; label: string }[] = [
+    { value: 'placed', label: 'Placed' },
+    { value: 'confirmed', label: 'Confirmed' },
+    { value: 'shipped', label: 'Shipped' },
+    { value: 'delivered', label: 'Delivered' },
+    { value: 'cancelled', label: 'Cancelled' },
+];
 
 export default function OrdersPage() {
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
-    const [statusFilter, setStatusFilter] = useState('all');
+    const [activeTab, setActiveTab] = useState('all');
     const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
+    const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
 
-    // Date filtering state
+    // Date filtering
     const [dateFilterType, setDateFilterType] = useState<'all' | 'month' | 'year' | 'date'>('all');
     const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
     const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
-    const [selectedDate, setSelectedDate] = useState<string>('');
+    const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
 
-    // Pagination state
+    // Pagination
     const [currentPage, setCurrentPage] = useState(1);
     const ordersPerPage = 10;
-
-    // Expanded order state
-    const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
-
-    const statuses = [
-        { id: 'all', name: 'All Orders' },
-        { id: 'pending', name: 'Pending' },
-        { id: 'confirmed', name: 'Confirmed' },
-        { id: 'shipped', name: 'Shipped' },
-        { id: 'delivered', name: 'Delivered' },
-        { id: 'cancelled', name: 'Cancelled' },
-        { id: 'payment_failed', name: 'Payment Failed' },
-    ];
-
-    const getPaymentStatusBadge = (paymentStatus?: string, paymentMethod?: string) => {
-        const status = paymentStatus?.toLowerCase() || 'pending';
-        const method = paymentMethod || (status === 'pending' ? 'COD' : '');
-
-        const statusConfig: Record<string, { bg: string; text: string; label: string }> = {
-            paid: { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-700 dark:text-green-400', label: 'Paid' },
-            pending: { bg: 'bg-yellow-100 dark:bg-yellow-900/30', text: 'text-yellow-700 dark:text-yellow-400', label: 'Pending' },
-            failed: { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-700 dark:text-red-400', label: 'Failed' },
-            dropped: { bg: 'bg-gray-100 dark:bg-gray-700/30', text: 'text-gray-700 dark:text-gray-400', label: 'Dropped' },
-        };
-
-        const config = statusConfig[status] || statusConfig.pending;
-
-        return (
-            <div className="flex flex-col gap-1">
-                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${config.bg} ${config.text}`}>
-                    {config.label}
-                </span>
-                {method && (
-                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                        {typeof method === 'object' ? Object.keys(method)[0] : method}
-                    </span>
-                )}
-            </div>
-        );
-    };
 
     useEffect(() => {
         fetchOrders();
@@ -102,42 +99,160 @@ export default function OrdersPage() {
     const fetchOrders = async () => {
         setLoading(true);
         try {
-            const ordersRef = collection(db, 'orders');
-            const querySnapshot = await getDocs(ordersRef);
-            const ordersData = querySnapshot.docs.map((doc, index) => ({
-                id: doc.id,
-                orderNo: String(index + 1).padStart(4, '0'),
-                ...doc.data()
-            })) as Order[];
+            const ordersQuery = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
+            const snapshot = await getDocs(ordersQuery);
 
-            // Sort by createdAt descending
-            ordersData.sort((a, b) => {
-                const dateA = a.createdAt?.toDate?.() || new Date(0);
-                const dateB = b.createdAt?.toDate?.() || new Date(0);
-                return dateB.getTime() - dateA.getTime();
+            const ordersData = snapshot.docs.map(doc => {
+                const data = doc.data();
+
+                // Migrate legacy status field to new orderStatus/refundStatus
+                let orderStatus: OrderStatus = data.orderStatus || 'placed';
+                let refundStatus: RefundStatus = data.refundStatus || 'none';
+
+                // Handle legacy status values
+                if (data.status && !data.orderStatus) {
+                    const legacyStatus = data.status.toLowerCase();
+                    if (legacyStatus === 'pending') orderStatus = 'placed';
+                    else if (legacyStatus === 'confirmed') orderStatus = 'confirmed';
+                    else if (legacyStatus === 'shipped') orderStatus = 'shipped';
+                    else if (legacyStatus === 'delivered') orderStatus = 'delivered';
+                    else if (legacyStatus === 'cancelled' || legacyStatus === 'cancellation_requested') orderStatus = 'cancelled';
+                    else if (legacyStatus === 'refund_initiated') {
+                        orderStatus = 'cancelled';
+                        refundStatus = 'initiated';
+                    }
+                    else if (legacyStatus === 'refunded') {
+                        orderStatus = 'cancelled';
+                        refundStatus = 'completed';
+                    }
+                }
+
+                return {
+                    id: doc.id,
+                    orderId: data.orderId || doc.id,
+                    cfOrderId: data.cfOrderId,
+                    partNumber: data.partNumber || '',
+                    productName: data.productName || '',
+                    productCategory: data.productCategory,
+                    productImage: data.productImage,
+                    quantity: data.quantity || 1,
+                    unitPrice: data.unitPrice || 0,
+                    totalAmount: data.totalAmount || data.unitPrice * (data.quantity || 1),
+                    customerId: data.customerId,
+                    customerName: data.customerName || '',
+                    customerEmail: data.customerEmail,
+                    phone: data.phone,
+                    address: data.address || '',
+                    shippingAddress: data.shippingAddress,
+                    orderStatus,
+                    paymentStatus: data.paymentStatus || 'pending',
+                    paymentMethod: data.paymentMethod,
+                    cfPaymentId: data.cfPaymentId,
+                    refundStatus,
+                    refundAmount: data.refundAmount,
+                    refundId: data.refundId,
+                    cfRefundId: data.cfRefundId,
+                    refundArn: data.refundArn,
+                    cancellationReason: data.cancellationReason,
+                    cancelledBy: data.cancelledBy,
+                    timeline: data.timeline || [],
+                    createdAt: data.createdAt,
+                    updatedAt: data.updatedAt,
+                    ...data,
+                } as Order;
             });
 
             setOrders(ordersData);
         } catch (error) {
-            console.error('Warning: Failed to fetch orders:', error);
+            console.error('Failed to fetch orders:', error);
             toast.error('Failed to load orders');
         } finally {
             setLoading(false);
         }
     };
 
-    const updateOrderStatus = async (orderId: string, newStatus: string) => {
+    // Filter orders based on active tab
+    const getFilteredOrders = () => {
+        let filtered = orders;
+
+        // Tab filtering
+        switch (activeTab) {
+            case 'active':
+                filtered = orders.filter(o => ['placed', 'confirmed', 'shipped'].includes(o.orderStatus));
+                break;
+            case 'delivered':
+                filtered = orders.filter(o => o.orderStatus === 'delivered');
+                break;
+            case 'cancelled':
+                filtered = orders.filter(o => o.orderStatus === 'cancelled');
+                break;
+            case 'refunds':
+                filtered = orders.filter(o => o.refundStatus !== 'none');
+                break;
+        }
+
+        // Search filtering
+        if (searchQuery) {
+            const query = searchQuery.toLowerCase();
+            filtered = filtered.filter(o =>
+                o.orderId?.toLowerCase().includes(query) ||
+                o.customerName?.toLowerCase().includes(query) ||
+                o.customerEmail?.toLowerCase().includes(query) ||
+                o.phone?.includes(query) ||
+                o.productName?.toLowerCase().includes(query)
+            );
+        }
+
+        // Date filtering
+        if (dateFilterType !== 'all') {
+            filtered = filtered.filter(o => {
+                if (!o.createdAt) return false;
+                const orderDate = o.createdAt.toDate ? o.createdAt.toDate() : new Date(o.createdAt);
+
+                if (dateFilterType === 'month') {
+                    return orderDate.getMonth() === selectedMonth && orderDate.getFullYear() === selectedYear;
+                } else if (dateFilterType === 'year') {
+                    return orderDate.getFullYear() === selectedYear;
+                } else if (dateFilterType === 'date') {
+                    return orderDate.toISOString().split('T')[0] === selectedDate;
+                }
+                return true;
+            });
+        }
+
+        return filtered;
+    };
+
+    const filteredOrders = getFilteredOrders();
+    const totalPages = Math.ceil(filteredOrders.length / ordersPerPage);
+    const paginatedOrders = filteredOrders.slice(
+        (currentPage - 1) * ordersPerPage,
+        currentPage * ordersPerPage
+    );
+
+    // Update order status with timeline tracking
+    const updateOrderStatus = async (orderId: string, newStatus: OrderStatus) => {
         setUpdatingStatus(orderId);
         try {
-            const orderRef = doc(db, 'orders', orderId);
-            await updateDoc(orderRef, {
-                status: newStatus,
-                updatedAt: new Date()
+            const order = orders.find(o => o.id === orderId);
+            if (!order) return;
+
+            const timelineEvent = {
+                timestamp: new Date(),
+                event: `Status changed to ${newStatus}`,
+                description: `Order status updated from ${order.orderStatus} to ${newStatus}`,
+                actor: 'admin'
+            };
+
+            await updateDoc(doc(db, 'orders', orderId), {
+                orderStatus: newStatus,
+                status: newStatus, // Keep legacy field for compatibility
+                updatedAt: new Date(),
+                timeline: arrayUnion(timelineEvent)
             });
 
-            // Update local state
-            setOrders(prev => prev.map(order =>
-                order.id === orderId ? { ...order, status: newStatus } : order
+            setOrders(prev => prev.map(o =>
+                o.id === orderId ? { ...o, orderStatus: newStatus, timeline: [...(o.timeline || []), timelineEvent] } : o
             ));
 
             toast.success(`Order status updated to ${newStatus}`);
@@ -149,593 +264,579 @@ export default function OrdersPage() {
         }
     };
 
-    const formatCurrency = (amount: number) => {
-        return `₹${(amount || 0).toLocaleString('en-IN')}`;
+    // Cancel order and initiate refund
+    const handleCancelOrder = async (order: Order, reason: string) => {
+        setUpdatingStatus(order.id);
+        try {
+            const cancelEvent = {
+                timestamp: new Date(),
+                event: 'Order Cancelled',
+                description: reason || 'Order cancelled by admin',
+                actor: 'admin'
+            };
+
+            // Update order status to cancelled
+            const updateData: any = {
+                orderStatus: 'cancelled',
+                status: 'cancelled',
+                cancellationReason: reason,
+                cancelledAt: new Date(),
+                cancelledBy: 'admin',
+                updatedAt: new Date(),
+                timeline: arrayUnion(cancelEvent)
+            };
+
+            // If order was paid, initiate refund
+            if (order.paymentStatus === 'paid' && order.cfOrderId) {
+                toast.info('Initiating refund via Cashfree...');
+
+                const refundResponse = await fetch('/api/cashfree/refund', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        orderId: order.id,
+                        cfOrderId: order.cfOrderId,
+                        refundAmount: order.totalAmount,
+                        refundType: 'full',
+                        reason: reason || 'Order cancelled',
+                    }),
+                });
+
+                const refundData = await refundResponse.json();
+
+                if (refundResponse.ok) {
+                    updateData.refundStatus = 'initiated';
+                    updateData.refundId = refundData.refundId;
+                    updateData.cfRefundId = refundData.cfRefundId;
+                    updateData.refundAmount = order.totalAmount;
+                    updateData.refundInitiatedAt = new Date();
+                    updateData.timeline = arrayUnion({
+                        timestamp: new Date(),
+                        event: 'Refund Initiated',
+                        description: `Refund of ₹${order.totalAmount.toLocaleString('en-IN')} initiated`,
+                        actor: 'system'
+                    });
+
+                    // Send email notification
+                    await fetch('/api/email/send', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            type: 'refund',
+                            data: {
+                                orderId: order.orderId,
+                                customerName: order.customerName,
+                                customerEmail: order.customerEmail,
+                                refundAmount: order.totalAmount,
+                                refundStatus: 'initiated',
+                            },
+                        }),
+                    });
+
+                    toast.success('Order cancelled & refund initiated!');
+                } else {
+                    updateData.refundStatus = 'failed';
+                    toast.error(`Order cancelled but refund failed: ${refundData.error}`);
+                }
+            } else {
+                // COD or unpaid order - no refund needed
+                updateData.refundStatus = 'none';
+                toast.success('Order cancelled! (No refund needed)');
+            }
+
+            await updateDoc(doc(db, 'orders', order.id), updateData);
+
+            // Update local state
+            setOrders(prev => prev.map(o =>
+                o.id === order.id ? { ...o, ...updateData } : o
+            ));
+
+        } catch (error) {
+            console.error('Failed to cancel order:', error);
+            toast.error('Failed to cancel order');
+        } finally {
+            setUpdatingStatus(null);
+        }
     };
+
+    // Check refund status from Cashfree
+    const checkRefundStatus = async (order: Order) => {
+        if (!order.cfOrderId) {
+            toast.error('No Cashfree order ID found');
+            return;
+        }
+
+        setUpdatingStatus(order.id);
+        try {
+            const response = await fetch('/api/cashfree/check-refund', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    cfOrderId: order.cfOrderId,
+                    refundId: order.refundId,
+                }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.refund) {
+                const refund = data.refund;
+                let newRefundStatus: RefundStatus = order.refundStatus;
+
+                if (refund.status === 'SUCCESS') newRefundStatus = 'completed';
+                else if (refund.status === 'PENDING' || refund.status === 'ONHOLD') newRefundStatus = 'processing';
+                else if (refund.status === 'CANCELLED') newRefundStatus = 'failed';
+
+                const timelineEvent = {
+                    timestamp: new Date(),
+                    event: `Refund ${refund.status}`,
+                    description: `Refund status updated to ${refund.status}${refund.arn ? ` (ARN: ${refund.arn})` : ''}`,
+                    actor: 'system'
+                };
+
+                await updateDoc(doc(db, 'orders', order.id), {
+                    refundStatus: newRefundStatus,
+                    cfRefundId: refund.cfRefundId || order.cfRefundId,
+                    refundArn: refund.arn || null,
+                    refundCompletedAt: newRefundStatus === 'completed' ? new Date() : null,
+                    updatedAt: new Date(),
+                    timeline: arrayUnion(timelineEvent)
+                });
+
+                setOrders(prev => prev.map(o =>
+                    o.id === order.id ? {
+                        ...o,
+                        refundStatus: newRefundStatus,
+                        cfRefundId: refund.cfRefundId,
+                        refundArn: refund.arn,
+                        timeline: [...(o.timeline || []), timelineEvent]
+                    } : o
+                ));
+
+                if (newRefundStatus === 'completed') {
+                    toast.success(`Refund completed! ARN: ${refund.arn || 'N/A'}`);
+                } else if (newRefundStatus === 'processing') {
+                    toast.info('Refund is still processing');
+                } else if (newRefundStatus === 'failed') {
+                    toast.error('Refund failed');
+                }
+            } else {
+                toast.error(data.error || 'Failed to check refund status');
+            }
+        } catch (error) {
+            console.error('Error checking refund:', error);
+            toast.error('Failed to check refund status');
+        } finally {
+            setUpdatingStatus(null);
+        }
+    };
+
+    // Format helpers
+    const formatCurrency = (amount: number) => `₹${(amount || 0).toLocaleString('en-IN')}`;
 
     const formatDate = (timestamp: any) => {
         if (!timestamp) return '-';
-        try {
-            const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-            return date.toLocaleDateString('en-IN', {
-                day: '2-digit',
-                month: 'short',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-        } catch {
-            return '-';
-        }
+        const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+        return date.toLocaleDateString('en-IN', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+        });
     };
 
-    const handlePrint = (order: Order) => {
-        const totalAmount = order.totalAmount || (order.unitPrice * (order.quantity || 1));
-        const printWindow = window.open('', '_blank');
-        if (printWindow) {
-            printWindow.document.write(`
-                <html>
-                <head>
-                    <title>Invoice - ${order.orderId || order.id}</title>
-                    <style>
-                        body { font-family: 'Segoe UI', Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; }
-                        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 30px; }
-                        .logo { font-size: 24px; font-weight: bold; color: #2563eb; }
-                        .invoice-title { font-size: 14px; color: #666; }
-                        .section { margin-bottom: 25px; }
-                        .section-title { font-size: 12px; color: #666; text-transform: uppercase; margin-bottom: 8px; }
-                        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-                        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-                        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-                        th { background: #f8f8f8; font-weight: 600; }
-                        .total-row { background: #f0f7ff; font-weight: bold; }
-                        .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666; text-align: center; }
-                        @media print { body { padding: 20px; } }
-                    </style>
-                </head>
-                <body>
-                    <div class="header">
-                        <div class="logo">Signature Computers</div>
-                        <div class="invoice-title">
-                            <strong>TAX INVOICE</strong><br>
-                            Order: ${order.orderId || order.id}
-                        </div>
-                    </div>
-                    
-                    <div class="grid">
-                        <div class="section">
-                            <div class="section-title">Bill To</div>
-                            <strong>${order.customerName || '-'}</strong><br>
-                            ${order.phone || ''}<br>
-                            ${order.address || '-'}
-                        </div>
-                        <div class="section">
-                            <div class="section-title">Order Details</div>
-                            <strong>Date:</strong> ${formatDate(order.createdAt)}<br>
-                            <strong>Status:</strong> ${order.status || 'pending'}<br>
-                            <strong>Payment ID:</strong> ${order.paymentId || '-'}
-                        </div>
-                    </div>
-                    
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Product</th>
-                                <th>Part No.</th>
-                                <th>Qty</th>
-                                <th>Unit Price</th>
-                                <th>Total</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>${order.productName || '-'}</td>
-                                <td>${order.partNumber || '-'}</td>
-                                <td>${order.quantity || 1}</td>
-                                <td>${formatCurrency(order.unitPrice || 0)}</td>
-                                <td>${formatCurrency(totalAmount)}</td>
-                            </tr>
-                            <tr class="total-row">
-                                <td colspan="4" style="text-align: right">Grand Total</td>
-                                <td>${formatCurrency(totalAmount)}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                    
-                    <div class="footer">
-                        Thank you for shopping with Signature Computers!<br>
-                        For support, contact us at support@signaturecomputers.com
-                    </div>
-                </body>
-                </html>
-            `);
-            printWindow.document.close();
-            printWindow.print();
-        }
+    const getPaymentMethodDisplay = (method: string | object | undefined) => {
+        if (!method) return 'N/A';
+        if (typeof method === 'object') return Object.keys(method)[0] || 'Online';
+        return method === 'COD' ? 'Cash on Delivery' : method;
     };
 
-    // Month names for dropdown
-    const monthNames = [
-        'January', 'February', 'March', 'April', 'May', 'June',
-        'July', 'August', 'September', 'October', 'November', 'December'
-    ];
-
-    // Generate year options (last 5 years)
-    const currentYear = new Date().getFullYear();
-    const yearOptions = Array.from({ length: 5 }, (_, i) => currentYear - i);
-
-    const filteredOrders = orders.filter(order => {
-        const matchesSearch =
-            (order.customerName?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
-            (order.productName?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
-            (order.orderId?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
-            (order.partNumber?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
-            (order.phone || '').includes(searchQuery);
-
-        const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
-
-        // Date filtering
-        let matchesDate = true;
-        if (dateFilterType !== 'all' && order.createdAt) {
-            const orderDate = order.createdAt?.toDate ? order.createdAt.toDate() : new Date(order.createdAt);
-
-            if (dateFilterType === 'month') {
-                matchesDate = orderDate.getMonth() === selectedMonth && orderDate.getFullYear() === selectedYear;
-            } else if (dateFilterType === 'year') {
-                matchesDate = orderDate.getFullYear() === selectedYear;
-            } else if (dateFilterType === 'date' && selectedDate) {
-                const selected = new Date(selectedDate);
-                matchesDate = orderDate.toDateString() === selected.toDateString();
-            }
-        }
-
-        return matchesSearch && matchesStatus && matchesDate;
-    });
-
-    // Pagination calculations
-    const totalPages = Math.ceil(filteredOrders.length / ordersPerPage);
-    const startIndex = (currentPage - 1) * ordersPerPage;
-    const endIndex = startIndex + ordersPerPage;
-    const currentOrders = filteredOrders.slice(startIndex, endIndex);
-
-    // Reset pagination when filters change
-    const handleDateFilterChange = (newType: 'all' | 'month' | 'year' | 'date') => {
-        setDateFilterType(newType);
-        setCurrentPage(1);
+    const toggleExpand = (orderId: string) => {
+        setExpandedOrders(prev => {
+            const next = new Set(prev);
+            if (next.has(orderId)) next.delete(orderId);
+            else next.add(orderId);
+            return next;
+        });
     };
 
-    // Calculate summary stats
-    const totalRevenue = orders.reduce((sum, order) => sum + (order.totalAmount || (order.unitPrice * (order.quantity || 1)) || 0), 0);
-    const pendingCount = orders.filter(o => o.status === 'pending' || !o.status).length;
+    // Calculate tab counts
+    const tabCounts = {
+        all: orders.length,
+        active: orders.filter(o => ['placed', 'confirmed', 'shipped'].includes(o.orderStatus)).length,
+        delivered: orders.filter(o => o.orderStatus === 'delivered').length,
+        cancelled: orders.filter(o => o.orderStatus === 'cancelled').length,
+        refunds: orders.filter(o => o.refundStatus !== 'none').length,
+    };
+
+    // Calculate revenue
+    const totalRevenue = orders
+        .filter(o => o.paymentStatus === 'paid' && o.orderStatus !== 'cancelled')
+        .reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+
+    if (loading) {
+        return (
+            <div className="flex justify-center items-center h-64">
+                <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            {/* Header */}
+            <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold dark:text-white">Orders</h1>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        {orders.length} total orders • {pendingCount} pending • {formatCurrency(totalRevenue)} revenue
+                    <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Orders</h1>
+                    <p className="text-sm text-gray-500 mt-1">
+                        {orders.length} total orders • {tabCounts.active} active • {formatCurrency(totalRevenue)} revenue
                     </p>
                 </div>
+                <button
+                    onClick={fetchOrders}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                    <FiRefreshCw /> Refresh
+                </button>
             </div>
 
-            {/* Filters & Search */}
-            <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 space-y-4">
-                <div className="flex flex-col md:flex-row gap-4">
-                    <div className="relative flex-1">
-                        <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            {/* Search & Filters */}
+            <div className="flex flex-wrap gap-4 items-center">
+                {/* Search */}
+                <div className="flex-1 min-w-[300px]">
+                    <div className="relative">
+                        <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                         <input
                             type="text"
-                            placeholder="Search by name, product, order ID, phone..."
+                            placeholder="Search by name, order ID, email, phone..."
                             value={searchQuery}
-                            onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-                            className="w-full pl-10 pr-4 py-2 rounded-lg border dark:bg-gray-900 dark:border-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500"
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-700 focus:ring-2 focus:ring-blue-500"
                         />
                     </div>
-                    <div className="flex items-center gap-2">
-                        <FiFilter className="text-gray-400" />
-                        <select
-                            value={statusFilter}
-                            onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
-                            className="p-2 pr-8 rounded-lg border dark:bg-gray-900 dark:border-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500"
-                        >
-                            {statuses.map(status => (
-                                <option key={status.id} value={status.id}>{status.name}</option>
-                            ))}
-                        </select>
-                    </div>
+                </div>
+
+                {/* Filter Dropdown */}
+                <div className="relative">
+                    <select
+                        value={activeTab}
+                        onChange={(e) => { setActiveTab(e.target.value); setCurrentPage(1); }}
+                        className="appearance-none pl-4 pr-10 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-800 dark:text-white font-medium cursor-pointer focus:ring-2 focus:ring-blue-500 min-w-[180px]"
+                    >
+                        <option value="all">All Orders ({tabCounts.all})</option>
+                        <option value="active">Active ({tabCounts.active})</option>
+                        <option value="delivered">Delivered ({tabCounts.delivered})</option>
+                        <option value="cancelled">Cancelled ({tabCounts.cancelled})</option>
+                        <option value="refunds">Refunds ({tabCounts.refunds})</option>
+                    </select>
+                    <FiChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
                 </div>
 
                 {/* Date Filters */}
-                <div className="flex flex-col md:flex-row md:items-center gap-4 pt-3 border-t border-gray-100 dark:border-gray-700">
-                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                        <FiCalendar className="w-4 h-4" />
-                        <span className="text-sm font-medium">Date:</span>
-                    </div>
-
-                    {/* Date Filter Type Buttons */}
-                    <div className="flex flex-wrap gap-2">
+                <div className="flex items-center gap-2 bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 p-1">
+                    <FiCalendar className="ml-2 text-gray-500" />
+                    {['all', 'month', 'year', 'date'].map(type => (
                         <button
-                            onClick={() => handleDateFilterChange('all')}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${dateFilterType === 'all'
+                            key={type}
+                            onClick={() => setDateFilterType(type as any)}
+                            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${dateFilterType === type
                                 ? 'bg-blue-600 text-white'
-                                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                                 }`}
                         >
-                            All Time
+                            {type === 'all' ? 'All Time' : type.charAt(0).toUpperCase() + type.slice(1)}
                         </button>
-                        <button
-                            onClick={() => handleDateFilterChange('month')}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${dateFilterType === 'month'
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                                }`}
-                        >
-                            Month
-                        </button>
-                        <button
-                            onClick={() => handleDateFilterChange('year')}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${dateFilterType === 'year'
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                                }`}
-                        >
-                            Year
-                        </button>
-                        <button
-                            onClick={() => handleDateFilterChange('date')}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${dateFilterType === 'date'
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                                }`}
-                        >
-                            Date
-                        </button>
-                    </div>
-
-                    {/* Date Filter Inputs */}
-                    {dateFilterType === 'month' && (
-                        <div className="flex gap-2">
-                            <select
-                                value={selectedMonth}
-                                onChange={(e) => { setSelectedMonth(Number(e.target.value)); setCurrentPage(1); }}
-                                className="px-2 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
-                            >
-                                {monthNames.map((month, index) => (
-                                    <option key={month} value={index}>{month}</option>
-                                ))}
-                            </select>
-                            <select
-                                value={selectedYear}
-                                onChange={(e) => { setSelectedYear(Number(e.target.value)); setCurrentPage(1); }}
-                                className="px-2 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
-                            >
-                                {yearOptions.map(year => (
-                                    <option key={year} value={year}>{year}</option>
-                                ))}
-                            </select>
-                        </div>
-                    )}
-
-                    {dateFilterType === 'year' && (
-                        <select
-                            value={selectedYear}
-                            onChange={(e) => { setSelectedYear(Number(e.target.value)); setCurrentPage(1); }}
-                            className="px-2 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
-                        >
-                            {yearOptions.map(year => (
-                                <option key={year} value={year}>{year}</option>
-                            ))}
-                        </select>
-                    )}
-
-                    {dateFilterType === 'date' && (
-                        <input
-                            type="date"
-                            value={selectedDate}
-                            onChange={(e) => { setSelectedDate(e.target.value); setCurrentPage(1); }}
-                            className="px-2 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
-                        />
-                    )}
-
-                    {/* Results count */}
-                    <div className="ml-auto text-sm text-gray-500 dark:text-gray-400">
-                        {filteredOrders.length} of {orders.length} orders
-                    </div>
+                    ))}
                 </div>
             </div>
 
-            {/* Table */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+            {/* Orders Table */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow overflow-hidden">
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm">
-                        <thead className="bg-gray-50 dark:bg-gray-900/50 text-gray-500 dark:text-gray-400 font-medium">
+                    <table className="w-full">
+                        <thead className="bg-gray-50 dark:bg-gray-900">
                             <tr>
-                                <th className="p-4">Order ID</th>
-                                <th className="p-4">CF Order</th>
-                                <th className="p-4">Date</th>
-                                <th className="p-4">Customer</th>
-                                <th className="p-4">Product</th>
-                                <th className="p-4">Qty</th>
-                                <th className="p-4">Amount</th>
-                                <th className="p-4">Payment</th>
-                                <th className="p-4">Status</th>
-                                <th className="p-4 text-right">Actions</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Order ID</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payment</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Order Status</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Refund Status</th>
+                                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                            {loading ? (
+                        <tbody className="divide-y dark:divide-gray-700">
+                            {paginatedOrders.length === 0 ? (
                                 <tr>
-                                    <td colSpan={10} className="p-8 text-center text-gray-500">
-                                        <div className="flex items-center justify-center gap-2">
-                                            <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                                            Loading orders...
-                                        </div>
+                                    <td colSpan={9} className="px-4 py-12 text-center text-gray-500">
+                                        No orders found
                                     </td>
                                 </tr>
-                            ) : filteredOrders.length === 0 ? (
-                                <tr>
-                                    <td colSpan={10} className="p-8 text-center text-gray-500">No orders found.</td>
-                                </tr>
-                            ) : (
-                                currentOrders.map((order) => {
-                                    const isExpanded = expandedOrder === order.id;
-                                    return (
-                                        <React.Fragment key={order.id}>
-                                            <tr
-                                                className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer ${isExpanded ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}`}
-                                                onClick={() => setExpandedOrder(isExpanded ? null : order.id)}
-                                            >
-                                                <td className="p-4">
-                                                    <div className="flex items-center gap-2">
-                                                        <FiChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
-                                                        <div className="font-mono text-xs font-semibold text-gray-700 dark:text-gray-300" title={order.orderId || order.id}>
-                                                            {order.orderId || order.id.slice(0, 12)}
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td className="p-4">
-                                                    {order.cfOrderId ? (
-                                                        <div className="font-mono text-xs text-blue-600 dark:text-blue-400" title={order.cfOrderId}>
-                                                            {order.cfOrderId.slice(0, 12)}...
-                                                        </div>
-                                                    ) : (
-                                                        <span className="text-xs text-gray-400">-</span>
+                            ) : paginatedOrders.map(order => {
+                                const isExpanded = expandedOrders.has(order.id);
+                                const orderColors = orderStatusColors[order.orderStatus];
+                                const refundColors = refundStatusColors[order.refundStatus];
+
+                                return (
+                                    <React.Fragment key={order.id}>
+                                        <tr
+                                            className="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer"
+                                            onClick={() => toggleExpand(order.id)}
+                                        >
+                                            <td className="px-4 py-3">
+                                                <div className="flex items-center gap-2">
+                                                    <FiChevronDown className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                                                    <span className="font-mono text-sm font-medium">{order.orderId}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-3 text-sm text-gray-500">
+                                                {formatDate(order.createdAt)}
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <div className="text-sm font-medium">{order.customerName}</div>
+                                                <div className="text-xs text-gray-500">{order.phone}</div>
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <div className="text-sm max-w-[200px] truncate">{order.productName}</div>
+                                                <div className="text-xs text-gray-500">Qty: {order.quantity}</div>
+                                            </td>
+                                            <td className="px-4 py-3 font-medium">
+                                                {formatCurrency(order.totalAmount)}
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${order.paymentStatus === 'paid' ? 'bg-green-100 text-green-700' :
+                                                    order.paymentStatus === 'failed' ? 'bg-red-100 text-red-700' :
+                                                        'bg-yellow-100 text-yellow-700'
+                                                    }`}>
+                                                    {order.paymentStatus}
+                                                </span>
+                                            </td>
+                                            <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
+                                                <select
+                                                    value={order.orderStatus}
+                                                    onChange={(e) => updateOrderStatus(order.id, e.target.value as OrderStatus)}
+                                                    disabled={updatingStatus === order.id || order.orderStatus === 'cancelled'}
+                                                    className={`px-2 py-1 rounded-lg text-xs font-medium border-0 cursor-pointer ${orderColors.bg} ${orderColors.text}`}
+                                                >
+                                                    {orderStatusOptions.map(opt => (
+                                                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                                    ))}
+                                                </select>
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                {order.refundStatus !== 'none' ? (
+                                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${refundColors.bg} ${refundColors.text}`}>
+                                                        {order.refundStatus}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-xs text-gray-400">—</span>
+                                                )}
+                                            </td>
+                                            <td className="px-4 py-3 text-right" onClick={e => e.stopPropagation()}>
+                                                <div className="flex items-center justify-end gap-1">
+                                                    {/* Cancel button for non-cancelled orders */}
+                                                    {order.orderStatus !== 'cancelled' && order.orderStatus !== 'delivered' && (
+                                                        <button
+                                                            onClick={() => {
+                                                                const reason = prompt('Enter cancellation reason:');
+                                                                if (reason) handleCancelOrder(order, reason);
+                                                            }}
+                                                            disabled={updatingStatus === order.id}
+                                                            className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg disabled:opacity-50"
+                                                            title="Cancel Order"
+                                                        >
+                                                            <FiX />
+                                                        </button>
                                                     )}
-                                                </td>
-                                                <td className="p-4 text-gray-500 dark:text-gray-400 text-xs">
-                                                    {formatDate(order.createdAt)}
-                                                </td>
-                                                <td className="p-4">
-                                                    <div className="font-medium dark:text-gray-200">{order.customerName || '-'}</div>
-                                                    {order.phone && <div className="text-xs text-gray-500">{order.phone}</div>}
-                                                </td>
-                                                <td className="p-4 font-medium dark:text-gray-200 max-w-[150px] truncate" title={order.productName}>
-                                                    {order.productName || '-'}
-                                                </td>
-                                                <td className="p-4 dark:text-gray-200">
-                                                    {order.quantity || 1}
-                                                </td>
-                                                <td className="p-4 font-semibold text-green-600 dark:text-green-400">
-                                                    {formatCurrency(order.totalAmount || (order.unitPrice * (order.quantity || 1)))}
-                                                </td>
-                                                <td className="p-4">
-                                                    {getPaymentStatusBadge(order.paymentStatus, order.paymentMethod)}
-                                                </td>
-                                                <td className="p-4" onClick={(e) => e.stopPropagation()}>
-                                                    <select
-                                                        value={order.status || 'pending'}
-                                                        onChange={(e) => updateOrderStatus(order.id, e.target.value)}
-                                                        disabled={updatingStatus === order.id}
-                                                        className={`px-2 py-1 rounded-lg text-xs font-medium border-0 cursor-pointer focus:ring-2 focus:ring-blue-500 ${order.status === 'delivered' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                                                            order.status === 'shipped' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
-                                                                order.status === 'confirmed' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' :
-                                                                    order.status === 'cancelled' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
-                                                                        'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-                                                            }`}
-                                                    >
-                                                        <option value="pending">Pending</option>
-                                                        <option value="confirmed">Confirmed</option>
-                                                        <option value="shipped">Shipped</option>
-                                                        <option value="delivered">Delivered</option>
-                                                        <option value="cancelled">Cancelled</option>
-                                                    </select>
-                                                </td>
-                                                <td className="p-4 text-right" onClick={(e) => e.stopPropagation()}>
+                                                    {/* Check refund status */}
+                                                    {order.refundStatus === 'initiated' || order.refundStatus === 'processing' ? (
+                                                        <button
+                                                            onClick={() => checkRefundStatus(order)}
+                                                            disabled={updatingStatus === order.id}
+                                                            className="p-2 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg disabled:opacity-50"
+                                                            title="Check Refund Status"
+                                                        >
+                                                            <FiRefreshCw className={updatingStatus === order.id ? 'animate-spin' : ''} />
+                                                        </button>
+                                                    ) : null}
                                                     <button
-                                                        onClick={() => handlePrint(order)}
-                                                        className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg dark:hover:bg-blue-900/20 transition-colors"
+                                                        onClick={() => {/* Print logic */ }}
+                                                        className="p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg"
                                                         title="Print Invoice"
                                                     >
                                                         <FiPrinter />
                                                     </button>
-                                                </td>
-                                            </tr>
+                                                </div>
+                                            </td>
+                                        </tr>
 
-                                            {/* Expanded Order Details */}
-                                            {isExpanded && (
-                                                <tr>
-                                                    <td colSpan={10} className="p-0 bg-gray-50 dark:bg-gray-800/50">
-                                                        <div className="p-6 border-t border-b border-gray-200 dark:border-gray-700">
-                                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                                                {/* Customer Information */}
-                                                                <div className="bg-white dark:bg-gray-900 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
-                                                                    <h4 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                                                                        <FiUser className="text-blue-600" />
-                                                                        Customer Details
-                                                                    </h4>
-                                                                    <div className="space-y-2 text-sm">
-                                                                        <div className="flex items-start gap-2">
-                                                                            <span className="text-gray-500 dark:text-gray-400 w-20">Name:</span>
-                                                                            <span className="font-medium text-gray-900 dark:text-white">{order.customerName || '-'}</span>
-                                                                        </div>
-                                                                        <div className="flex items-start gap-2">
-                                                                            <span className="text-gray-500 dark:text-gray-400 w-20">Phone:</span>
-                                                                            <span className="text-gray-700 dark:text-gray-300">{order.phone || '-'}</span>
-                                                                        </div>
-                                                                        <div className="flex items-start gap-2">
-                                                                            <span className="text-gray-500 dark:text-gray-400 w-20">Email:</span>
-                                                                            <span className="text-gray-700 dark:text-gray-300 text-xs break-all">{order.customerEmail || '-'}</span>
-                                                                        </div>
-                                                                        <div className="flex items-start gap-2">
-                                                                            <span className="text-gray-500 dark:text-gray-400 w-20">Address:</span>
-                                                                            <span className="text-gray-700 dark:text-gray-300">
-                                                                                {order.shippingAddress ? (
-                                                                                    <>
-                                                                                        {order.shippingAddress.addressLine1}<br />
-                                                                                        {order.shippingAddress.city}, {order.shippingAddress.state} - {order.shippingAddress.pincode}
-                                                                                    </>
-                                                                                ) : order.address || '-'}
-                                                                            </span>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-
-                                                                {/* Product Information */}
-                                                                <div className="bg-white dark:bg-gray-900 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
-                                                                    <h4 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                                                                        <FiPackage className="text-blue-600" />
-                                                                        Product Details
-                                                                    </h4>
-                                                                    <div className="space-y-2 text-sm">
-                                                                        <div className="flex items-start gap-2">
-                                                                            <span className="text-gray-500 dark:text-gray-400 w-20">Product:</span>
-                                                                            <span className="font-medium text-gray-900 dark:text-white">{order.productName || '-'}</span>
-                                                                        </div>
-                                                                        <div className="flex items-start gap-2">
-                                                                            <span className="text-gray-500 dark:text-gray-400 w-20">Part No:</span>
-                                                                            <span className="font-mono text-xs text-gray-700 dark:text-gray-300">{order.partNumber || '-'}</span>
-                                                                        </div>
-                                                                        <div className="flex items-start gap-2">
-                                                                            <span className="text-gray-500 dark:text-gray-400 w-20">Category:</span>
-                                                                            <span className="text-gray-700 dark:text-gray-300 capitalize">{order.productCategory || '-'}</span>
-                                                                        </div>
-                                                                        <div className="flex items-start gap-2">
-                                                                            <span className="text-gray-500 dark:text-gray-400 w-20">Quantity:</span>
-                                                                            <span className="text-gray-700 dark:text-gray-300">{order.quantity || 1}</span>
-                                                                        </div>
-                                                                        <div className="flex items-start gap-2">
-                                                                            <span className="text-gray-500 dark:text-gray-400 w-20">Unit Price:</span>
-                                                                            <span className="text-gray-700 dark:text-gray-300">{formatCurrency(order.unitPrice)}</span>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-
-                                                                {/* Payment Information */}
-                                                                <div className="bg-white dark:bg-gray-900 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
-                                                                    <h4 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                                                                        <FiCreditCard className="text-blue-600" />
-                                                                        Payment Details
-                                                                    </h4>
-                                                                    <div className="space-y-2 text-sm">
-                                                                        <div className="flex items-start gap-2">
-                                                                            <span className="text-gray-500 dark:text-gray-400 w-20">Method:</span>
-                                                                            <span className="font-medium text-gray-900 dark:text-white capitalize">
-                                                                                {order.paymentMethod === 'COD' ? 'Cash on Delivery' : order.paymentMethod || '-'}
-                                                                            </span>
-                                                                        </div>
-                                                                        <div className="flex items-start gap-2">
-                                                                            <span className="text-gray-500 dark:text-gray-400 w-20">Status:</span>
-                                                                            <span className={`font-medium capitalize ${order.paymentStatus === 'paid' ? 'text-green-600' :
-                                                                                order.paymentStatus === 'failed' ? 'text-red-600' : 'text-amber-600'
-                                                                                }`}>
-                                                                                {order.paymentStatus || 'pending'}
-                                                                            </span>
-                                                                        </div>
-                                                                        {order.cfPaymentId && (
-                                                                            <div className="flex items-start gap-2">
-                                                                                <span className="text-gray-500 dark:text-gray-400 w-20">CF Pay ID:</span>
-                                                                                <span className="font-mono text-xs text-gray-700 dark:text-gray-300">{order.cfPaymentId}</span>
-                                                                            </div>
-                                                                        )}
-                                                                        <div className="pt-2 mt-2 border-t border-gray-100 dark:border-gray-800">
-                                                                            <div className="flex items-start gap-2">
-                                                                                <span className="text-gray-500 dark:text-gray-400 w-20">Total:</span>
-                                                                                <span className="font-bold text-lg text-green-600 dark:text-green-400">
-                                                                                    {formatCurrency(order.totalAmount || (order.unitPrice * (order.quantity || 1)))}
-                                                                                </span>
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-
-                                                            {/* Order Timeline & Actions */}
-                                                            <div className="mt-4 flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                                                                <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
-                                                                    <div>Created: {formatDate(order.createdAt)}</div>
-                                                                    {order.updatedAt && <div>Updated: {formatDate(order.updatedAt)}</div>}
-                                                                </div>
-                                                                <div className="flex gap-2">
-                                                                    <button
-                                                                        onClick={(e) => { e.stopPropagation(); handlePrint(order); }}
-                                                                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg flex items-center gap-2 transition-colors"
-                                                                    >
-                                                                        <FiPrinter className="w-4 h-4" /> Print Invoice
-                                                                    </button>
+                                        {/* Expanded Row */}
+                                        {isExpanded && (
+                                            <tr className="bg-gray-50 dark:bg-gray-900/50">
+                                                <td colSpan={9} className="px-6 py-4">
+                                                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                                                        {/* Customer Details */}
+                                                        <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border dark:border-gray-700">
+                                                            <h4 className="font-semibold mb-3 flex items-center gap-2">
+                                                                <FiUser className="text-blue-600" /> Customer
+                                                            </h4>
+                                                            <div className="space-y-2 text-sm">
+                                                                <div><span className="text-gray-500">Name:</span> {order.customerName}</div>
+                                                                <div><span className="text-gray-500">Phone:</span> {order.phone}</div>
+                                                                <div><span className="text-gray-500">Email:</span> {order.customerEmail}</div>
+                                                                <div className="pt-2 border-t dark:border-gray-700">
+                                                                    <span className="text-gray-500">Address:</span>
+                                                                    <p className="mt-1">{order.shippingAddress?.addressLine1 || order.address}</p>
+                                                                    {order.shippingAddress && (
+                                                                        <p>{order.shippingAddress.city}, {order.shippingAddress.state} - {order.shippingAddress.pincode}</p>
+                                                                    )}
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                    </td>
-                                                </tr>
-                                            )}
-                                        </React.Fragment>
-                                    );
-                                })
-                            )}
+
+                                                        {/* Product Details */}
+                                                        <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border dark:border-gray-700">
+                                                            <h4 className="font-semibold mb-3 flex items-center gap-2">
+                                                                <FiPackage className="text-blue-600" /> Product
+                                                            </h4>
+                                                            <div className="space-y-2 text-sm">
+                                                                <div className="font-medium">{order.productName}</div>
+                                                                <div><span className="text-gray-500">Part No:</span> {order.partNumber}</div>
+                                                                <div><span className="text-gray-500">Category:</span> {order.productCategory}</div>
+                                                                <div><span className="text-gray-500">Qty:</span> {order.quantity}</div>
+                                                                <div><span className="text-gray-500">Unit Price:</span> {formatCurrency(order.unitPrice)}</div>
+                                                                <div className="pt-2 border-t dark:border-gray-700 font-bold text-green-600">
+                                                                    Total: {formatCurrency(order.totalAmount)}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Payment & Refund Details */}
+                                                        <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border dark:border-gray-700">
+                                                            <h4 className="font-semibold mb-3 flex items-center gap-2">
+                                                                <FiCreditCard className="text-blue-600" /> Payment
+                                                            </h4>
+                                                            <div className="space-y-2 text-sm">
+                                                                <div><span className="text-gray-500">Method:</span> {getPaymentMethodDisplay(order.paymentMethod)}</div>
+                                                                <div><span className="text-gray-500">Status:</span> <span className={order.paymentStatus === 'paid' ? 'text-green-600' : 'text-yellow-600'}>{order.paymentStatus}</span></div>
+                                                                {order.cfPaymentId && <div><span className="text-gray-500">CF ID:</span> <span className="font-mono text-xs">{order.cfPaymentId}</span></div>}
+
+                                                                {order.refundStatus !== 'none' && (
+                                                                    <div className="pt-3 mt-3 border-t border-dashed dark:border-gray-700">
+                                                                        <div className="flex items-center gap-2 text-purple-600 font-medium mb-2">
+                                                                            <FiDollarSign /> Refund
+                                                                        </div>
+                                                                        <div><span className="text-gray-500">Status:</span> <span className={`font-medium ${refundColors.text}`}>{order.refundStatus}</span></div>
+                                                                        {order.refundAmount && <div><span className="text-gray-500">Amount:</span> {formatCurrency(order.refundAmount)}</div>}
+                                                                        {order.cfRefundId && <div><span className="text-gray-500">Refund ID:</span> <span className="font-mono text-xs">{order.cfRefundId}</span></div>}
+                                                                        {order.refundArn && <div><span className="text-gray-500">ARN:</span> <span className="font-mono text-xs">{order.refundArn}</span></div>}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Timeline */}
+                                                        <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border dark:border-gray-700">
+                                                            <h4 className="font-semibold mb-3 flex items-center gap-2">
+                                                                <FiClock className="text-blue-600" /> Timeline
+                                                            </h4>
+                                                            <div className="space-y-3 text-sm max-h-48 overflow-y-auto">
+                                                                {(order.timeline && order.timeline.length > 0) ? (
+                                                                    order.timeline.slice().reverse().map((event, idx) => (
+                                                                        <div key={idx} className="flex gap-3">
+                                                                            <div className="w-2 h-2 mt-1.5 bg-blue-600 rounded-full flex-shrink-0"></div>
+                                                                            <div>
+                                                                                <div className="font-medium">{event.event}</div>
+                                                                                <div className="text-xs text-gray-500">{formatDate(event.timestamp)}</div>
+                                                                            </div>
+                                                                        </div>
+                                                                    ))
+                                                                ) : (
+                                                                    <>
+                                                                        <div className="flex gap-3">
+                                                                            <div className="w-2 h-2 mt-1.5 bg-blue-600 rounded-full"></div>
+                                                                            <div>
+                                                                                <div className="font-medium">Order Placed</div>
+                                                                                <div className="text-xs text-gray-500">{formatDate(order.createdAt)}</div>
+                                                                            </div>
+                                                                        </div>
+                                                                        {order.orderStatus !== 'placed' && (
+                                                                            <div className="flex gap-3">
+                                                                                <div className="w-2 h-2 mt-1.5 bg-green-600 rounded-full"></div>
+                                                                                <div>
+                                                                                    <div className="font-medium">Status: {order.orderStatus}</div>
+                                                                                    <div className="text-xs text-gray-500">{formatDate(order.updatedAt)}</div>
+                                                                                </div>
+                                                                            </div>
+                                                                        )}
+                                                                    </>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Action Buttons */}
+                                                    <div className="mt-4 pt-4 border-t dark:border-gray-700 flex gap-3">
+                                                        {order.orderStatus === 'cancelled' && order.refundStatus === 'none' && order.paymentStatus === 'paid' && (
+                                                            <button
+                                                                onClick={() => handleCancelOrder(order, 'Refund initiated by admin')}
+                                                                disabled={updatingStatus === order.id}
+                                                                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg flex items-center gap-2 disabled:opacity-50"
+                                                            >
+                                                                <FiDollarSign /> Initiate Refund
+                                                            </button>
+                                                        )}
+                                                        {(order.refundStatus === 'initiated' || order.refundStatus === 'processing') && (
+                                                            <button
+                                                                onClick={() => checkRefundStatus(order)}
+                                                                disabled={updatingStatus === order.id}
+                                                                className="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg flex items-center gap-2 disabled:opacity-50"
+                                                            >
+                                                                <FiRefreshCw className={updatingStatus === order.id ? 'animate-spin' : ''} />
+                                                                Check Refund Status
+                                                            </button>
+                                                        )}
+                                                        <button
+                                                            onClick={() => {/* Print */ }}
+                                                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center gap-2"
+                                                        >
+                                                            <FiPrinter /> Print Invoice
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </React.Fragment>
+                                );
+                            })}
                         </tbody>
                     </table>
                 </div>
 
                 {/* Pagination */}
                 {totalPages > 1 && (
-                    <div className="flex items-center justify-between p-4 border-t border-gray-200 dark:border-gray-700">
-                        <div className="text-sm text-gray-500 dark:text-gray-400">
-                            Showing {startIndex + 1}-{Math.min(endIndex, filteredOrders.length)} of {filteredOrders.length} orders
+                    <div className="flex items-center justify-between p-4 border-t dark:border-gray-700">
+                        <div className="text-sm text-gray-500">
+                            Showing {(currentPage - 1) * ordersPerPage + 1} - {Math.min(currentPage * ordersPerPage, filteredOrders.length)} of {filteredOrders.length}
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex gap-2">
                             <button
-                                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                                 disabled={currentPage === 1}
-                                className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                className="px-3 py-1.5 rounded-lg border dark:border-gray-700 disabled:opacity-50"
                             >
-                                <FiChevronLeft className="w-4 h-4" />
+                                <FiChevronLeft />
                             </button>
-
-                            {/* Page Numbers */}
-                            <div className="flex items-center gap-1">
-                                {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                                    let pageNum;
-                                    if (totalPages <= 5) {
-                                        pageNum = i + 1;
-                                    } else if (currentPage <= 3) {
-                                        pageNum = i + 1;
-                                    } else if (currentPage >= totalPages - 2) {
-                                        pageNum = totalPages - 4 + i;
-                                    } else {
-                                        pageNum = currentPage - 2 + i;
-                                    }
-                                    return (
-                                        <button
-                                            key={pageNum}
-                                            onClick={() => setCurrentPage(pageNum)}
-                                            className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${currentPage === pageNum
-                                                ? 'bg-blue-600 text-white'
-                                                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                                                }`}
-                                        >
-                                            {pageNum}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-
+                            <span className="px-3 py-1.5 bg-blue-600 text-white rounded-lg">{currentPage}</span>
                             <button
-                                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                                 disabled={currentPage === totalPages}
-                                className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                className="px-3 py-1.5 rounded-lg border dark:border-gray-700 disabled:opacity-50"
                             >
-                                <FiChevronRight className="w-4 h-4" />
+                                <FiChevronRight />
                             </button>
                         </div>
                     </div>

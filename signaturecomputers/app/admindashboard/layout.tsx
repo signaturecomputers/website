@@ -17,7 +17,9 @@ import {
     Zap,
     Image as ImageIcon,
     MessageSquare,
-    Eye
+    Eye,
+    RefreshCcw,
+    Webhook
 } from "lucide-react";
 
 export default function AdminDashboardLayout({
@@ -44,6 +46,8 @@ export default function AdminDashboardLayout({
         { name: "Dashboard", href: "/admindashboard", icon: LayoutDashboard },
         { name: "Products", href: "/admindashboard/products", icon: Package },
         { name: "Orders", href: "/admindashboard/orders", icon: ShoppingCart },
+        { name: "Refunds & Returns", href: "/admindashboard/refunds", icon: RefreshCcw },
+        { name: "Webhook Logs", href: "/admindashboard/webhook-logs", icon: Webhook },
         { name: "Hot Deals", href: "/admindashboard/hot-deals", icon: Zap },
         { name: "Categories", href: "/admindashboard/categories", icon: Tag },
         { name: "Header Images", href: "/admindashboard/header-images", icon: ImageIcon },

@@ -666,10 +666,134 @@ export default function OrdersPage() {
                                                     >
                                                         View Product
                                                     </Link>
+
+                                                    {/* View Invoice - Only for paid/confirmed orders */}
+                                                    {(order.paymentStatus === 'paid' || order.status === 'confirmed' || order.status === 'shipped' || order.status === 'delivered') && (
+                                                        <Link
+                                                            href={`/invoice?orderId=${order.id}`}
+                                                            className="px-4 py-2 border border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg text-sm font-medium transition-colors flex items-center gap-1"
+                                                        >
+                                                            <FiCreditCard className="w-4 h-4" />
+                                                            View Invoice
+                                                        </Link>
+                                                    )}
+
+                                                    {/* Cancel Order - Only for pending/confirmed orders not yet shipped */}
+                                                    {['pending', 'confirmed'].includes(order.status) && (
+                                                        <button
+                                                            onClick={async (e) => {
+                                                                e.stopPropagation();
+                                                                const reason = prompt('Please provide a reason for cancellation:');
+                                                                if (!reason) return;
+
+                                                                try {
+                                                                    const response = await fetch('/api/orders/cancel', {
+                                                                        method: 'POST',
+                                                                        headers: { 'Content-Type': 'application/json' },
+                                                                        body: JSON.stringify({
+                                                                            orderId: order.id,
+                                                                            customerId: user?.uid,
+                                                                            reason,
+                                                                        }),
+                                                                    });
+                                                                    const data = await response.json();
+                                                                    if (response.ok) {
+                                                                        alert('Cancellation request submitted successfully!');
+                                                                        window.location.reload();
+                                                                    } else {
+                                                                        alert(data.error || 'Failed to submit cancellation request');
+                                                                    }
+                                                                } catch (error) {
+                                                                    alert('Error submitting request. Please try again.');
+                                                                }
+                                                            }}
+                                                            className="px-4 py-2 border border-red-300 dark:border-red-600 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-sm font-medium transition-colors flex items-center gap-1"
+                                                        >
+                                                            <FiX className="w-4 h-4" />
+                                                            Cancel Order
+                                                        </button>
+                                                    )}
+
+                                                    {/* Request Return - Only for delivered orders (within return window) */}
+                                                    {order.status === 'delivered' && (
+                                                        <button
+                                                            onClick={async (e) => {
+                                                                e.stopPropagation();
+                                                                const reasons = [
+                                                                    'Product damaged on arrival',
+                                                                    'Product not as described',
+                                                                    'Wrong product delivered',
+                                                                    'Product not working',
+                                                                    'Quality not as expected',
+                                                                    'Missing parts/accessories',
+                                                                    'Other'
+                                                                ];
+                                                                const reason = prompt(`Select return reason:\n${reasons.map((r, i) => `${i + 1}. ${r}`).join('\n')}\n\nEnter number (1-7):`);
+                                                                if (!reason) return;
+
+                                                                const selectedReason = reasons[parseInt(reason) - 1] || reason;
+
+                                                                try {
+                                                                    const response = await fetch('/api/orders/return', {
+                                                                        method: 'POST',
+                                                                        headers: { 'Content-Type': 'application/json' },
+                                                                        body: JSON.stringify({
+                                                                            orderId: order.id,
+                                                                            customerId: user?.uid,
+                                                                            reason: selectedReason,
+                                                                        }),
+                                                                    });
+                                                                    const data = await response.json();
+                                                                    if (response.ok) {
+                                                                        alert(`Return request submitted successfully! You have ${data.daysInWindow} days remaining in the return window.`);
+                                                                        window.location.reload();
+                                                                    } else {
+                                                                        alert(data.reason || data.error || 'Failed to submit return request');
+                                                                    }
+                                                                } catch (error) {
+                                                                    alert('Error submitting request. Please try again.');
+                                                                }
+                                                            }}
+                                                            className="px-4 py-2 border border-amber-300 dark:border-amber-600 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg text-sm font-medium transition-colors flex items-center gap-1"
+                                                        >
+                                                            <FiPackage className="w-4 h-4" />
+                                                            Request Return
+                                                        </button>
+                                                    )}
+
                                                     {order.status === 'delivered' && (
                                                         <button className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-sm font-medium transition-colors">
                                                             Write a Review
                                                         </button>
+                                                    )}
+
+                                                    {/* Status badges for ongoing requests */}
+                                                    {order.status === 'cancellation_requested' && (
+                                                        <span className="px-4 py-2 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-lg text-sm font-medium flex items-center gap-1">
+                                                            <FiClock className="w-4 h-4" />
+                                                            Cancellation Pending
+                                                        </span>
+                                                    )}
+
+                                                    {order.status === 'return_requested' && (
+                                                        <span className="px-4 py-2 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 rounded-lg text-sm font-medium flex items-center gap-1">
+                                                            <FiClock className="w-4 h-4" />
+                                                            Return Pending
+                                                        </span>
+                                                    )}
+
+                                                    {['refund_initiated', 'refund_processing'].includes(order.status) && (
+                                                        <span className="px-4 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-lg text-sm font-medium flex items-center gap-1">
+                                                            <FiClock className="w-4 h-4" />
+                                                            Refund Processing
+                                                        </span>
+                                                    )}
+
+                                                    {order.status === 'refunded' && (
+                                                        <span className="px-4 py-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg text-sm font-medium flex items-center gap-1">
+                                                            <FiCheck className="w-4 h-4" />
+                                                            Refunded
+                                                        </span>
                                                     )}
                                                 </div>
                                             </div>
