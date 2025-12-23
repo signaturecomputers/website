@@ -53,15 +53,56 @@ interface Order {
 }
 
 const statusSteps = [
-    { id: 'pending', label: 'Order Placed', icon: FiClock },
+    { id: 'placed', label: 'Order Placed', icon: FiClock },
     { id: 'confirmed', label: 'Confirmed', icon: FiCheck },
     { id: 'shipped', label: 'Shipped', icon: FiTruck },
     { id: 'delivered', label: 'Delivered', icon: FiHome },
 ];
 
 const getStatusIndex = (status: string): number => {
-    const index = statusSteps.findIndex(s => s.id === status);
+    // Normalize order_placed to placed for progress bar
+    const normalizedStatus = (status === 'placed') ? 'placed' : status;
+    const index = statusSteps.findIndex(s => s.id === normalizedStatus);
     return index >= 0 ? index : 0;
+};
+
+// Get display status for customer
+const getDisplayStatus = (status: string, paymentStatus?: string): string => {
+    if (paymentStatus === 'failed') return 'Cancelled';
+    if (status === 'placed') return 'Order Placed';
+    if (status === 'cancelled') return 'Cancelled';
+    return status.charAt(0).toUpperCase() + status.slice(1);
+};
+
+// Get customer-facing status message
+const getStatusMessage = (status: string, paymentStatus?: string): string => {
+    if (paymentStatus === 'failed') {
+        return 'Payment failed. Please re-order the product.';
+    }
+    switch (status) {
+        case 'placed':
+            return 'Payment successful. Your order is placed and awaiting confirmation.';
+        case 'confirmed':
+            return 'Your order is confirmed. Invoice is now available.';
+        case 'shipped':
+            return 'Your order has been shipped and is on its way.';
+        case 'delivered':
+            return 'Your order has been delivered.';
+        case 'cancelled':
+            return 'This order has been cancelled.';
+        default:
+            return '';
+    }
+};
+
+// Check if invoice should be visible (only after confirmed)
+const isInvoiceVisible = (status: string): boolean => {
+    return ['confirmed', 'shipped', 'delivered'].includes(status);
+};
+
+// Check if customer can cancel (ONLY Placed or Confirmed, NOT after Shipped)
+const canCustomerCancel = (status: string): boolean => {
+    return ['placed', 'confirmed'].includes(status);
 };
 
 const getStatusColor = (status: string) => {
@@ -76,6 +117,8 @@ const getStatusColor = (status: string) => {
         case 'payment_failed':
         case 'payment_dropped':
             return 'text-red-600 bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400';
+        case 'placed':
+        case 'placed':
         case 'pending':
         default:
             return 'text-amber-600 bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-800 dark:text-amber-400';
@@ -505,7 +548,7 @@ export default function OrdersPage() {
                                                             </p>
                                                         </div>
                                                         <div className={`px-3 py-1 rounded-full text-xs font-semibold border capitalize ${getStatusColor(order.status)}`}>
-                                                            {order.status.replace(/_/g, ' ')}
+                                                            {getDisplayStatus(order.status)}
                                                         </div>
                                                     </div>
 
@@ -667,8 +710,8 @@ export default function OrdersPage() {
                                                         View Product
                                                     </Link>
 
-                                                    {/* View Invoice - Only for paid/confirmed orders */}
-                                                    {(order.paymentStatus === 'paid' || order.status === 'confirmed' || order.status === 'shipped' || order.status === 'delivered') && (
+                                                    {/* View Invoice - Only for confirmed/shipped/delivered orders */}
+                                                    {isInvoiceVisible(order.status) ? (
                                                         <Link
                                                             href={`/invoice?orderId=${order.id}`}
                                                             className="px-4 py-2 border border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg text-sm font-medium transition-colors flex items-center gap-1"
@@ -676,10 +719,14 @@ export default function OrdersPage() {
                                                             <FiCreditCard className="w-4 h-4" />
                                                             View Invoice
                                                         </Link>
+                                                    ) : (order.status === 'placed' || order.status === 'placed') && (
+                                                        <span className="px-4 py-2 text-gray-500 dark:text-gray-400 text-sm italic">
+                                                            Invoice will be available once your order is confirmed.
+                                                        </span>
                                                     )}
 
-                                                    {/* Cancel Order - Only for pending/confirmed orders not yet shipped */}
-                                                    {['pending', 'confirmed'].includes(order.status) && (
+                                                    {/* Cancel Order - Only for order_placed/placed/confirmed orders (before shipping) */}
+                                                    {canCustomerCancel(order.status) && (
                                                         <button
                                                             onClick={async (e) => {
                                                                 e.stopPropagation();
@@ -714,55 +761,22 @@ export default function OrdersPage() {
                                                         </button>
                                                     )}
 
-                                                    {/* Request Return - Only for delivered orders (within return window) */}
+                                                    {/* Return button removed - no returns for delivered orders */}
+
+                                                    {/* Write a Review - Navigate to home page feedback with product details */}
                                                     {order.status === 'delivered' && (
                                                         <button
-                                                            onClick={async (e) => {
+                                                            onClick={(e) => {
                                                                 e.stopPropagation();
-                                                                const reasons = [
-                                                                    'Product damaged on arrival',
-                                                                    'Product not as described',
-                                                                    'Wrong product delivered',
-                                                                    'Product not working',
-                                                                    'Quality not as expected',
-                                                                    'Missing parts/accessories',
-                                                                    'Other'
-                                                                ];
-                                                                const reason = prompt(`Select return reason:\n${reasons.map((r, i) => `${i + 1}. ${r}`).join('\n')}\n\nEnter number (1-7):`);
-                                                                if (!reason) return;
-
-                                                                const selectedReason = reasons[parseInt(reason) - 1] || reason;
-
-                                                                try {
-                                                                    const response = await fetch('/api/orders/return', {
-                                                                        method: 'POST',
-                                                                        headers: { 'Content-Type': 'application/json' },
-                                                                        body: JSON.stringify({
-                                                                            orderId: order.id,
-                                                                            customerId: user?.uid,
-                                                                            reason: selectedReason,
-                                                                        }),
-                                                                    });
-                                                                    const data = await response.json();
-                                                                    if (response.ok) {
-                                                                        alert(`Return request submitted successfully! You have ${data.daysInWindow} days remaining in the return window.`);
-                                                                        window.location.reload();
-                                                                    } else {
-                                                                        alert(data.reason || data.error || 'Failed to submit return request');
-                                                                    }
-                                                                } catch (error) {
-                                                                    alert('Error submitting request. Please try again.');
-                                                                }
+                                                                // Navigate to home page feedback section with product auto-filled
+                                                                const params = new URLSearchParams({
+                                                                    product: order.productName,
+                                                                    orderId: order.orderId,
+                                                                });
+                                                                window.location.href = `/?feedback=true&${params.toString()}#feedback`;
                                                             }}
-                                                            className="px-4 py-2 border border-amber-300 dark:border-amber-600 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg text-sm font-medium transition-colors flex items-center gap-1"
+                                                            className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-sm font-medium transition-colors"
                                                         >
-                                                            <FiPackage className="w-4 h-4" />
-                                                            Request Return
-                                                        </button>
-                                                    )}
-
-                                                    {order.status === 'delivered' && (
-                                                        <button className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-sm font-medium transition-colors">
                                                             Write a Review
                                                         </button>
                                                     )}

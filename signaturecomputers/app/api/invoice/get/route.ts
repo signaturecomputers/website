@@ -36,6 +36,9 @@ export async function GET(request: NextRequest) {
         if (invoiceData?.invoiceDate?.toDate) {
             invoiceData.invoiceDate = invoiceData.invoiceDate.toDate().toISOString();
         }
+        if (invoiceData?.orderDate?.toDate) {
+            invoiceData.orderDate = invoiceData.orderDate.toDate().toISOString();
+        }
         if (invoiceData?.createdAt?.toDate) {
             invoiceData.createdAt = invoiceData.createdAt.toDate().toISOString();
         }

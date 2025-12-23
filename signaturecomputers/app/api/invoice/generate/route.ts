@@ -2,12 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase-admin";
 import {
     COMPANY_INFO,
-    calculateGST,
-    getHSNCode,
     generateInvoiceNumber,
     numberToWords,
     formatInvoiceDate,
     getStateCode,
+    isIntraState,
 } from "@/lib/invoice";
 
 interface OrderData {
@@ -18,7 +17,7 @@ interface OrderData {
     productCategory?: string;
     partNumber?: string;
     quantity: number;
-    unitPrice: number;
+    unitPrice?: number;
     totalAmount: number;
     customerId: string;
     customerEmail?: string;
@@ -26,6 +25,16 @@ interface OrderData {
     phone?: string;
     shippingAddress?: {
         fullName?: string;
+        phone?: string;
+        addressLine1?: string;
+        addressLine2?: string;
+        city?: string;
+        state?: string;
+        pincode?: string;
+    };
+    billingAddress?: {
+        fullName?: string;
+        phone?: string;
         addressLine1?: string;
         addressLine2?: string;
         city?: string;
@@ -33,11 +42,79 @@ interface OrderData {
         pincode?: string;
     };
     paymentStatus?: string;
-    paymentMethod?: string;
+    paymentMethod?: string | { [key: string]: unknown };
     status?: string;
     createdAt?: any;
     invoiceNumber?: string;
     invoiceGenerated?: boolean;
+    warranty?: string;
+}
+
+/**
+ * Determine the payment mode for display on invoice
+ * Only shows UPI, Card, or Net Banking
+ */
+function getPaymentMode(paymentMethod: string | { [key: string]: unknown } | undefined): 'UPI' | 'Card' | 'Net Banking' | 'Online Payment' {
+    if (!paymentMethod) return 'Online Payment';
+
+    // If it's an object (from Cashfree webhook), extract the method
+    const method = typeof paymentMethod === 'object'
+        ? Object.keys(paymentMethod)[0]?.toLowerCase()
+        : paymentMethod.toLowerCase();
+
+    if (method.includes('upi')) return 'UPI';
+    if (method.includes('card') || method.includes('credit') || method.includes('debit')) return 'Card';
+    if (method.includes('netbanking') || method.includes('net_banking') || method.includes('nb')) return 'Net Banking';
+
+    return 'Online Payment';
+}
+
+/**
+ * Generate warranty text based on product category
+ */
+function getWarrantyInfo(category?: string, productName?: string): string {
+    const name = (productName || '').toLowerCase();
+    const cat = (category || '').toLowerCase();
+
+    // HP products
+    if (name.includes('hp') || name.includes('hewlett') || name.includes('probook')) {
+        return '3 Years Warranty – Provided by HP';
+    }
+    // Dell products
+    if (name.includes('dell')) {
+        return '3 Years Warranty – Provided by Dell';
+    }
+    // Lenovo products  
+    if (name.includes('lenovo') || name.includes('thinkpad') || name.includes('ideapad')) {
+        return '3 Years Warranty – Provided by Lenovo';
+    }
+    // Acer products
+    if (name.includes('acer') || name.includes('predator') || name.includes('aspire')) {
+        return '2 Years Warranty – Provided by Acer';
+    }
+    // ASUS products
+    if (name.includes('asus') || name.includes('rog') || name.includes('zenbook') || name.includes('vivobook')) {
+        return '2 Years Warranty – Provided by ASUS';
+    }
+    // Laptops, Desktops, Workstations - default manufacturer warranty
+    if (cat.includes('laptop') || cat.includes('desktop') || cat.includes('workstation')) {
+        return '1 Year Warranty – Manufacturer';
+    }
+    // Monitors
+    if (cat.includes('monitor')) {
+        return '3 Years Warranty – Manufacturer';
+    }
+    // Printers
+    if (cat.includes('printer')) {
+        return '1 Year Warranty – Manufacturer';
+    }
+    // Accessories - Signature Computers warranty
+    if (cat.includes('keyboard') || cat.includes('mouse') || cat.includes('headphone') ||
+        cat.includes('cable') || cat.includes('bag') || cat.includes('dock') || cat.includes('usb')) {
+        return '6 Months Warranty – Signature Computers';
+    }
+
+    return '1 Year Warranty – Signature Computers';
 }
 
 /**
@@ -97,89 +174,102 @@ export async function POST(request: NextRequest) {
         const invoiceNumber = generateInvoiceNumber(sequenceNumber);
 
         // Get customer state for GST calculation
-        const customerState = orderData.shippingAddress?.state || "Tamil Nadu";
+        const address = orderData.billingAddress || orderData.shippingAddress;
+        const customerState = address?.state || "Tamil Nadu";
         const customerStateCode = getStateCode(customerState);
 
-        // Calculate GST
-        const gstDetails = calculateGST(orderData.unitPrice * orderData.quantity, customerState);
+        // =====================================================
+        // PRICE LOGIC: Grand Total = Paid Amount (INCLUDES GST)
+        // =====================================================
+        const grandTotal = orderData.totalAmount || 0;
+        const quantity = orderData.quantity || 1;
 
-        // Get HSN code
-        const hsnCode = getHSNCode(orderData.productCategory || "laptops");
+        // Unit price = total / quantity (this is the per-unit price INCLUDING GST)
+        const unitPrice = orderData.unitPrice || (grandTotal / quantity);
 
-        // Calculate delivery charges (can be configured in settings)
-        const deliveryCharges = 0; // Free delivery typically, or fetch from settings
+        // GST is ALREADY INCLUDED in the price
+        // Reverse calculate: Taxable Amount = Grand Total / 1.18
+        const taxableAmount = Math.round((grandTotal / 1.18) * 100) / 100;
 
-        // Prepare invoice data
+        // Calculate GST components from taxable amount
+        const intraState = isIntraState(customerState);
+        let cgstRate = 0, cgstAmount = 0, sgstRate = 0, sgstAmount = 0, igstRate = 0, igstAmount = 0;
+
+        if (intraState) {
+            // CGST + SGST (9% each) - calculated from taxable amount
+            cgstRate = 9;
+            sgstRate = 9;
+            cgstAmount = Math.round((taxableAmount * 0.09) * 100) / 100;
+            sgstAmount = Math.round((taxableAmount * 0.09) * 100) / 100;
+        } else {
+            // IGST (18%) for inter-state
+            igstRate = 18;
+            igstAmount = Math.round((taxableAmount * 0.18) * 100) / 100;
+        }
+
+        // Get warranty info for the product
+        const warrantyInfo = getWarrantyInfo(orderData.productCategory, orderData.productName);
+
+        // Get order creation date
+        const orderDate = orderData.createdAt?.toDate?.() || new Date();
+
+        // Get part number - check multiple possible locations
+        const partNumber = orderData.partNumber || "";
+
+        // Prepare invoice data - Clean, modern format
         const invoiceData = {
             invoiceNumber,
             orderId: orderData.orderId,
-            cfOrderId: orderData.cfOrderId || "",
             invoiceDate: new Date(),
             invoiceDateFormatted: formatInvoiceDate(new Date()),
+            orderDate,
+            orderDateFormatted: formatInvoiceDate(orderDate),
 
             // Company Info
             company: COMPANY_INFO,
 
-            // Customer Info (Billed To / Shipped To)
+            // Customer Info (Billed To only - no Ship To)
             billedTo: {
-                name: orderData.customerName,
-                addressLine1: orderData.shippingAddress?.addressLine1 || "",
-                addressLine2: orderData.shippingAddress?.addressLine2 || "",
-                city: orderData.shippingAddress?.city || "",
+                name: address?.fullName || orderData.customerName,
+                addressLine1: address?.addressLine1 || "",
+                addressLine2: address?.addressLine2 || "",
+                city: address?.city || "",
                 state: customerState,
-                pincode: orderData.shippingAddress?.pincode || "",
+                pincode: address?.pincode || "",
                 stateCode: customerStateCode,
-                phone: orderData.phone || "",
+                phone: address?.phone || orderData.phone || "",
                 email: orderData.customerEmail || "",
-                gstin: "", // Customer GSTIN if B2B
-            },
-            shippedTo: {
-                name: orderData.customerName,
-                addressLine1: orderData.shippingAddress?.addressLine1 || "",
-                addressLine2: orderData.shippingAddress?.addressLine2 || "",
-                city: orderData.shippingAddress?.city || "",
-                state: customerState,
-                pincode: orderData.shippingAddress?.pincode || "",
-                stateCode: customerStateCode,
-                phone: orderData.phone || "",
             },
 
-            // Order Details
-            termsOfDelivery: "DELIVERY",
-            paymentMode: orderData.paymentMethod === "COD" ? "COD" : "Online Payment",
+            // Payment Mode (UPI / Card / Net Banking only - No COD)
+            paymentMode: getPaymentMode(orderData.paymentMethod),
 
-            // Items
+            // Items - Price includes GST
             items: [
                 {
                     sno: 1,
+                    productId: partNumber,  // Part Number
                     description: orderData.productName,
-                    partNumber: orderData.partNumber || "",
-                    hsnCode,
-                    quantity: orderData.quantity,
-                    unit: "Nos",
-                    grossRate: orderData.unitPrice,
-                    discount: 0,
-                    netRate: orderData.unitPrice,
-                    amount: orderData.unitPrice * orderData.quantity,
+                    warranty: warrantyInfo,
+                    quantity: quantity,
+                    unitPrice: unitPrice,  // Per unit price (includes GST)
+                    amount: grandTotal,  // Total = unitPrice * quantity (includes GST)
                 },
             ],
 
-            // Tax Details
-            taxableAmount: gstDetails.taxableAmount,
-            cgstRate: gstDetails.cgstRate,
-            cgstAmount: gstDetails.cgstAmount,
-            sgstRate: gstDetails.sgstRate,
-            sgstAmount: gstDetails.sgstAmount,
-            igstRate: gstDetails.igstRate,
-            igstAmount: gstDetails.igstAmount,
-            totalTax: gstDetails.totalTax,
+            // Tax Details (reverse calculated from Grand Total)
+            // Grand Total INCLUDES GST, so we extract it
+            taxableAmount: taxableAmount,
+            cgstRate,
+            cgstAmount,
+            sgstRate,
+            sgstAmount,
+            igstRate,
+            igstAmount,
 
-            // Totals
-            deliveryCharges,
-            grandTotal: gstDetails.taxableAmount + gstDetails.totalTax + deliveryCharges,
-            amountInWords: numberToWords(
-                gstDetails.taxableAmount + gstDetails.totalTax + deliveryCharges
-            ),
+            // Grand Total = Exactly what customer paid (INCLUDES GST)
+            grandTotal: grandTotal,
+            amountInWords: numberToWords(grandTotal),
 
             // Metadata
             createdAt: new Date(),

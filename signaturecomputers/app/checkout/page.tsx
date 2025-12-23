@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { db } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp, doc, setDoc, getDoc, updateDoc, increment } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, setDoc, getDoc } from 'firebase/firestore';
 import { getProductById } from '@/lib/products';
 import { toast } from 'sonner';
 import { load } from '@cashfreepayments/cashfree-js';
@@ -288,106 +288,6 @@ export default function CheckoutPage() {
         }
     };
 
-    // Legacy COD order (fallback)
-    const handleCODOrder = async (e: React.FormEvent) => {
-        e.preventDefault();
-
-        if (!user) {
-            toast.error('Please login to place order');
-            return;
-        }
-
-        if (!formData.phone || formData.phone.length < 10) {
-            toast.error('Please enter a valid phone number');
-            return;
-        }
-
-        setLoading(true);
-        try {
-            const fullAddress = `${formData.address}, ${formData.city}, ${formData.state} - ${formData.zip}`;
-
-            for (const item of cart) {
-                const product = await getProductById(item.id);
-
-                if (!product) {
-                    toast.error(`Product ${item.name} not found. Please refresh and try again.`);
-                    setLoading(false);
-                    return;
-                }
-
-                if (product.stock < item.quantity) {
-                    toast.error(`Insufficient stock for ${item.name}. Only ${product.stock} available.`);
-                    setLoading(false);
-                    return;
-                }
-
-                // Generate uniform order ID: SC-YYYYMMDD-XXXX
-                const now = new Date();
-                const dateStr = now.getFullYear().toString() +
-                    (now.getMonth() + 1).toString().padStart(2, '0') +
-                    now.getDate().toString().padStart(2, '0');
-                const randomPart = Math.random().toString(36).substring(2, 6).toUpperCase();
-                const orderId = `SC-${dateStr}-${randomPart}`;
-
-                const orderData = {
-                    orderId,
-                    productId: item.id,
-                    productName: item.name,
-                    productImage: item.image || '',
-                    productCategory: product.category,
-                    partNumber: (item as { partNumber?: string }).partNumber || product.productInfo?.partNo || '',
-                    quantity: item.quantity,
-                    unitPrice: item.price,
-                    totalAmount: item.price * item.quantity,
-                    customerId: user.uid,
-                    customerEmail: user.email,
-                    customerName: formData.name,
-                    phone: formData.phone,
-                    address: fullAddress,
-                    shippingAddress: {
-                        addressLine1: formData.address,
-                        city: formData.city,
-                        state: formData.state,
-                        pincode: formData.zip
-                    },
-                    paymentMethod: 'COD',
-                    paymentStatus: 'pending',
-                    status: 'pending',
-                    createdAt: serverTimestamp(),
-                    updatedAt: serverTimestamp()
-                };
-
-                await addDoc(collection(db, 'orders'), orderData);
-
-                // Deduct stock
-                const productRef = doc(db, product.category, item.id);
-                await updateDoc(productRef, {
-                    stock: increment(-item.quantity)
-                });
-            }
-
-            // Save address
-            const userRef = doc(db, 'users', user.uid);
-            await setDoc(userRef, {
-                phone: formData.phone,
-                shippingAddress: {
-                    addressLine1: formData.address,
-                    city: formData.city,
-                    state: formData.state,
-                    pincode: formData.zip
-                }
-            }, { merge: true });
-
-            toast.success('Order placed successfully!');
-            clearCart();
-            router.push('/profile');
-        } catch (error) {
-            console.error('Error placing order:', error);
-            toast.error('Failed to place order. Please try again.');
-        } finally {
-            setLoading(false);
-        }
-    };
 
     if (cart.length === 0) {
         return <div className="p-8 text-center">Your cart is empty.</div>;
@@ -404,10 +304,10 @@ export default function CheckoutPage() {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">Checkout</h1>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                        {/* Shipping Form */}
+                        {/* Billing Address Form */}
                         <div>
-                            <h2 className="text-xl font-semibold mb-6 dark:text-white">Shipping Address</h2>
-                            <form onSubmit={handleCODOrder} className="space-y-6">
+                            <h2 className="text-xl font-semibold mb-6 dark:text-white">Billing Address</h2>
+                            <form onSubmit={(e) => { e.preventDefault(); initiateCashfreePayment(); }} className="space-y-6">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Full Name</label>
                                     <input required name="name" value={formData.name} onChange={handleChange} type="text" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 p-3" />
@@ -465,43 +365,15 @@ export default function CheckoutPage() {
                                                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                                                 </svg>
-                                                Pay Online ₹{cartTotal.toLocaleString()}
+                                                Pay ₹{cartTotal.toLocaleString()}
                                             </>
                                         )}
                                     </button>
 
-                                    <div className="relative">
-                                        <div className="absolute inset-0 flex items-center">
-                                            <div className="w-full border-t border-gray-300 dark:border-gray-700"></div>
-                                        </div>
-                                        <div className="relative flex justify-center text-sm">
-                                            <span className="px-2 bg-white dark:bg-black text-gray-500">OR</span>
-                                        </div>
-                                    </div>
-
-                                    {/* COD Button */}
-                                    <button
-                                        type="submit"
-                                        disabled={loading || paymentLoading}
-                                        className="w-full flex items-center justify-center py-4 px-4 border-2 border-gray-300 dark:border-gray-600 rounded-xl shadow-sm text-base font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-                                    >
-                                        {loading ? (
-                                            <>
-                                                <svg className="animate-spin -ml-1 mr-3 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                </svg>
-                                                Placing Order...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-                                                </svg>
-                                                Cash on Delivery ₹{cartTotal.toLocaleString()}
-                                            </>
-                                        )}
-                                    </button>
+                                    {/* Payment methods info */}
+                                    <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
+                                        Pay securely via UPI, Credit/Debit Card, or Net Banking
+                                    </p>
                                 </div>
 
                                 {/* Payment Methods Info */}

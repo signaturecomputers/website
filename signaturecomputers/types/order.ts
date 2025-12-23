@@ -1,7 +1,7 @@
 // Order Status Enum - Primary status of the order
 export type OrderStatus =
-    | 'placed'           // Order placed, awaiting payment confirmation
-    | 'confirmed'        // Payment confirmed, order processing
+    | 'placed'           // Order placed, awaiting admin confirmation
+    | 'confirmed'        // Admin confirmed, order processing
     | 'shipped'          // Order shipped
     | 'delivered'        // Order delivered
     | 'cancelled';       // Order cancelled
@@ -106,12 +106,44 @@ export function getDisplayStatus(order: { orderStatus: OrderStatus; refundStatus
     }
 
     switch (order.orderStatus) {
-        case 'placed': return 'Order Placed';
+        case 'placed': return 'Order Placed'; // Legacy support
         case 'confirmed': return 'Order Confirmed';
         case 'shipped': return 'Shipped';
         case 'delivered': return 'Delivered';
         default: return order.orderStatus;
     }
+}
+
+// Customer-facing status messages
+export function getCustomerStatusMessage(orderStatus: OrderStatus, paymentStatus: PaymentStatus): string {
+    if (paymentStatus === 'failed') {
+        return 'Order cancelled due to payment failure.';
+    }
+
+    switch (orderStatus) {
+        case 'placed':
+            return 'Payment successful. Your order is placed and awaiting confirmation.';
+        case 'confirmed':
+            return 'Your order is confirmed. Invoice is now available.';
+        case 'shipped':
+            return 'Your order has been shipped and is on its way.';
+        case 'delivered':
+            return 'Your order has been delivered.';
+        case 'cancelled':
+            return 'This order has been cancelled.';
+        default:
+            return '';
+    }
+}
+
+// Check if invoice should be visible (only after confirmed)
+export function isInvoiceVisible(orderStatus: OrderStatus): boolean {
+    return ['confirmed', 'shipped', 'delivered'].includes(orderStatus);
+}
+
+// Check if order can be cancelled by customer
+export function canCustomerCancel(orderStatus: OrderStatus): boolean {
+    return ['placed', 'confirmed'].includes(orderStatus);
 }
 
 // Helper to check if order should appear in Refunds filter

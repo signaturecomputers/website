@@ -196,16 +196,16 @@ async function handlePaymentSuccess(data: PaymentSuccessData) {
 
         const batch = adminDb.batch();
         const stockUpdates: { category: string; productId: string; quantity: number }[] = [];
-        const ordersToNotify: { docId: string; data: DocumentData }[] = [];
 
         ordersSnapshot.forEach((doc: QueryDocumentSnapshot<DocumentData>) => {
             const orderData = doc.data();
 
-            // Update order status
+            // Update order: paymentStatus = paid, orderStatus = placed
+            // Admin must manually confirm the order to generate invoice
             batch.update(doc.ref, {
                 paymentStatus: "paid",
-                orderStatus: "confirmed",  // New field
-                status: "confirmed",        // Legacy field for compatibility
+                orderStatus: "placed",  // Order Placed - awaiting admin confirmation
+                status: "placed",       // Legacy field for compatibility
                 cfPaymentId: payment.cf_payment_id,
                 paymentMethod: payment.payment_method,
                 paymentTime: payment.payment_time,
@@ -214,7 +214,7 @@ async function handlePaymentSuccess(data: PaymentSuccessData) {
                 timeline: adminDb.FieldValue.arrayUnion({
                     timestamp: new Date(),
                     event: "Payment Successful",
-                    description: `Payment of ₹${payment.payment_amount} received via ${payment.payment_method?.toString() || 'online'}`,
+                    description: `Payment of ₹${payment.payment_amount} received via ${payment.payment_method?.toString() || 'online'}. Awaiting order confirmation.`,
                     actor: "system"
                 })
             });
@@ -227,14 +227,11 @@ async function handlePaymentSuccess(data: PaymentSuccessData) {
                     quantity: orderData.quantity || 1,
                 });
             }
-
-            // Collect orders for email notifications
-            ordersToNotify.push({ docId: doc.id, data: orderData });
         });
 
         // Commit order updates
         await batch.commit();
-        console.log(`Updated ${ordersSnapshot.size} orders to paid/confirmed`);
+        console.log(`Updated ${ordersSnapshot.size} orders to payment_received`);
 
         // Deduct stock for each product
         for (const update of stockUpdates) {
@@ -254,54 +251,10 @@ async function handlePaymentSuccess(data: PaymentSuccessData) {
             }
         }
 
-        // Generate invoice and send confirmation emails for each order
-        for (const orderInfo of ordersToNotify) {
-            try {
-                // Generate invoice
-                const invoiceResponse = await fetch(
-                    `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/invoice/generate`,
-                    {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ orderId: orderInfo.docId }),
-                    }
-                );
+        // NOTE: Invoice generation and email are now triggered when admin confirms the order
+        // This happens in the admin panel when status is changed to "confirmed"
+        console.log("Payment processed. Order awaiting admin confirmation for invoice generation.");
 
-                const invoiceData = await invoiceResponse.json();
-                console.log("Invoice generated:", invoiceData.invoiceNumber);
-
-                // Send order confirmation email
-                const emailResponse = await fetch(
-                    `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/email/send`,
-                    {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            type: 'order_confirmation',
-                            data: {
-                                orderId: orderInfo.data.orderId,
-                                customerName: orderInfo.data.customerName,
-                                customerEmail: orderInfo.data.customerEmail,
-                                customerPhone: orderInfo.data.phone || '',
-                                productName: orderInfo.data.productName,
-                                quantity: orderInfo.data.quantity || 1,
-                                totalAmount: orderInfo.data.totalAmount,
-                                shippingAddress: orderInfo.data.address || '',
-                                paymentMethod: 'Online Payment (Cashfree)',
-                                invoiceNumber: invoiceData.invoiceNumber,
-                            },
-                        }),
-                    }
-                );
-
-                if (emailResponse.ok) {
-                    console.log("Order confirmation email sent for:", orderInfo.data.orderId);
-                }
-            } catch (notifyError) {
-                console.error("Error sending notifications:", notifyError);
-                // Don't throw - payment was successful, email is secondary
-            }
-        }
     } catch (error) {
         console.error("Error handling payment success:", error);
         throw error;
@@ -332,17 +285,28 @@ async function handlePaymentFailed(data: PaymentFailedData) {
         const batch = adminDb.batch();
 
         ordersSnapshot.forEach((doc: QueryDocumentSnapshot<DocumentData>) => {
+            // AUTO-CANCEL order on payment failure
             batch.update(doc.ref, {
                 paymentStatus: "failed",
-                status: "payment_failed",
+                orderStatus: "cancelled",  // Auto-cancel on payment failure
+                status: "cancelled",       // Legacy field
+                cancellationReason: "Order cancelled due to payment failure.",
+                cancelledAt: new Date(),
+                cancelledBy: "system",
                 cfPaymentId: payment.cf_payment_id,
                 paymentError: error_details || { error_description: "Payment failed" },
                 updatedAt: new Date(),
+                timeline: adminDb.FieldValue.arrayUnion({
+                    timestamp: new Date(),
+                    event: "Order Cancelled",
+                    description: "Order automatically cancelled due to payment failure.",
+                    actor: "system"
+                })
             });
         });
 
         await batch.commit();
-        console.log(`Updated ${ordersSnapshot.size} orders to failed`);
+        console.log(`Updated ${ordersSnapshot.size} orders to cancelled (payment failed)`);
     } catch (error) {
         console.error("Error handling payment failure:", error);
         throw error;

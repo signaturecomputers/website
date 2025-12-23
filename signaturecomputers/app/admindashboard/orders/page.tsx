@@ -69,13 +69,29 @@ interface Order {
 }
 
 // Order status options for dropdown
-const orderStatusOptions: { value: OrderStatus; label: string }[] = [
+const allOrderStatusOptions: { value: OrderStatus; label: string }[] = [
     { value: 'placed', label: 'Placed' },
     { value: 'confirmed', label: 'Confirmed' },
     { value: 'shipped', label: 'Shipped' },
     { value: 'delivered', label: 'Delivered' },
     { value: 'cancelled', label: 'Cancelled' },
 ];
+
+// Get status options for dropdown - Admin can change to any status
+const getValidNextStatuses = (currentStatus: OrderStatus, paymentStatus?: string) => {
+    // If payment failed, can only show cancelled (order is already cancelled)
+    if (paymentStatus === 'failed') {
+        return [{ value: 'cancelled' as OrderStatus, label: 'Cancelled' }];
+    }
+
+    // If order is delivered, no changes allowed
+    if (currentStatus === 'delivered') {
+        return [{ value: 'delivered' as OrderStatus, label: 'Delivered' }];
+    }
+
+    // Admin can change to any status
+    return allOrderStatusOptions;
+};
 
 export default function OrdersPage() {
     const [orders, setOrders] = useState<Order[]>([]);
@@ -109,9 +125,9 @@ export default function OrdersPage() {
                 const data = doc.data();
 
                 // Migrate legacy status field to new orderStatus/refundStatus
+                // Migrate legacy status field to new orderStatus/refundStatus
                 let orderStatus: OrderStatus = data.orderStatus || 'placed';
                 let refundStatus: RefundStatus = data.refundStatus || 'none';
-
                 // Check for cancellation request - either boolean or legacy status
                 let cancellationRequested = data.cancellationRequested || false;
 
@@ -119,6 +135,8 @@ export default function OrdersPage() {
                 if (data.status && !data.orderStatus) {
                     const legacyStatus = data.status.toLowerCase();
                     if (legacyStatus === 'pending') orderStatus = 'placed';
+                    else if (legacyStatus === 'placed') orderStatus = 'placed';
+                    else if (legacyStatus === 'placed') orderStatus = 'placed';
                     else if (legacyStatus === 'confirmed') orderStatus = 'confirmed';
                     else if (legacyStatus === 'shipped') orderStatus = 'shipped';
                     else if (legacyStatus === 'delivered') orderStatus = 'delivered';
@@ -252,11 +270,26 @@ export default function OrdersPage() {
     );
 
     // Update order status with timeline tracking
-    const updateOrderStatus = async (orderId: string, newStatus: OrderStatus) => {
+    // When confirming an order, invoice is generated and email is sent
+    const updateOrderStatus = async (orderId: string, newStatus: OrderStatus | string) => {
         setUpdatingStatus(orderId);
         try {
             const order = orders.find(o => o.id === orderId);
             if (!order) return;
+
+            // Only restriction: Don't allow status change for delivered orders
+            if (order.orderStatus === 'delivered' && newStatus !== 'delivered') {
+                toast.error('Cannot change status of delivered orders');
+                setUpdatingStatus(null);
+                return;
+            }
+
+            // Don't allow shipped/delivered orders to be cancelled
+            if (newStatus === 'cancelled' && ['shipped', 'delivered'].includes(order.orderStatus)) {
+                toast.error('Cannot cancel shipped or delivered orders');
+                setUpdatingStatus(null);
+                return;
+            }
 
             const timelineEvent = {
                 timestamp: new Date(),
@@ -265,6 +298,7 @@ export default function OrdersPage() {
                 actor: 'admin'
             };
 
+            // Update order in Firestore
             await updateDoc(doc(db, 'orders', orderId), {
                 orderStatus: newStatus,
                 status: newStatus, // Keep legacy field for compatibility
@@ -272,8 +306,54 @@ export default function OrdersPage() {
                 timeline: arrayUnion(timelineEvent)
             });
 
+            // If confirming order, generate invoice and send email
+            if (newStatus === 'confirmed' && order.orderStatus !== 'confirmed') {
+                toast.info('Generating invoice...');
+                try {
+                    // Generate invoice
+                    const invoiceResponse = await fetch('/api/invoice/generate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ orderId }),
+                    });
+
+                    const invoiceData = await invoiceResponse.json();
+
+                    if (invoiceResponse.ok) {
+                        toast.success(`Invoice ${invoiceData.invoiceNumber} generated!`);
+
+                        // Send confirmation email
+                        await fetch('/api/email/send', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                type: 'order_confirmation',
+                                data: {
+                                    orderId: order.orderId,
+                                    customerName: order.customerName,
+                                    customerEmail: order.customerEmail,
+                                    customerPhone: order.phone || '',
+                                    productName: order.productName,
+                                    quantity: order.quantity || 1,
+                                    totalAmount: order.totalAmount,
+                                    shippingAddress: order.address || '',
+                                    paymentMethod: 'Online Payment',
+                                    invoiceNumber: invoiceData.invoiceNumber,
+                                },
+                            }),
+                        });
+                    } else {
+                        console.error('Invoice generation failed:', invoiceData);
+                        toast.error('Invoice generation failed');
+                    }
+                } catch (invoiceError) {
+                    console.error('Error generating invoice:', invoiceError);
+                    toast.error('Failed to generate invoice');
+                }
+            }
+
             setOrders(prev => prev.map(o =>
-                o.id === orderId ? { ...o, orderStatus: newStatus, timeline: [...(o.timeline || []), timelineEvent] } : o
+                o.id === orderId ? { ...o, orderStatus: newStatus as OrderStatus, timeline: [...(o.timeline || []), timelineEvent] } : o
             ));
 
             toast.success(`Order status updated to ${newStatus}`);
@@ -684,7 +764,7 @@ export default function OrdersPage() {
                                                     disabled={updatingStatus === order.id || order.orderStatus === 'cancelled'}
                                                     className={`px-2 py-1 rounded-lg text-xs font-medium border-0 cursor-pointer ${orderColors.bg} ${orderColors.text}`}
                                                 >
-                                                    {orderStatusOptions.map(opt => (
+                                                    {getValidNextStatuses(order.orderStatus).map((opt: { value: OrderStatus; label: string }) => (
                                                         <option key={opt.value} value={opt.value}>{opt.label}</option>
                                                     ))}
                                                 </select>

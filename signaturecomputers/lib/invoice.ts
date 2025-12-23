@@ -13,10 +13,6 @@ export interface CompanyInfo {
     gstin: string;
     pan: string;
     stateCode: string;
-    bankName: string;
-    bankBranch: string;
-    accountNumber: string;
-    ifscCode: string;
 }
 
 export interface CustomerInfo {
@@ -33,13 +29,11 @@ export interface CustomerInfo {
 
 export interface InvoiceItem {
     sno: number;
+    productId?: string;
     description: string;
-    hsnCode: string;
+    warranty?: string;
     quantity: number;
-    unit: string;
-    grossRate: number;
-    discount: number;
-    netRate: number;
+    unitPrice: number;
     amount: number;
 }
 
@@ -47,17 +41,9 @@ export interface InvoiceData {
     invoiceNumber: string;
     invoiceDate: Date;
     orderId: string;
-    cfOrderId?: string;
-    irnNumber?: string;
-    ackNumber?: string;
-    ewayBillNo?: string;
-    vehicleNo?: string;
-    termsOfDelivery: string;
-    paymentMode: string;
-    refDate?: Date;
-    buyerOrderNo?: string;
+    orderDate: Date;
+    paymentMode: 'UPI' | 'Card' | 'Net Banking' | 'Online Payment';
     billedTo: CustomerInfo;
-    shippedTo: CustomerInfo;
     items: InvoiceItem[];
     taxableAmount: number;
     cgstRate: number;
@@ -66,7 +52,6 @@ export interface InvoiceData {
     sgstAmount: number;
     igstRate?: number;
     igstAmount?: number;
-    deliveryCharges: number;
     grandTotal: number;
     amountInWords: string;
 }
@@ -75,17 +60,13 @@ export interface InvoiceData {
 export const COMPANY_INFO: CompanyInfo = {
     name: "SIGNATURE COMPUTERS",
     address: "No - 52, Ground Floor, Sri Kalyan Square, Pantheon Road, Egmore, Chennai - 600 008.",
-    phone: "044 3551 0050",
+    phone: "044 3551 0050 | 9884285858",
     mobile: "9884285858",
     email: "saravanan@signaturecomputers.in",
     website: "https://signaturecomputers.in",
     gstin: "33AEQFS0223K1ZZ",
     pan: "AEQFS0223K",
-    stateCode: "33",
-    bankName: "KOTAK MAHINDRA BANK",
-    bankBranch: "EGMORE",
-    accountNumber: "9884285858",
-    ifscCode: "KKBK0008513"
+    stateCode: "33"
 };
 
 // GST State Codes for India

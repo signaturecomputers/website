@@ -24,8 +24,27 @@ export default function Footer() {
     const [validationError, setValidationError] = useState('');
 
     // Restore draft if available and user is logged in; otherwise clear it
+    // Also check for URL params from 'Write a Review' button
     useEffect(() => {
         if (typeof window !== 'undefined' && !loading) {
+            // Check for URL params from Write a Review button
+            const urlParams = new URLSearchParams(window.location.search);
+            const feedbackParam = urlParams.get('feedback');
+            const productParam = urlParams.get('product');
+
+            if (feedbackParam === 'true' && productParam) {
+                // Auto-fill product name from URL
+                setProductName(productParam);
+                // Scroll to feedback section after a short delay
+                setTimeout(() => {
+                    const feedbackSection = document.getElementById('feedback');
+                    if (feedbackSection) {
+                        feedbackSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                }, 500);
+                return; // Don't restore draft if coming from orders page
+            }
+
             const draft = sessionStorage.getItem('review_draft');
 
             if (user && draft) {
@@ -200,7 +219,7 @@ export default function Footer() {
                     </div>
 
                     {/* COLUMN 5: Your Experience (Access Controlled) */}
-                    <div className="lg:flex-1 lg:max-w-xs lg:ml-8">
+                    <div id="feedback" className="lg:flex-1 lg:max-w-xs lg:ml-8">
                         <h4 className="text-base font-bold text-white mb-4 border-b border-gray-700/50 pb-1 inline-block">Your Experience</h4>
 
                         {isSubmitted ? (

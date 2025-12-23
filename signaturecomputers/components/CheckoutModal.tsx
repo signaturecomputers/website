@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { FiX, FiShoppingBag, FiMapPin, FiUser, FiPhone, FiCreditCard } from 'react-icons/fi';
+import { useState, useEffect } from 'react';
+import { FiX, FiShoppingBag, FiMapPin, FiUser, FiPhone, FiCreditCard, FiPlus, FiCheck, FiTrash2, FiEdit2 } from 'react-icons/fi';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp, doc, getDoc, setDoc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import Script from 'next/script';
@@ -39,7 +39,8 @@ interface CheckoutModalProps {
     quantity: number;
 }
 
-interface ShippingAddress {
+interface BillingAddress {
+    id: string;
     fullName: string;
     phone: string;
     addressLine1: string;
@@ -47,6 +48,7 @@ interface ShippingAddress {
     city: string;
     state: string;
     pincode: string;
+    isDefault?: boolean;
 }
 
 export default function CheckoutModal({ isOpen, onClose, product, quantity }: CheckoutModalProps) {
@@ -56,7 +58,15 @@ export default function CheckoutModal({ isOpen, onClose, product, quantity }: Ch
     const [paymentLoading, setPaymentLoading] = useState(false);
     const [cashfreeLoaded, setCashfreeLoaded] = useState(false);
     const [step, setStep] = useState<'address' | 'confirm'>('address');
-    const [address, setAddress] = useState<ShippingAddress>({
+
+    // Multiple addresses state
+    const [savedAddresses, setSavedAddresses] = useState<BillingAddress[]>([]);
+    const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+    const [showAddForm, setShowAddForm] = useState(false);
+    const [loadingAddresses, setLoadingAddresses] = useState(true);
+
+    // New address form
+    const [newAddress, setNewAddress] = useState<Omit<BillingAddress, 'id'>>({
         fullName: '',
         phone: '',
         addressLine1: '',
@@ -66,82 +76,190 @@ export default function CheckoutModal({ isOpen, onClose, product, quantity }: Ch
         pincode: ''
     });
 
-    // Load saved address if available
+    // Load saved addresses
     useEffect(() => {
-        const loadUserAddress = async () => {
+        const loadUserAddresses = async () => {
             if (user) {
-                const userRef = doc(db, 'users', user.uid);
-                const userDoc = await getDoc(userRef);
-                if (userDoc.exists()) {
-                    const userData = userDoc.data();
-                    if (userData.shippingAddress) {
-                        setAddress(userData.shippingAddress);
+                setLoadingAddresses(true);
+                try {
+                    const userRef = doc(db, 'users', user.uid);
+                    const userDoc = await getDoc(userRef);
+                    if (userDoc.exists()) {
+                        const userData = userDoc.data();
+                        const addresses = userData.billingAddresses || [];
+                        setSavedAddresses(addresses);
+
+                        // Select default or first address
+                        const defaultAddr = addresses.find((a: BillingAddress) => a.isDefault);
+                        if (defaultAddr) {
+                            setSelectedAddressId(defaultAddr.id);
+                        } else if (addresses.length > 0) {
+                            setSelectedAddressId(addresses[0].id);
+                        }
+
+                        // Pre-fill new address form with user info
+                        if (userData.displayName) {
+                            setNewAddress(prev => ({
+                                ...prev,
+                                fullName: userData.displayName || '',
+                                phone: userData.phone || ''
+                            }));
+                        }
+
+                        // If no saved addresses, show the add form
+                        if (addresses.length === 0) {
+                            setShowAddForm(true);
+                        }
+                    } else {
+                        setShowAddForm(true);
                     }
-                    // Pre-fill name and phone if available
-                    if (userData.displayName && !address.fullName) {
-                        setAddress(prev => ({
-                            ...prev,
-                            fullName: userData.displayName || '',
-                            phone: userData.phone || ''
-                        }));
-                    }
+                } catch (error) {
+                    console.error('Error loading addresses:', error);
+                    setShowAddForm(true);
+                } finally {
+                    setLoadingAddresses(false);
                 }
             }
         };
         if (isOpen) {
-            loadUserAddress();
+            loadUserAddresses();
         }
     }, [user, isOpen]);
 
     if (!isOpen) return null;
 
     const totalAmount = product.price * quantity;
+    const selectedAddress = savedAddresses.find(a => a.id === selectedAddressId);
 
-    const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleNewAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
-        setAddress(prev => ({ ...prev, [name]: value }));
+        setNewAddress(prev => ({ ...prev, [name]: value }));
     };
 
-    const validateAddress = () => {
-        if (!address.fullName.trim()) {
+    const validateNewAddress = () => {
+        if (!newAddress.fullName.trim()) {
             toast.error('Please enter your full name');
             return false;
         }
-        if (!address.phone.trim() || address.phone.length < 10) {
+        if (!newAddress.phone.trim() || newAddress.phone.length < 10) {
             toast.error('Please enter a valid phone number');
             return false;
         }
-        if (!address.addressLine1.trim()) {
+        if (!newAddress.addressLine1.trim()) {
             toast.error('Please enter your address');
             return false;
         }
-        if (!address.city.trim()) {
+        if (!newAddress.city.trim()) {
             toast.error('Please enter your city');
             return false;
         }
-        if (!address.state.trim()) {
+        if (!newAddress.state.trim()) {
             toast.error('Please enter your state');
             return false;
         }
-        if (!address.pincode.trim() || address.pincode.length !== 6) {
+        if (!newAddress.pincode.trim() || newAddress.pincode.length !== 6) {
             toast.error('Please enter a valid 6-digit pincode');
             return false;
         }
         return true;
     };
 
+    const handleAddNewAddress = async () => {
+        if (!validateNewAddress()) return;
+        if (!user) return;
+
+        try {
+            const addressId = `addr_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            const addressData: BillingAddress = {
+                id: addressId,
+                ...newAddress,
+                isDefault: savedAddresses.length === 0 // First address is default
+            };
+
+            const userRef = doc(db, 'users', user.uid);
+            await updateDoc(userRef, {
+                billingAddresses: arrayUnion(addressData)
+            }).catch(async () => {
+                // Document might not exist, create it
+                await setDoc(userRef, {
+                    billingAddresses: [addressData]
+                }, { merge: true });
+            });
+
+            setSavedAddresses(prev => [...prev, addressData]);
+            setSelectedAddressId(addressId);
+            setShowAddForm(false);
+            setNewAddress({
+                fullName: '',
+                phone: '',
+                addressLine1: '',
+                addressLine2: '',
+                city: '',
+                state: '',
+                pincode: ''
+            });
+            toast.success('Address added successfully!');
+        } catch (error) {
+            console.error('Error adding address:', error);
+            toast.error('Failed to add address');
+        }
+    };
+
+    const handleDeleteAddress = async (addressId: string) => {
+        if (!user) return;
+
+        const addressToDelete = savedAddresses.find(a => a.id === addressId);
+        if (!addressToDelete) return;
+
+        if (!confirm('Are you sure you want to delete this address?')) return;
+
+        try {
+            const userRef = doc(db, 'users', user.uid);
+            await updateDoc(userRef, {
+                billingAddresses: arrayRemove(addressToDelete)
+            });
+
+            setSavedAddresses(prev => prev.filter(a => a.id !== addressId));
+            if (selectedAddressId === addressId) {
+                const remaining = savedAddresses.filter(a => a.id !== addressId);
+                setSelectedAddressId(remaining.length > 0 ? remaining[0].id : null);
+            }
+            toast.success('Address deleted');
+        } catch (error) {
+            console.error('Error deleting address:', error);
+            toast.error('Failed to delete address');
+        }
+    };
+
     const handleProceedToConfirm = () => {
-        if (validateAddress()) {
+        if (!selectedAddress && !showAddForm) {
+            toast.error('Please select or add an address');
+            return;
+        }
+        if (showAddForm) {
+            if (!validateNewAddress()) return;
+            // Save address first, then proceed
+            handleAddNewAddress().then(() => {
+                setStep('confirm');
+            });
+        } else {
             setStep('confirm');
         }
     };
 
     // Create pending order in Firestore
     const createPendingOrder = async (cfOrderId: string) => {
-        if (!user) return null;
+        if (!user || !selectedAddress) return null;
 
-        const addressString = `${address.addressLine1}${address.addressLine2 ? ', ' + address.addressLine2 : ''}, ${address.city}, ${address.state} - ${address.pincode}`;
-        const orderId = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        const addressString = `${selectedAddress.addressLine1}${selectedAddress.addressLine2 ? ', ' + selectedAddress.addressLine2 : ''}, ${selectedAddress.city}, ${selectedAddress.state} - ${selectedAddress.pincode}`;
+
+        // Generate uniform order ID: SC-YYYYMMDD-XXXX
+        const now = new Date();
+        const dateStr = now.getFullYear().toString() +
+            (now.getMonth() + 1).toString().padStart(2, '0') +
+            now.getDate().toString().padStart(2, '0');
+        const randomPart = Math.floor(1000 + Math.random() * 9000);
+        const orderId = `SC-${dateStr}-${randomPart}`;
 
         const orderData = {
             orderId,
@@ -156,10 +274,10 @@ export default function CheckoutModal({ isOpen, onClose, product, quantity }: Ch
             totalAmount: totalAmount,
             customerId: user.uid,
             customerEmail: user.email,
-            customerName: address.fullName,
-            phone: address.phone,
+            customerName: selectedAddress.fullName,
+            phone: selectedAddress.phone,
             address: addressString,
-            shippingAddress: address,
+            billingAddress: selectedAddress,
             paymentStatus: 'pending',
             status: 'pending',
             createdAt: serverTimestamp(),
@@ -168,20 +286,18 @@ export default function CheckoutModal({ isOpen, onClose, product, quantity }: Ch
 
         await addDoc(collection(db, 'orders'), orderData);
 
-        // Save address to user profile
-        const userRef = doc(db, 'users', user.uid);
-        await setDoc(userRef, {
-            shippingAddress: address,
-            phone: address.phone
-        }, { merge: true });
-
         return orderId;
     };
 
-    // Cashfree Online Payment
+    // Cashfree Online Payment (Primary method - no COD)
     const handleOnlinePayment = async () => {
         if (!user) {
             toast.error('Please login to place order');
+            return;
+        }
+
+        if (!selectedAddress) {
+            toast.error('Please select a billing address');
             return;
         }
 
@@ -205,8 +321,8 @@ export default function CheckoutModal({ isOpen, onClose, product, quantity }: Ch
                     amount: totalAmount,
                     customer_id: user.uid,
                     email: user.email,
-                    phone: address.phone,
-                    customer_name: address.fullName,
+                    phone: selectedAddress.phone,
+                    customer_name: selectedAddress.fullName,
                     order_id: cfOrderId
                 })
             });
@@ -239,60 +355,6 @@ export default function CheckoutModal({ isOpen, onClose, product, quantity }: Ch
         }
     };
 
-    // COD Order
-    const handleCODOrder = async () => {
-        if (!user) {
-            toast.error('Please login to place order');
-            return;
-        }
-
-        setLoading(true);
-        try {
-            const addressString = `${address.addressLine1}${address.addressLine2 ? ', ' + address.addressLine2 : ''}, ${address.city}, ${address.state} - ${address.pincode}`;
-
-            const orderData = {
-                orderId: `ORD-${Date.now()}`,
-                productId: product.id,
-                productName: product.name,
-                productImage: product.images?.[0] || '',
-                productCategory: product.category || '',
-                partNumber: product.productInfo?.partNo || '',
-                quantity: quantity,
-                unitPrice: product.price,
-                totalAmount: totalAmount,
-                customerId: user.uid,
-                customerEmail: user.email,
-                customerName: address.fullName,
-                phone: address.phone,
-                address: addressString,
-                shippingAddress: address,
-                paymentMethod: 'COD',
-                paymentStatus: 'pending',
-                status: 'pending',
-                createdAt: serverTimestamp(),
-                updatedAt: serverTimestamp()
-            };
-
-            await addDoc(collection(db, 'orders'), orderData);
-
-            // Save address to user profile
-            const userRef = doc(db, 'users', user.uid);
-            await setDoc(userRef, {
-                shippingAddress: address,
-                phone: address.phone
-            }, { merge: true });
-
-            toast.success('Order placed successfully!');
-            onClose();
-            router.push('/profile');
-        } catch (error) {
-            console.error('Error placing order:', error);
-            toast.error('Failed to place order. Please try again.');
-        } finally {
-            setLoading(false);
-        }
-    };
-
     return (
         <>
             {/* Load Cashfree SDK */}
@@ -315,7 +377,7 @@ export default function CheckoutModal({ isOpen, onClose, product, quantity }: Ch
                     <div className="sticky top-0 bg-white dark:bg-gray-800 border-b dark:border-gray-700 p-4 flex items-center justify-between z-10">
                         <h2 className="text-xl font-bold dark:text-white flex items-center gap-2">
                             <FiShoppingBag className="text-blue-600" />
-                            {step === 'address' ? 'Shipping Address' : 'Confirm Order'}
+                            {step === 'address' ? 'Billing Address' : 'Confirm Order'}
                         </h2>
                         <button
                             onClick={onClose}
@@ -329,99 +391,189 @@ export default function CheckoutModal({ isOpen, onClose, product, quantity }: Ch
                     <div className="p-6">
                         {step === 'address' ? (
                             <div className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="col-span-2">
-                                        <label className="block text-sm font-medium mb-1 dark:text-gray-300">
-                                            <FiUser className="inline mr-1" /> Full Name *
-                                        </label>
-                                        <input
-                                            type="text"
-                                            name="fullName"
-                                            value={address.fullName}
-                                            onChange={handleAddressChange}
-                                            placeholder="Enter your full name"
-                                            className="w-full p-3 rounded-lg border dark:bg-gray-900 dark:border-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500"
-                                        />
+                                {loadingAddresses ? (
+                                    <div className="flex items-center justify-center py-8">
+                                        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
                                     </div>
-                                    <div className="col-span-2">
-                                        <label className="block text-sm font-medium mb-1 dark:text-gray-300">
-                                            <FiPhone className="inline mr-1" /> Phone Number *
-                                        </label>
-                                        <input
-                                            type="tel"
-                                            name="phone"
-                                            value={address.phone}
-                                            onChange={handleAddressChange}
-                                            placeholder="10-digit phone number"
-                                            maxLength={10}
-                                            className="w-full p-3 rounded-lg border dark:bg-gray-900 dark:border-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500"
-                                        />
-                                    </div>
-                                    <div className="col-span-2">
-                                        <label className="block text-sm font-medium mb-1 dark:text-gray-300">
-                                            <FiMapPin className="inline mr-1" /> Address Line 1 *
-                                        </label>
-                                        <input
-                                            type="text"
-                                            name="addressLine1"
-                                            value={address.addressLine1}
-                                            onChange={handleAddressChange}
-                                            placeholder="House/Flat No., Building, Street"
-                                            className="w-full p-3 rounded-lg border dark:bg-gray-900 dark:border-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500"
-                                        />
-                                    </div>
-                                    <div className="col-span-2">
-                                        <label className="block text-sm font-medium mb-1 dark:text-gray-300">
-                                            Address Line 2
-                                        </label>
-                                        <input
-                                            type="text"
-                                            name="addressLine2"
-                                            value={address.addressLine2}
-                                            onChange={handleAddressChange}
-                                            placeholder="Landmark, Area (optional)"
-                                            className="w-full p-3 rounded-lg border dark:bg-gray-900 dark:border-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium mb-1 dark:text-gray-300">City *</label>
-                                        <input
-                                            type="text"
-                                            name="city"
-                                            value={address.city}
-                                            onChange={handleAddressChange}
-                                            placeholder="City"
-                                            className="w-full p-3 rounded-lg border dark:bg-gray-900 dark:border-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium mb-1 dark:text-gray-300">State *</label>
-                                        <input
-                                            type="text"
-                                            name="state"
-                                            value={address.state}
-                                            onChange={handleAddressChange}
-                                            placeholder="State"
-                                            className="w-full p-3 rounded-lg border dark:bg-gray-900 dark:border-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500"
-                                        />
-                                    </div>
-                                    <div className="col-span-2">
-                                        <label className="block text-sm font-medium mb-1 dark:text-gray-300">Pincode *</label>
-                                        <input
-                                            type="text"
-                                            name="pincode"
-                                            value={address.pincode}
-                                            onChange={handleAddressChange}
-                                            placeholder="6-digit pincode"
-                                            maxLength={6}
-                                            className="w-full p-3 rounded-lg border dark:bg-gray-900 dark:border-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500"
-                                        />
-                                    </div>
-                                </div>
+                                ) : (
+                                    <>
+                                        {/* Saved Addresses */}
+                                        {savedAddresses.length > 0 && !showAddForm && (
+                                            <div className="space-y-3">
+                                                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                                    Select a billing address:
+                                                </p>
+                                                {savedAddresses.map((addr) => (
+                                                    <div
+                                                        key={addr.id}
+                                                        className={`relative border rounded-lg p-4 cursor-pointer transition-all ${selectedAddressId === addr.id
+                                                                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                                                                : 'border-gray-200 dark:border-gray-700 hover:border-blue-300'
+                                                            }`}
+                                                        onClick={() => setSelectedAddressId(addr.id)}
+                                                    >
+                                                        <div className="flex items-start justify-between">
+                                                            <div className="flex items-start gap-3">
+                                                                <div className={`mt-1 w-5 h-5 rounded-full border-2 flex items-center justify-center ${selectedAddressId === addr.id
+                                                                        ? 'border-blue-600 bg-blue-600'
+                                                                        : 'border-gray-300'
+                                                                    }`}>
+                                                                    {selectedAddressId === addr.id && (
+                                                                        <FiCheck className="text-white text-xs" />
+                                                                    )}
+                                                                </div>
+                                                                <div>
+                                                                    <p className="font-semibold dark:text-white">{addr.fullName}</p>
+                                                                    <p className="text-sm text-gray-600 dark:text-gray-400">{addr.phone}</p>
+                                                                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                                        {addr.addressLine1}
+                                                                        {addr.addressLine2 && `, ${addr.addressLine2}`}
+                                                                    </p>
+                                                                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                                        {addr.city}, {addr.state} - {addr.pincode}
+                                                                    </p>
+                                                                    {addr.isDefault && (
+                                                                        <span className="inline-block mt-1 px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded">
+                                                                            Default
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleDeleteAddress(addr.id);
+                                                                }}
+                                                                className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                                            >
+                                                                <FiTrash2 className="w-4 h-4" />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ))}
+
+                                                {/* Add New Address Button */}
+                                                <button
+                                                    onClick={() => setShowAddForm(true)}
+                                                    className="w-full flex items-center justify-center gap-2 p-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-400 hover:border-blue-500 hover:text-blue-600 transition-colors"
+                                                >
+                                                    <FiPlus /> Add New Address
+                                                </button>
+                                            </div>
+                                        )}
+
+                                        {/* Add New Address Form */}
+                                        {showAddForm && (
+                                            <div className="space-y-4">
+                                                {savedAddresses.length > 0 && (
+                                                    <button
+                                                        onClick={() => setShowAddForm(false)}
+                                                        className="text-sm text-blue-600 hover:underline"
+                                                    >
+                                                        ← Back to saved addresses
+                                                    </button>
+                                                )}
+                                                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                                    Add new billing address:
+                                                </p>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div className="col-span-2">
+                                                        <label className="block text-sm font-medium mb-1 dark:text-gray-300">
+                                                            <FiUser className="inline mr-1" /> Full Name *
+                                                        </label>
+                                                        <input
+                                                            type="text"
+                                                            name="fullName"
+                                                            value={newAddress.fullName}
+                                                            onChange={handleNewAddressChange}
+                                                            placeholder="Enter your full name"
+                                                            className="w-full p-3 rounded-lg border dark:bg-gray-900 dark:border-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                                        />
+                                                    </div>
+                                                    <div className="col-span-2">
+                                                        <label className="block text-sm font-medium mb-1 dark:text-gray-300">
+                                                            <FiPhone className="inline mr-1" /> Phone Number *
+                                                        </label>
+                                                        <input
+                                                            type="tel"
+                                                            name="phone"
+                                                            value={newAddress.phone}
+                                                            onChange={handleNewAddressChange}
+                                                            placeholder="10-digit phone number"
+                                                            maxLength={10}
+                                                            className="w-full p-3 rounded-lg border dark:bg-gray-900 dark:border-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                                        />
+                                                    </div>
+                                                    <div className="col-span-2">
+                                                        <label className="block text-sm font-medium mb-1 dark:text-gray-300">
+                                                            <FiMapPin className="inline mr-1" /> Address Line 1 *
+                                                        </label>
+                                                        <input
+                                                            type="text"
+                                                            name="addressLine1"
+                                                            value={newAddress.addressLine1}
+                                                            onChange={handleNewAddressChange}
+                                                            placeholder="House/Flat No., Building, Street"
+                                                            className="w-full p-3 rounded-lg border dark:bg-gray-900 dark:border-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                                        />
+                                                    </div>
+                                                    <div className="col-span-2">
+                                                        <label className="block text-sm font-medium mb-1 dark:text-gray-300">
+                                                            Address Line 2
+                                                        </label>
+                                                        <input
+                                                            type="text"
+                                                            name="addressLine2"
+                                                            value={newAddress.addressLine2}
+                                                            onChange={handleNewAddressChange}
+                                                            placeholder="Landmark, Area (optional)"
+                                                            className="w-full p-3 rounded-lg border dark:bg-gray-900 dark:border-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-sm font-medium mb-1 dark:text-gray-300">City *</label>
+                                                        <input
+                                                            type="text"
+                                                            name="city"
+                                                            value={newAddress.city}
+                                                            onChange={handleNewAddressChange}
+                                                            placeholder="City"
+                                                            className="w-full p-3 rounded-lg border dark:bg-gray-900 dark:border-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-sm font-medium mb-1 dark:text-gray-300">State *</label>
+                                                        <input
+                                                            type="text"
+                                                            name="state"
+                                                            value={newAddress.state}
+                                                            onChange={handleNewAddressChange}
+                                                            placeholder="State"
+                                                            className="w-full p-3 rounded-lg border dark:bg-gray-900 dark:border-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                                        />
+                                                    </div>
+                                                    <div className="col-span-2">
+                                                        <label className="block text-sm font-medium mb-1 dark:text-gray-300">Pincode *</label>
+                                                        <input
+                                                            type="text"
+                                                            name="pincode"
+                                                            value={newAddress.pincode}
+                                                            onChange={handleNewAddressChange}
+                                                            placeholder="6-digit pincode"
+                                                            maxLength={6}
+                                                            className="w-full p-3 rounded-lg border dark:bg-gray-900 dark:border-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </>
+                                )}
 
                                 <button
                                     onClick={handleProceedToConfirm}
-                                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-colors mt-4"
+                                    disabled={!selectedAddressId && !showAddForm}
+                                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-colors mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     Continue to Confirm
                                 </button>
@@ -452,37 +604,39 @@ export default function CheckoutModal({ isOpen, onClose, product, quantity }: Ch
                                     </div>
                                 </div>
 
-                                {/* Shipping Address */}
-                                <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
-                                    <div className="flex justify-between items-center mb-2">
-                                        <h3 className="font-semibold dark:text-white">Shipping Address</h3>
-                                        <button
-                                            onClick={() => setStep('address')}
-                                            className="text-blue-600 text-sm hover:underline"
-                                        >
-                                            Edit
-                                        </button>
+                                {/* Billing Address */}
+                                {selectedAddress && (
+                                    <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
+                                        <div className="flex justify-between items-center mb-2">
+                                            <h3 className="font-semibold dark:text-white">Billing Address</h3>
+                                            <button
+                                                onClick={() => setStep('address')}
+                                                className="text-blue-600 text-sm hover:underline"
+                                            >
+                                                Change
+                                            </button>
+                                        </div>
+                                        <p className="text-sm dark:text-gray-300">{selectedAddress.fullName}</p>
+                                        <p className="text-sm text-gray-600 dark:text-gray-400">{selectedAddress.phone}</p>
+                                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                                            {selectedAddress.addressLine1}
+                                            {selectedAddress.addressLine2 && `, ${selectedAddress.addressLine2}`}
+                                        </p>
+                                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                                            {selectedAddress.city}, {selectedAddress.state} - {selectedAddress.pincode}
+                                        </p>
                                     </div>
-                                    <p className="text-sm dark:text-gray-300">{address.fullName}</p>
-                                    <p className="text-sm text-gray-600 dark:text-gray-400">{address.phone}</p>
-                                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                                        {address.addressLine1}
-                                        {address.addressLine2 && `, ${address.addressLine2}`}
-                                    </p>
-                                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                                        {address.city}, {address.state} - {address.pincode}
-                                    </p>
-                                </div>
+                                )}
 
-                                {/* Payment Options */}
+                                {/* Payment - Only Online Payment */}
                                 <div className="space-y-3">
                                     <h3 className="font-semibold dark:text-white">Payment Method</h3>
 
-                                    {/* Pay Online Button */}
+                                    {/* Pay Online Button - Primary and only option */}
                                     <button
                                         onClick={handleOnlinePayment}
-                                        disabled={paymentLoading || loading || !cashfreeLoaded}
-                                        className="w-full flex items-center justify-center py-3 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                        disabled={paymentLoading || !cashfreeLoaded}
+                                        className="w-full flex items-center justify-center py-4 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         {paymentLoading ? (
                                             <>
@@ -497,43 +651,15 @@ export default function CheckoutModal({ isOpen, onClose, product, quantity }: Ch
                                         ) : (
                                             <>
                                                 <FiCreditCard className="mr-2" />
-                                                Pay Online ₹{totalAmount.toLocaleString()}
+                                                Pay ₹{totalAmount.toLocaleString()}
                                             </>
                                         )}
                                     </button>
 
-                                    <div className="relative">
-                                        <div className="absolute inset-0 flex items-center">
-                                            <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
-                                        </div>
-                                        <div className="relative flex justify-center text-sm">
-                                            <span className="px-2 bg-white dark:bg-gray-800 text-gray-500">OR</span>
-                                        </div>
-                                    </div>
-
-                                    {/* COD Button */}
-                                    <button
-                                        onClick={handleCODOrder}
-                                        disabled={loading || paymentLoading}
-                                        className="w-full flex items-center justify-center py-3 px-4 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-bold rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        {loading ? (
-                                            <>
-                                                <svg className="animate-spin -ml-1 mr-3 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                </svg>
-                                                Placing Order...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-                                                </svg>
-                                                Cash on Delivery
-                                            </>
-                                        )}
-                                    </button>
+                                    {/* Payment methods info */}
+                                    <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
+                                        Pay securely via UPI, Credit/Debit Card, or Net Banking
+                                    </p>
                                 </div>
 
                                 {/* Back button */}
