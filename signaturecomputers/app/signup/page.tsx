@@ -17,6 +17,7 @@ export default function Signup() {
     const [phone, setPhone] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [policyAccepted, setPolicyAccepted] = useState(false);
 
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -33,7 +34,13 @@ export default function Signup() {
         e.preventDefault();
         setError('');
 
-        // 1. Validation
+        // 1. Policy acceptance check
+        if (!policyAccepted) {
+            setError('Please agree to the policies to create an account.');
+            return;
+        }
+
+        // 2. Validation
         if (!isValidName(firstName)) {
             setError('Please enter a valid first name (letters only, min 2 characters)');
             return;
@@ -62,19 +69,20 @@ export default function Signup() {
 
         setLoading(true);
         try {
-            // 2. Auth Creation
+            // 3. Auth Creation
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
             const displayName = `${firstName} ${lastName}`.trim();
 
-            // 3. Update Profile
+            // 4. Update Profile
             await updateProfile(user, { displayName });
 
-            // 4. Firestore Sync (Passing extra fields)
+            // 5. Firestore Sync (Passing extra fields including policy acceptance)
             await createFirestoreUser(user, 'password', displayName, {
                 firstName,
                 lastName,
-                phoneNumber: phone
+                phoneNumber: phone,
+                policyAcceptedAt: new Date().toISOString(),
             });
 
             router.push('/');
@@ -90,11 +98,17 @@ export default function Signup() {
     };
 
     const handleGoogleLogin = async () => {
+        if (!policyAccepted) {
+            setError('Please agree to the policies to create an account.');
+            return;
+        }
         setError('');
         try {
             const provider = new GoogleAuthProvider();
             const result = await signInWithPopup(auth, provider);
-            await createFirestoreUser(result.user, 'google');
+            await createFirestoreUser(result.user, 'google', undefined, {
+                policyAcceptedAt: new Date().toISOString(),
+            });
             router.push('/');
         } catch (err: any) {
             console.error("Google Signup Error:", err);
@@ -175,6 +189,31 @@ export default function Signup() {
                             value={confirmPassword}
                             onChange={(e) => setConfirmPassword(e.target.value)}
                         />
+                    </div>
+
+                    {/* Policy Acceptance Checkbox */}
+                    <div className="flex items-start gap-2 pt-2">
+                        <input
+                            type="checkbox"
+                            id="policy-accept"
+                            checked={policyAccepted}
+                            onChange={(e) => setPolicyAccepted(e.target.checked)}
+                            className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer"
+                        />
+                        <label htmlFor="policy-accept" className="text-sm text-gray-600 dark:text-gray-400 cursor-pointer">
+                            I agree to the{' '}
+                            <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-500 underline">
+                                Terms & Conditions
+                            </a>
+                            ,{' '}
+                            <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-500 underline">
+                                Privacy Policy
+                            </a>
+                            , and{' '}
+                            <a href="/returns" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-500 underline">
+                                Refund & Cancellation Policy
+                            </a>
+                        </label>
                     </div>
 
                     <div className="pt-2">

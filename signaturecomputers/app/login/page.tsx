@@ -139,6 +139,23 @@ function LoginContent() {
                         >
                             {loading ? 'Logging in...' : 'Login'}
                         </button>
+
+                        {/* Informational Policy Consent */}
+                        <p className="mt-3 text-xs text-center text-gray-500 dark:text-gray-400">
+                            By logging in, you agree to our{' '}
+                            <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-500 underline">
+                                Terms & Conditions
+                            </a>
+                            ,{' '}
+                            <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-500 underline">
+                                Privacy Policy
+                            </a>
+                            , and{' '}
+                            <a href="/returns" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-500 underline">
+                                Refund & Cancellation Policy
+                            </a>
+                            .
+                        </p>
                     </div>
                 </form>
 

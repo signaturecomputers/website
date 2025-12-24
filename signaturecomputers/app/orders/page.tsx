@@ -7,6 +7,7 @@ import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import Image from 'next/image';
 import Link from 'next/link';
+import CancellationModal from '@/components/CancellationModal';
 import {
     FiPackage,
     FiLoader,
@@ -179,6 +180,10 @@ export default function OrdersPage() {
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
     const ordersPerPage = 5;
+
+    // Cancellation modal state
+    const [showCancelModal, setShowCancelModal] = useState(false);
+    const [cancelOrderId, setCancelOrderId] = useState<string | null>(null);
 
     // Redirect if not logged in
     useEffect(() => {
@@ -728,32 +733,7 @@ export default function OrdersPage() {
                                                     {/* Cancel Order - Only for order_placed/placed/confirmed orders (before shipping) */}
                                                     {canCustomerCancel(order.status) && (
                                                         <button
-                                                            onClick={async (e) => {
-                                                                e.stopPropagation();
-                                                                const reason = prompt('Please provide a reason for cancellation:');
-                                                                if (!reason) return;
-
-                                                                try {
-                                                                    const response = await fetch('/api/orders/cancel', {
-                                                                        method: 'POST',
-                                                                        headers: { 'Content-Type': 'application/json' },
-                                                                        body: JSON.stringify({
-                                                                            orderId: order.id,
-                                                                            customerId: user?.uid,
-                                                                            reason,
-                                                                        }),
-                                                                    });
-                                                                    const data = await response.json();
-                                                                    if (response.ok) {
-                                                                        alert('Cancellation request submitted successfully!');
-                                                                        window.location.reload();
-                                                                    } else {
-                                                                        alert(data.error || 'Failed to submit cancellation request');
-                                                                    }
-                                                                } catch (error) {
-                                                                    alert('Error submitting request. Please try again.');
-                                                                }
-                                                            }}
+                                                            onClick={(e) => { e.stopPropagation(); setCancelOrderId(order.id); setShowCancelModal(true); }}
                                                             className="px-4 py-2 border border-red-300 dark:border-red-600 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-sm font-medium transition-colors flex items-center gap-1"
                                                         >
                                                             <FiX className="w-4 h-4" />
@@ -863,6 +843,13 @@ export default function OrdersPage() {
                     </>
                 )}
             </div>
+            <CancellationModal
+                isOpen={showCancelModal}
+                orderId={cancelOrderId}
+                userId={user?.uid}
+                onClose={() => { setShowCancelModal(false); setCancelOrderId(null); }}
+                onSuccess={() => window.location.reload()}
+            />
         </div>
     );
 }

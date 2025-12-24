@@ -62,6 +62,37 @@ export async function POST(request: NextRequest) {
             });
         }
 
+        // Fetch payment details to get transaction ID
+        let cfPaymentId = null;
+        let paymentMethod = null;
+        let paymentTime = null;
+        try {
+            const paymentsResponse = await fetch(`${baseApiUrl}/orders/${order_id}/payments`, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    "x-api-version": "2025-01-01",
+                    "x-client-id": clientId,
+                    "x-client-secret": secretKey,
+                },
+            });
+
+            if (paymentsResponse.ok) {
+                const paymentsData = await paymentsResponse.json();
+                // Get the successful payment (usually the first one with SUCCESS status)
+                const successfulPayment = paymentsData.find((p: any) => p.payment_status === "SUCCESS") || paymentsData[0];
+                if (successfulPayment) {
+                    cfPaymentId = successfulPayment.cf_payment_id;
+                    paymentMethod = successfulPayment.payment_method;
+                    paymentTime = successfulPayment.payment_time;
+                    console.log("Payment details fetched:", { cfPaymentId, paymentMethod });
+                }
+            }
+        } catch (paymentError) {
+            console.error("Failed to fetch payment details:", paymentError);
+            // Continue without payment details - not critical
+        }
+
         // Find all orders with this cfOrderId
         const ordersSnapshot = await adminDb
             .collection("orders")
@@ -89,12 +120,26 @@ export async function POST(request: NextRequest) {
                 return;
             }
 
-            // Update order status
-            batch.update(doc.ref, {
+            // Update order status - Payment successful, awaiting admin confirmation
+            const updateData: Record<string, any> = {
                 paymentStatus: "paid",
-                status: "confirmed",
+                orderStatus: "placed",  // Order Placed - awaiting admin confirmation
+                status: "placed",       // Legacy field for compatibility
                 updatedAt: FieldValue.serverTimestamp(),
-            });
+                timeline: FieldValue.arrayUnion({
+                    timestamp: new Date(),
+                    event: "Payment Successful",
+                    description: "Payment verified. Order placed, awaiting admin confirmation.",
+                    actor: "system"
+                })
+            };
+
+            // Add Cashfree payment details if available
+            if (cfPaymentId) updateData.cfPaymentId = cfPaymentId;
+            if (paymentMethod) updateData.paymentMethod = paymentMethod;
+            if (paymentTime) updateData.paymentTime = paymentTime;
+
+            batch.update(doc.ref, updateData);
 
             // Collect stock updates
             if (orderData.productCategory && orderData.productId) {
@@ -110,14 +155,14 @@ export async function POST(request: NextRequest) {
         if (alreadyUpdated) {
             return NextResponse.json({
                 success: true,
-                message: "Order already confirmed",
+                message: "Order already placed",
                 updated: 0,
             });
         }
 
         // Commit order updates
         await batch.commit();
-        console.log(`Updated ${ordersSnapshot.size} orders to paid/confirmed`);
+        console.log(`Updated ${ordersSnapshot.size} orders to paid/placed`);
 
         // Deduct stock for each product
         for (const update of stockUpdates) {
@@ -139,7 +184,7 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({
             success: true,
-            message: "Order confirmed successfully",
+            message: "Order placed successfully",
             updated: ordersSnapshot.size,
         });
     } catch (error) {

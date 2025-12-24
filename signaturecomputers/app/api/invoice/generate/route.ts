@@ -274,6 +274,8 @@ export async function POST(request: NextRequest) {
             // Metadata
             createdAt: new Date(),
             customerId: orderData.customerId,
+            firestoreOrderId: orderId, // Firestore document ID for order lookups
+            cfOrderId: orderData.cfOrderId || null, // Cashfree order ID for refunds
         };
 
         // Save invoice to Firestore

@@ -166,7 +166,16 @@ export async function POST(request: NextRequest) {
         const data = await response.json();
 
         if (!response.ok) {
-            console.error("Cashfree refund error:", data);
+            console.error("Cashfree refund error:", JSON.stringify(data, null, 2));
+            console.error("HTTP Status:", response.status, response.statusText);
+
+            // Extract meaningful error message
+            const errorMessage = data.message || data.error || data.error_description ||
+                (Object.keys(data).length === 0 ? `HTTP ${response.status}: ${response.statusText}` : JSON.stringify(data));
+
+            // Check for specific sandbox limitations
+            const isSandboxLimitation = envMode !== "PRODUCTION" &&
+                (response.status === 400 || response.status === 422);
 
             // Still save the failed refund attempt
             const failedRefundData: RefundData = {
@@ -179,7 +188,7 @@ export async function POST(request: NextRequest) {
                 initiatedBy: body.initiatedBy,
                 initiatedAt: new Date(),
                 cashfreeResponse: data,
-                errorMessage: data.message || "Refund failed",
+                errorMessage: errorMessage,
             };
 
             await adminDb.collection("refunds").doc(refundId).set(failedRefundData);
@@ -187,8 +196,13 @@ export async function POST(request: NextRequest) {
             return NextResponse.json(
                 {
                     error: "Refund failed",
+                    message: isSandboxLimitation
+                        ? `Sandbox mode limitation - refunds may not work in test mode. ${errorMessage}`
+                        : errorMessage,
                     details: data,
                     refundId,
+                    httpStatus: response.status,
+                    isSandbox: envMode !== "PRODUCTION",
                 },
                 { status: response.status }
             );

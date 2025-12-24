@@ -7,7 +7,7 @@ import {
     FiSearch, FiPrinter, FiCheck, FiX, FiCalendar,
     FiChevronLeft, FiChevronRight, FiChevronDown,
     FiMapPin, FiPhone, FiMail, FiPackage, FiCreditCard,
-    FiTruck, FiClock, FiUser, FiRefreshCw, FiDollarSign
+    FiTruck, FiClock, FiUser, FiRefreshCw, FiDollarSign, FiAlertCircle
 } from 'react-icons/fi';
 import { toast } from 'sonner';
 import {
@@ -48,6 +48,9 @@ interface Order {
     refundId?: string;
     cfRefundId?: string;
     refundArn?: string;
+    // Invoice fields
+    invoiceNumber?: string;
+    invoiceGenerated?: boolean;
     // Cancellation request fields
     cancellationRequested?: boolean;
     cancellationRequestedAt?: any;
@@ -187,6 +190,8 @@ export default function OrdersPage() {
                     refundId: data.refundId,
                     cfRefundId: data.cfRefundId,
                     refundArn: data.refundArn,
+                    invoiceNumber: data.invoiceNumber,
+                    invoiceGenerated: data.invoiceGenerated || false,
                     cancellationRequested,  // Use our computed value
                     cancellationRequestedAt: data.cancellationRequestedAt,
                     cancellationReason: data.cancellationReason,
@@ -227,6 +232,14 @@ export default function OrdersPage() {
                 break;
             case 'refunds':
                 filtered = orders.filter(o => o.refundStatus !== 'none');
+                break;
+            case 'failed_refunds':
+                // Show only orders where payment was successful but refund failed
+                filtered = orders.filter(o =>
+                    o.orderStatus === 'cancelled' &&
+                    o.refundStatus === 'failed' &&
+                    o.paymentStatus === 'paid'
+                );
                 break;
         }
 
@@ -365,19 +378,25 @@ export default function OrdersPage() {
         }
     };
 
-    // Cancel order and initiate refund
+    // Cancel order and initiate refund (also handles refund retry)
     const handleCancelOrder = async (order: Order, reason: string) => {
         setUpdatingStatus(order.id);
         try {
+            // Check if this is a retry of a failed refund (order already cancelled)
+            const isRefundRetry = order.orderStatus === 'cancelled' && order.refundStatus === 'failed';
+
             const cancelEvent = {
                 timestamp: new Date(),
-                event: 'Order Cancelled',
-                description: reason || 'Order cancelled by admin',
+                event: isRefundRetry ? 'Refund Retry' : 'Order Cancelled',
+                description: isRefundRetry ? 'Retrying refund after previous failure' : (reason || 'Order cancelled by admin'),
                 actor: 'admin'
             };
 
-            // Update order status to cancelled
-            const updateData: any = {
+            // Update order status to cancelled (skip if already cancelled for retry)
+            const updateData: any = isRefundRetry ? {
+                updatedAt: new Date(),
+                timeline: arrayUnion(cancelEvent)
+            } : {
                 orderStatus: 'cancelled',
                 status: 'cancelled',
                 cancellationReason: reason,
@@ -389,7 +408,7 @@ export default function OrdersPage() {
 
             // If order was paid, initiate refund
             if (order.paymentStatus === 'paid' && order.cfOrderId) {
-                toast.info('Initiating refund via Cashfree...');
+                toast.info(isRefundRetry ? 'Retrying refund via Cashfree...' : 'Initiating refund via Cashfree...');
 
                 const refundResponse = await fetch('/api/cashfree/refund', {
                     method: 'POST',
@@ -400,6 +419,7 @@ export default function OrdersPage() {
                         refundAmount: order.totalAmount,
                         refundType: 'full',
                         reason: reason || 'Order cancelled',
+                        initiatedBy: 'admin',
                     }),
                 });
 
@@ -434,10 +454,26 @@ export default function OrdersPage() {
                         }),
                     });
 
-                    toast.success('Order cancelled & refund initiated!');
+                    toast.success(order.refundStatus === 'failed' ? 'Refund retry initiated!' : 'Order cancelled & refund initiated!');
                 } else {
                     updateData.refundStatus = 'failed';
-                    toast.error(`Order cancelled but refund failed: ${refundData.error}`);
+                    // Extract detailed error message - prioritize API's message field
+                    let errorMsg = refundData.message || 'Unknown error';
+                    if (!refundData.message && refundData.details) {
+                        // Fallback to Cashfree API error format
+                        errorMsg = refundData.details.message ||
+                            refundData.details.error_description ||
+                            refundData.details.code ||
+                            (Object.keys(refundData.details).length > 0 ? JSON.stringify(refundData.details) : 'Empty response from payment gateway');
+                    }
+                    console.error('Refund failed:', JSON.stringify(refundData, null, 2));
+
+                    // Show sandbox warning if applicable
+                    if (refundData.isSandbox) {
+                        toast.error(`Refund failed (Sandbox Mode): ${errorMsg}`);
+                    } else {
+                        toast.error(`Refund failed: ${errorMsg}. Order is cancelled but refund needs manual processing.`);
+                    }
                 }
             } else {
                 // COD or unpaid order - no refund needed
@@ -567,6 +603,59 @@ export default function OrdersPage() {
         }
     };
 
+    // Print invoice handler - directly opens print dialog for admin
+    const handlePrintInvoice = async (order: Order) => {
+        // Admin can view cancelled order invoices, but not placed orders
+        // Invoice is available for: confirmed, shipped, delivered, AND cancelled (for admin)
+        const allowedStatuses = ['confirmed', 'shipped', 'delivered', 'cancelled'];
+        if (!allowedStatuses.includes(order.orderStatus)) {
+            toast.error('Invoice is only available for confirmed orders');
+            return;
+        }
+
+        // Check if invoice has been generated
+        if (order.invoiceNumber) {
+            // Open the invoice page with print=true to directly trigger print dialog
+            const invoiceUrl = `/invoice?invoice=${encodeURIComponent(order.invoiceNumber)}&admin=true&print=true`;
+            window.open(invoiceUrl, '_blank');
+        } else {
+            // For cancelled orders without invoice, can't generate new one
+            if (order.orderStatus === 'cancelled') {
+                toast.error('No invoice available for this cancelled order');
+                return;
+            }
+
+            // Generate invoice first and then open it
+            toast.info('Generating invoice...');
+            try {
+                const response = await fetch('/api/invoice/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ orderId: order.id }),
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Update local state with invoice number
+                    setOrders(prev => prev.map(o =>
+                        o.id === order.id ? { ...o, invoiceNumber: data.invoiceNumber, invoiceGenerated: true } : o
+                    ));
+
+                    // Open the invoice page with print=true to directly trigger print dialog
+                    const invoiceUrl = `/invoice?invoice=${encodeURIComponent(data.invoiceNumber)}&admin=true&print=true`;
+                    window.open(invoiceUrl, '_blank');
+                    toast.success(`Invoice ${data.invoiceNumber} generated!`);
+                } else {
+                    toast.error(data.error || 'Failed to generate invoice');
+                }
+            } catch (error) {
+                console.error('Error generating invoice:', error);
+                toast.error('Failed to generate invoice');
+            }
+        }
+    };
+
     // Format helpers
     const formatCurrency = (amount: number) => `₹${(amount || 0).toLocaleString('en-IN')}`;
 
@@ -605,6 +694,11 @@ export default function OrdersPage() {
         cancellation_requests: orders.filter(o => o.cancellationRequested && o.orderStatus !== 'cancelled').length,
         cancelled: orders.filter(o => o.orderStatus === 'cancelled').length,
         refunds: orders.filter(o => o.refundStatus !== 'none').length,
+        failed_refunds: orders.filter(o =>
+            o.orderStatus === 'cancelled' &&
+            o.refundStatus === 'failed' &&
+            o.paymentStatus === 'paid'
+        ).length,
     };
 
     // Calculate revenue
@@ -667,6 +761,7 @@ export default function OrdersPage() {
                         <option value="cancellation_requests">⚠️ Cancel Requests ({tabCounts.cancellation_requests})</option>
                         <option value="cancelled">Cancelled ({tabCounts.cancelled})</option>
                         <option value="refunds">Refunds ({tabCounts.refunds})</option>
+                        <option value="failed_refunds">❌ Failed Refunds ({tabCounts.failed_refunds})</option>
                     </select>
                     <FiChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
                 </div>
@@ -727,7 +822,12 @@ export default function OrdersPage() {
                                             <td className="px-4 py-3">
                                                 <div className="flex items-center gap-2">
                                                     <FiChevronDown className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
-                                                    <span className="font-mono text-sm font-medium">{order.orderId}</span>
+                                                    <div>
+                                                        <span className="font-mono text-sm font-medium">{order.orderId}</span>
+                                                        {order.invoiceNumber && (
+                                                            <div className="text-xs text-gray-500">{order.invoiceNumber}</div>
+                                                        )}
+                                                    </div>
                                                     {order.cancellationRequested && order.orderStatus !== 'cancelled' && (
                                                         <span className="px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs font-medium rounded" title="Customer requested cancellation">
                                                             Cancel Request
@@ -754,7 +854,8 @@ export default function OrdersPage() {
                                                     order.paymentStatus === 'failed' ? 'bg-red-100 text-red-700' :
                                                         'bg-yellow-100 text-yellow-700'
                                                     }`}>
-                                                    {order.paymentStatus}
+                                                    {order.paymentStatus === 'paid' ? 'Success' :
+                                                        order.paymentStatus === 'failed' ? 'Failed' : 'Pending'}
                                                 </span>
                                             </td>
                                             <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
@@ -818,10 +919,28 @@ export default function OrdersPage() {
                                                         </button>
                                                     )}
 
+                                                    {/* Retry Refund button - Only for failed refunds where payment was successful */}
+                                                    {order.orderStatus === 'cancelled' &&
+                                                        order.refundStatus === 'failed' &&
+                                                        order.paymentStatus === 'paid' && (
+                                                            <button
+                                                                onClick={() => {
+                                                                    if (confirm(`Retry refund of ₹${order.totalAmount?.toLocaleString('en-IN')}?`)) {
+                                                                        handleCancelOrder(order, 'Refund retry by admin');
+                                                                    }
+                                                                }}
+                                                                disabled={updatingStatus === order.id}
+                                                                className="p-2 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-lg disabled:opacity-50"
+                                                                title="Retry Refund"
+                                                            >
+                                                                <FiRefreshCw className={updatingStatus === order.id ? 'animate-spin' : ''} />
+                                                            </button>
+                                                        )}
+
                                                     <button
-                                                        onClick={() => {/* Print logic */ }}
+                                                        onClick={() => handlePrintInvoice(order)}
                                                         className="p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg"
-                                                        title="Print Invoice"
+                                                        title={order.invoiceNumber ? `Print Invoice ${order.invoiceNumber}` : 'Print Invoice'}
                                                     >
                                                         <FiPrinter />
                                                     </button>
@@ -877,8 +996,28 @@ export default function OrdersPage() {
                                                             </h4>
                                                             <div className="space-y-2 text-sm">
                                                                 <div><span className="text-gray-500">Method:</span> {getPaymentMethodDisplay(order.paymentMethod)}</div>
-                                                                <div><span className="text-gray-500">Status:</span> <span className={order.paymentStatus === 'paid' ? 'text-green-600' : 'text-yellow-600'}>{order.paymentStatus}</span></div>
-                                                                {order.cfPaymentId && <div><span className="text-gray-500">CF ID:</span> <span className="font-mono text-xs">{order.cfPaymentId}</span></div>}
+                                                                <div>
+                                                                    <span className="text-gray-500">Status:</span>{' '}
+                                                                    <span className={`font-medium ${order.paymentStatus === 'paid' ? 'text-green-600' :
+                                                                        order.paymentStatus === 'failed' ? 'text-red-600' :
+                                                                            'text-yellow-600'
+                                                                        }`}>
+                                                                        {order.paymentStatus === 'paid' ? 'Success' :
+                                                                            order.paymentStatus === 'failed' ? 'Failed' :
+                                                                                'Pending'}
+                                                                    </span>
+                                                                </div>
+                                                                {order.cfPaymentId && (
+                                                                    <div><span className="text-gray-500">Transaction ID:</span> <span className="font-mono text-xs bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">{order.cfPaymentId}</span></div>
+                                                                )}
+                                                                {order.cfOrderId && (
+                                                                    <div><span className="text-gray-500">CF Order ID:</span> <span className="font-mono text-xs bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">{order.cfOrderId}</span></div>
+                                                                )}
+                                                                {order.invoiceNumber && (
+                                                                    <div className="pt-2 border-t dark:border-gray-700">
+                                                                        <span className="text-gray-500">Invoice:</span> <span className="font-medium text-blue-600">{order.invoiceNumber}</span>
+                                                                    </div>
+                                                                )}
 
                                                                 {order.refundStatus !== 'none' && (
                                                                     <div className="pt-3 mt-3 border-t border-dashed dark:border-gray-700">
@@ -889,10 +1028,44 @@ export default function OrdersPage() {
                                                                         {order.refundAmount && <div><span className="text-gray-500">Amount:</span> {formatCurrency(order.refundAmount)}</div>}
                                                                         {order.cfRefundId && <div><span className="text-gray-500">Refund ID:</span> <span className="font-mono text-xs">{order.cfRefundId}</span></div>}
                                                                         {order.refundArn && <div><span className="text-gray-500">ARN:</span> <span className="font-mono text-xs">{order.refundArn}</span></div>}
+                                                                        {order.refundStatus === 'failed' && (
+                                                                            <div className="mt-2 p-2 bg-red-50 dark:bg-red-900/20 rounded text-xs text-red-600 dark:text-red-400">
+                                                                                ⚠️ Refund failed. This may be due to Sandbox mode limitations. Use the "Retry Refund" button or process manually.
+                                                                            </div>
+                                                                        )}
                                                                     </div>
                                                                 )}
                                                             </div>
                                                         </div>
+
+                                                        {/* Cancellation Request Details */}
+                                                        {(order.cancellationRequested || order.status === 'cancellation_requested' || order.cancellationReason) && (
+                                                            <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-xl border border-red-200 dark:border-red-800">
+                                                                <h4 className="font-semibold mb-3 flex items-center gap-2 text-red-700 dark:text-red-400">
+                                                                    <FiAlertCircle className="text-red-600" /> Cancellation Request
+                                                                </h4>
+                                                                <div className="space-y-2 text-sm">
+                                                                    {order.cancellationReason && (
+                                                                        <div>
+                                                                            <span className="text-gray-600 dark:text-gray-400 block mb-1">Customer's Reason:</span>
+                                                                            <p className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-red-200 dark:border-red-700 text-gray-800 dark:text-gray-200 italic">
+                                                                                "{order.cancellationReason}"
+                                                                            </p>
+                                                                        </div>
+                                                                    )}
+                                                                    {order.cancellationRequestedAt && (
+                                                                        <div className="text-xs text-gray-500 mt-2">
+                                                                            Requested on: {formatDate(order.cancellationRequestedAt)}
+                                                                        </div>
+                                                                    )}
+                                                                    {order.cancelledBy && (
+                                                                        <div className="text-xs text-gray-500">
+                                                                            Requested by: {order.cancelledBy}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        )}
 
                                                         {/* Timeline */}
                                                         <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border dark:border-gray-700">
@@ -936,6 +1109,7 @@ export default function OrdersPage() {
 
                                                     {/* Action Buttons */}
                                                     <div className="mt-4 pt-4 border-t dark:border-gray-700 flex gap-3">
+                                                        {/* Initiate Refund - for cancelled orders with no refund initiated */}
                                                         {order.orderStatus === 'cancelled' && order.refundStatus === 'none' && order.paymentStatus === 'paid' && (
                                                             <button
                                                                 onClick={() => handleCancelOrder(order, 'Refund initiated by admin')}
@@ -943,6 +1117,16 @@ export default function OrdersPage() {
                                                                 className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg flex items-center gap-2 disabled:opacity-50"
                                                             >
                                                                 <FiDollarSign /> Initiate Refund
+                                                            </button>
+                                                        )}
+                                                        {/* Retry Refund - for cancelled orders with failed refund */}
+                                                        {order.orderStatus === 'cancelled' && order.refundStatus === 'failed' && order.paymentStatus === 'paid' && order.cfOrderId && (
+                                                            <button
+                                                                onClick={() => handleCancelOrder(order, 'Refund retry by admin')}
+                                                                disabled={updatingStatus === order.id}
+                                                                className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg flex items-center gap-2 disabled:opacity-50"
+                                                            >
+                                                                <FiRefreshCw className={updatingStatus === order.id ? 'animate-spin' : ''} /> Retry Refund
                                                             </button>
                                                         )}
                                                         {(order.refundStatus === 'initiated' || order.refundStatus === 'processing') && (
@@ -956,10 +1140,10 @@ export default function OrdersPage() {
                                                             </button>
                                                         )}
                                                         <button
-                                                            onClick={() => {/* Print */ }}
+                                                            onClick={() => handlePrintInvoice(order)}
                                                             className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center gap-2"
                                                         >
-                                                            <FiPrinter /> Print Invoice
+                                                            <FiPrinter /> {order.invoiceNumber ? `Print ${order.invoiceNumber}` : 'Print Invoice'}
                                                         </button>
                                                     </div>
                                                 </td>

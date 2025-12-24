@@ -34,6 +34,7 @@ export default function CheckoutPage() {
     const [paymentLoading, setPaymentLoading] = useState(false);
     const cashfreeRef = useRef<CashfreeSDK | null>(null);
     const [cashfreeLoaded, setCashfreeLoaded] = useState(false);
+    const [policyAccepted, setPolicyAccepted] = useState(false);
     const [formData, setFormData] = useState({
         name: '',
         email: '',
@@ -202,6 +203,12 @@ export default function CheckoutPage() {
             return;
         }
 
+        // Validate policy acceptance
+        if (!policyAccepted) {
+            toast.error('Please agree to the policies before proceeding to payment.');
+            return;
+        }
+
         // Validate form
         if (!formData.phone || formData.phone.length < 10) {
             toast.error('Please enter a valid phone number');
@@ -343,12 +350,40 @@ export default function CheckoutPage() {
                                 <div className="pt-6 space-y-4">
                                     <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Payment Method</h3>
 
+                                    {/* Policy Acceptance Checkbox */}
+                                    <div className="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                                        <input
+                                            type="checkbox"
+                                            id="checkout-policy-accept"
+                                            checked={policyAccepted}
+                                            onChange={(e) => setPolicyAccepted(e.target.checked)}
+                                            className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer"
+                                        />
+                                        <label htmlFor="checkout-policy-accept" className="text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+                                            I have read and agree to the{' '}
+                                            <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-500 underline font-medium">
+                                                Terms & Conditions
+                                            </a>
+                                            ,{' '}
+                                            <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-500 underline font-medium">
+                                                Privacy Policy
+                                            </a>
+                                            , and{' '}
+                                            <a href="/returns" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-500 underline font-medium">
+                                                Refund & Cancellation Policy
+                                            </a>
+                                        </label>
+                                    </div>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
+                                        These policies help protect both customers and sellers.
+                                    </p>
+
                                     {/* Pay Online Button */}
                                     <button
                                         type="button"
                                         onClick={initiateCashfreePayment}
-                                        disabled={paymentLoading || loading || !cashfreeLoaded}
-                                        className="w-full flex items-center justify-center py-4 px-4 border border-transparent rounded-xl shadow-lg text-base font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                                        disabled={paymentLoading || loading || !cashfreeLoaded || !policyAccepted}
+                                        className={`w-full flex items-center justify-center py-4 px-4 border border-transparent rounded-xl shadow-lg text-base font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200`}
                                     >
                                         {paymentLoading ? (
                                             <>
