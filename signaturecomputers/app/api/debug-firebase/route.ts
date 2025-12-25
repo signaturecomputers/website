@@ -1,6 +1,7 @@
 // Debug endpoint to check Firebase Admin SDK status
 // DELETE THIS FILE AFTER DEBUGGING
 import { NextResponse } from 'next/server';
+import { adminDb } from '@/lib/firebase-admin';
 
 export async function GET() {
     const base64Key = process.env.FIREBASE_SERVICE_ACCOUNT_KEY_BASE64;
@@ -9,6 +10,28 @@ export async function GET() {
     let base64Status = 'not set';
     let regularStatus = 'not set';
     let decodedPreview = '';
+    let adminDbStatus = 'unknown';
+    let testResult = 'not tested';
+
+    // Check adminDb
+    if (adminDb) {
+        if (typeof adminDb.collection === 'function') {
+            adminDbStatus = 'INITIALIZED - collection method available';
+
+            // Try a simple operation
+            try {
+                const testRef = adminDb.collection('laptops').doc('test');
+                await testRef.get();
+                testResult = 'SUCCESS - Can read from Firestore';
+            } catch (e: any) {
+                testResult = `FAILED - ${e.message}`;
+            }
+        } else {
+            adminDbStatus = 'NOT INITIALIZED - adminDb is empty object';
+        }
+    } else {
+        adminDbStatus = 'NULL - adminDb is null/undefined';
+    }
 
     if (base64Key) {
         base64Status = `set (${base64Key.length} chars)`;
@@ -40,6 +63,8 @@ export async function GET() {
 
     return NextResponse.json({
         message: 'Firebase Admin SDK Debug Info',
+        adminDbStatus: adminDbStatus,
+        testResult: testResult,
         FIREBASE_SERVICE_ACCOUNT_KEY_BASE64: base64Status,
         FIREBASE_SERVICE_ACCOUNT_KEY: regularStatus,
         decodedPreview: decodedPreview,
