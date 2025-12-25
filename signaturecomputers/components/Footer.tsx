@@ -23,8 +23,8 @@ export default function Footer() {
     const [hoveredStar, setHoveredStar] = useState(0);
     const [validationError, setValidationError] = useState('');
 
-    // Restore draft if available and user is logged in; otherwise clear it
-    // Also check for URL params from 'Write a Review' button
+    // Check for URL params from 'Write a Review' button and clear them after reading
+    // This ensures refresh shows a clean form
     useEffect(() => {
         if (typeof window !== 'undefined' && !loading) {
             // Check for URL params from Write a Review button
@@ -33,8 +33,14 @@ export default function Footer() {
             const productParam = urlParams.get('product');
 
             if (feedbackParam === 'true' && productParam) {
-                // Auto-fill product name from URL
+                // Auto-fill product name from URL (one-time only)
                 setProductName(productParam);
+
+                // Clear URL params so refresh shows empty form
+                // Use replaceState to remove params without page reload
+                const cleanUrl = window.location.pathname;
+                window.history.replaceState({}, '', cleanUrl);
+
                 // Scroll to feedback section after a short delay
                 setTimeout(() => {
                     const feedbackSection = document.getElementById('feedback');
@@ -45,21 +51,28 @@ export default function Footer() {
                 return; // Don't restore draft if coming from orders page
             }
 
+            // For normal visits, don't restore draft - start fresh
+            // Only restore draft if user was in middle of writing and logged in
             const draft = sessionStorage.getItem('review_draft');
 
             if (user && draft) {
-                // Restore state for logged-in user
+                // Restore state only if there's a pending draft (user was redirected to login)
                 try {
-                    const { rating: savedRating, review: savedReview } = JSON.parse(draft);
+                    const { rating: savedRating, review: savedReview, productName: savedProduct } = JSON.parse(draft);
                     if (savedRating) setRating(Number(savedRating));
                     if (savedReview) setReview(savedReview);
+                    if (savedProduct) setProductName(savedProduct);
+                    // Clear draft after restoring to prevent showing on next refresh
+                    sessionStorage.removeItem('review_draft');
                 } catch (e) {
                     console.error("Failed to parse review draft", e);
+                    sessionStorage.removeItem('review_draft');
                 }
             } else if (!user) {
-                // Strictly plain slate for non-logged-in user
+                // Clean slate for non-logged-in user
                 setRating(0);
                 setReview('');
+                setProductName('');
                 sessionStorage.removeItem('review_draft');
             }
         }
@@ -107,6 +120,7 @@ export default function Footer() {
                 setRating(0);
                 setReview('');
                 setProductName('');
+                setIsSubmitted(false); // Allow writing another review
             }, 3000);
         } catch (error) {
             console.error('Error submitting feedback:', error);

@@ -2,9 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { collection, getDocs, deleteDoc, doc } from 'firebase/firestore';
+import { collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { deleteProduct } from '@/lib/admin-actions';
 import Link from 'next/link';
 import { FiPlus, FiTrash2, FiEdit2, FiSearch, FiFilter, FiEye } from 'react-icons/fi';
 import { toast } from 'sonner';
@@ -97,20 +96,47 @@ export default function ProductsPage() {
         }
     };
 
-    const handleDelete = async (productId: string) => {
+    const handleDelete = async (productId: string, productCategory: string) => {
         if (!confirm('Are you sure you want to delete this product? This action cannot be undone.')) return;
 
+        // Use the product's actual category, not selectedCategory (which could be 'all')
+        const categoryToDelete = productCategory || selectedCategory;
+
+        if (categoryToDelete === 'all') {
+            toast.error('Cannot delete product: unknown category');
+            return;
+        }
+
+        // Get admin session from sessionStorage
+        const adminSession = sessionStorage.getItem('admin_user');
+        if (!adminSession) {
+            toast.error('Admin session expired. Please login again.');
+            return;
+        }
+
         try {
-            const result = await deleteProduct(selectedCategory, productId);
-            if (result.success) {
+            // Use API route for deletion (works on Vercel with Firebase Admin SDK)
+            // Pass admin session in Authorization header
+            const response = await fetch('/api/admin/products/delete', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${btoa(adminSession)}` // Base64 encode the session
+                },
+                body: JSON.stringify({ category: categoryToDelete, productId }),
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.success) {
                 setProducts(prev => prev.filter(p => p.id !== productId));
                 toast.success('Product deleted successfully');
             } else {
-                throw new Error(result.error);
+                throw new Error(result.error || 'Failed to delete product');
             }
         } catch (error) {
             console.error('Error deleting product:', error);
-            toast.error('Failed to delete product');
+            toast.error(error instanceof Error ? error.message : 'Failed to delete product');
         }
     };
 
@@ -252,7 +278,7 @@ export default function ProductsPage() {
                                                 </Link>
 
                                                 <button
-                                                    onClick={() => handleDelete(product.id)}
+                                                    onClick={() => handleDelete(product.id, product.category || selectedCategory)}
                                                     className="p-2 text-red-500 hover:bg-red-50 rounded-lg dark:hover:bg-red-900/20 transition-colors"
                                                     title="Delete Product"
                                                 >

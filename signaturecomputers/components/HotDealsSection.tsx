@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { FiShoppingCart, FiCheckCircle, FiPackage, FiTruck, FiChevronLeft, FiChevronRight, FiMinus, FiPlus } from 'react-icons/fi';
+import { FiShoppingCart, FiPackage, FiTruck, FiChevronLeft, FiChevronRight, FiMinus, FiPlus } from 'react-icons/fi';
 import { useCart } from '@/context/CartContext';
 import { getProductById, Product } from '@/lib/products';
 import { collection, getDocs } from 'firebase/firestore';
@@ -271,14 +271,10 @@ export default function HotDealsSection({ mode = 'home' }: HotDealsProps) {
                                         </button>
                                     </div>
 
-                                    <div className="pt-8 border-t border-gray-100 grid grid-cols-2 lg:grid-cols-3 gap-4">
+                                    <div className="pt-8 border-t border-gray-100 flex justify-center gap-8">
                                         <div className="flex items-center gap-2 text-sm text-gray-600">
                                             <FiTruck className="w-5 h-5 text-blue-600" />
                                             <span>Fast Delivery</span>
-                                        </div>
-                                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                                            <FiCheckCircle className="w-5 h-5 text-blue-600" />
-                                            <span>Easy Returns</span>
                                         </div>
                                         <div className="flex items-center gap-2 text-sm text-gray-600">
                                             <FiPackage className="w-5 h-5 text-blue-600" />

@@ -184,27 +184,27 @@ export default function GetQuotePage() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 py-12 px-4">
-            <div className="max-w-3xl mx-auto">
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 py-6 px-4 sm:px-6 lg:px-8">
+            <div className="max-w-7xl mx-auto">
                 {/* Header */}
-                <div className="text-center mb-8">
-                    <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-3">
+                <div className="text-center mb-6">
+                    <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-2">
                         Get a Quote
                     </h1>
-                    <p className="text-gray-600 max-w-xl mx-auto">
+                    <p className="text-gray-600 text-sm sm:text-base whitespace-nowrap">
                         Fill in your requirements below and our team will provide you with the best pricing for your business needs.
                     </p>
                 </div>
 
-                {/* Form */}
-                <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 space-y-6">
+                {/* Form - no container, blends with background */}
+                <form onSubmit={handleSubmit} className="space-y-6">
                     {/* Contact Information */}
                     <div>
                         <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
                             <FiUser className="w-5 h-5 text-indigo-600" />
                             Contact Information
                         </h2>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                     Full Name <span className="text-red-500">*</span>
@@ -213,7 +213,7 @@ export default function GetQuotePage() {
                                     type="text"
                                     value={formData.name}
                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${errors.name ? 'border-red-500' : 'border-gray-300'}`}
+                                    className={`w-full px-4 py-2.5 bg-white/80 backdrop-blur-sm border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm ${errors.name ? 'border-red-500' : 'border-gray-200'}`}
                                     placeholder="John Doe"
                                 />
                                 {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
@@ -228,7 +228,7 @@ export default function GetQuotePage() {
                                         type="text"
                                         value={formData.companyName}
                                         onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
-                                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                        className="w-full pl-10 pr-4 py-2.5 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm"
                                         placeholder="Company Ltd."
                                     />
                                 </div>
@@ -243,7 +243,7 @@ export default function GetQuotePage() {
                                         type="email"
                                         value={formData.email}
                                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                        className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${errors.email ? 'border-red-500' : 'border-gray-300'}`}
+                                        className={`w-full pl-10 pr-4 py-2.5 bg-white/80 backdrop-blur-sm border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm ${errors.email ? 'border-red-500' : 'border-gray-200'}`}
                                         placeholder="john@company.com"
                                     />
                                 </div>
@@ -259,7 +259,7 @@ export default function GetQuotePage() {
                                         type="tel"
                                         value={formData.phone}
                                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                        className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${errors.phone ? 'border-red-500' : 'border-gray-300'}`}
+                                        className={`w-full pl-10 pr-4 py-2.5 bg-white/80 backdrop-blur-sm border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm ${errors.phone ? 'border-red-500' : 'border-gray-200'}`}
                                         placeholder="+91 98765 43210"
                                     />
                                 </div>
@@ -275,7 +275,7 @@ export default function GetQuotePage() {
                             Product Requirements
                         </h2>
                         <div className="space-y-4">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
                                         Product Category <span className="text-red-500">*</span>
@@ -283,7 +283,7 @@ export default function GetQuotePage() {
                                     <select
                                         value={formData.category}
                                         onChange={(e) => setFormData({ ...formData, category: e.target.value, additionalInfo: {} })}
-                                        className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${errors.category ? 'border-red-500' : 'border-gray-300'}`}
+                                        className={`w-full px-4 py-2.5 bg-white/80 backdrop-blur-sm border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm ${errors.category ? 'border-red-500' : 'border-gray-200'}`}
                                     >
                                         <option value="">Select a category</option>
                                         {categories.map(cat => (
@@ -303,7 +303,7 @@ export default function GetQuotePage() {
                                             min="1"
                                             value={formData.quantity}
                                             onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) || 1 })}
-                                            className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${errors.quantity ? 'border-red-500' : 'border-gray-300'}`}
+                                            className={`w-full pl-10 pr-4 py-2.5 bg-white/80 backdrop-blur-sm border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm ${errors.quantity ? 'border-red-500' : 'border-gray-200'}`}
                                         />
                                     </div>
                                     {errors.quantity && <p className="text-red-500 text-xs mt-1">{errors.quantity}</p>}
@@ -312,11 +312,11 @@ export default function GetQuotePage() {
 
                             {/* Dynamic Fields Based on Category */}
                             {selectedCategory && selectedCategory.fields.length > 0 && (
-                                <div className="bg-indigo-50 rounded-xl p-4">
+                                <div className="bg-indigo-50/70 backdrop-blur-sm rounded-xl p-4 border border-indigo-100">
                                     <h3 className="text-sm font-medium text-indigo-800 mb-3">
                                         Specifications for {selectedCategory.name}
                                     </h3>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                                         {selectedCategory.fields.map(field => (
                                             <div key={field}>
                                                 <label className="block text-xs font-medium text-indigo-700 mb-1">
@@ -338,33 +338,36 @@ export default function GetQuotePage() {
                                 </div>
                             )}
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Describe Your Requirements <span className="text-red-500">*</span>
-                                </label>
-                                <textarea
-                                    value={formData.productDetails}
-                                    onChange={(e) => setFormData({ ...formData, productDetails: e.target.value })}
-                                    rows={4}
-                                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none ${errors.productDetails ? 'border-red-500' : 'border-gray-300'}`}
-                                    placeholder="Please describe the specific product or model you're looking for, any brand preferences, budget range, or any other requirements..."
-                                />
-                                {errors.productDetails && <p className="text-red-500 text-xs mt-1">{errors.productDetails}</p>}
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Additional Message <span className="text-gray-400">(Optional)</span>
-                                </label>
-                                <div className="relative">
-                                    <FiMessageSquare className="absolute left-3 top-3 text-gray-400" />
+                            {/* Textareas in 2 columns on large screens */}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Describe Your Requirements <span className="text-red-500">*</span>
+                                    </label>
                                     <textarea
-                                        value={formData.message}
-                                        onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                                        rows={2}
-                                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
-                                        placeholder="Any additional notes or questions..."
+                                        value={formData.productDetails}
+                                        onChange={(e) => setFormData({ ...formData, productDetails: e.target.value })}
+                                        rows={4}
+                                        className={`w-full px-4 py-2.5 bg-white/80 backdrop-blur-sm border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none shadow-sm ${errors.productDetails ? 'border-red-500' : 'border-gray-200'}`}
+                                        placeholder="Please describe the specific product or model you're looking for, any brand preferences, budget range, or any other requirements..."
                                     />
+                                    {errors.productDetails && <p className="text-red-500 text-xs mt-1">{errors.productDetails}</p>}
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Additional Message <span className="text-gray-400">(Optional)</span>
+                                    </label>
+                                    <div className="relative">
+                                        <FiMessageSquare className="absolute left-3 top-3 text-gray-400" />
+                                        <textarea
+                                            value={formData.message}
+                                            onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                                            rows={4}
+                                            className="w-full pl-10 pr-4 py-2.5 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none shadow-sm"
+                                            placeholder="Any additional notes or questions..."
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         </div>

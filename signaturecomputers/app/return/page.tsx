@@ -94,6 +94,52 @@ function PaymentReturnContent() {
         }
     }, [status, retryCount, orderId, verifyPayment]);
 
+    // Prevent back button from going to payment gateway when payment is successful
+    // This uses a more aggressive approach since external domain history can't be modified
+    useEffect(() => {
+        if (status === "success" && typeof window !== 'undefined') {
+            // Mark that we've reached payment success
+            sessionStorage.setItem('paymentCompleted', 'true');
+
+            // Push multiple entries to create a buffer
+            for (let i = 0; i < 3; i++) {
+                window.history.pushState({ preventBack: true }, '', window.location.href);
+            }
+
+            // Handler for back button - redirect to home immediately
+            const handlePopState = () => {
+                // Redirect to home page
+                window.location.replace('/');
+            };
+
+            window.addEventListener('popstate', handlePopState);
+
+            return () => {
+                window.removeEventListener('popstate', handlePopState);
+            };
+        }
+    }, [status]);
+
+    // On initial load, check if coming back to payment gateway page after successful payment
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const paymentCompleted = sessionStorage.getItem('paymentCompleted');
+            // If payment was already completed and this is a fresh load (not just re-render),
+            // redirect to home to prevent going back to payment gateway
+            if (paymentCompleted === 'true' && status === 'loading') {
+                // Small delay to let the page determine actual status
+                const timer = setTimeout(() => {
+                    // Only redirect if still in loading state (meaning it's a back navigation issue)
+                    if (status === 'loading' && !orderId) {
+                        sessionStorage.removeItem('paymentCompleted');
+                        window.location.replace('/');
+                    }
+                }, 100);
+                return () => clearTimeout(timer);
+            }
+        }
+    }, [status, orderId]);
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center p-4">
             <div className="bg-gray-800/50 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full border border-gray-700/50 shadow-2xl">

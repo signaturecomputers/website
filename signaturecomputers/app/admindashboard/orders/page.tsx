@@ -48,6 +48,8 @@ interface Order {
     refundId?: string;
     cfRefundId?: string;
     refundArn?: string;
+    refundInitiatedAt?: any;
+    refundCompletedAt?: any;
     // Invoice fields
     invoiceNumber?: string;
     invoiceGenerated?: boolean;
@@ -466,13 +468,14 @@ export default function OrdersPage() {
                             refundData.details.code ||
                             (Object.keys(refundData.details).length > 0 ? JSON.stringify(refundData.details) : 'Empty response from payment gateway');
                     }
-                    console.error('Refund failed:', JSON.stringify(refundData, null, 2));
 
-                    // Show sandbox warning if applicable
+                    // Show sandbox warning if applicable - use warn instead of error for sandbox
                     if (refundData.isSandbox) {
-                        toast.error(`Refund failed (Sandbox Mode): ${errorMsg}`);
+                        console.warn('Refund failed (Sandbox Mode):', JSON.stringify(refundData, null, 2));
+                        toast.warning(`Order cancelled! Refund failed in Sandbox mode - this is expected. In production, refund will be processed automatically.`);
                     } else {
-                        toast.error(`Refund failed: ${errorMsg}. Order is cancelled but refund needs manual processing.`);
+                        console.error('Refund failed:', JSON.stringify(refundData, null, 2));
+                        toast.error(`Order cancelled but refund failed: ${errorMsg}. Please process refund manually.`);
                     }
                 }
             } else {
@@ -598,6 +601,78 @@ export default function OrdersPage() {
         } catch (error) {
             console.error('Error checking refund:', error);
             toast.error('Failed to check refund status');
+        } finally {
+            setUpdatingStatus(null);
+        }
+    };
+
+    // Mark refund as manually completed (for refunds processed outside the system)
+    const markRefundComplete = async (order: Order) => {
+        const refundArn = prompt('Enter the Refund ARN/Reference Number (optional, for records):');
+
+        // User cancelled the prompt
+        if (refundArn === null) return;
+
+        const confirmed = confirm(
+            `Are you sure you want to mark this refund as COMPLETE?\n\n` +
+            `Order: ${order.orderId}\n` +
+            `Amount: ₹${order.totalAmount?.toLocaleString('en-IN') || order.refundAmount?.toLocaleString('en-IN')}\n\n` +
+            `⚠️ Only do this if you have already processed the refund manually (via Cashfree dashboard, bank transfer, etc.)`
+        );
+
+        if (!confirmed) return;
+
+        setUpdatingStatus(order.id);
+        try {
+            const timelineEvent = {
+                timestamp: new Date(),
+                event: 'Refund Marked Complete',
+                description: `Refund manually marked as complete by admin${refundArn ? ` (ARN: ${refundArn})` : ''}`,
+                actor: 'admin'
+            };
+
+            await updateDoc(doc(db, 'orders', order.id), {
+                refundStatus: 'completed',
+                refundArn: refundArn || order.refundArn || 'Manual',
+                refundCompletedAt: new Date(),
+                updatedAt: new Date(),
+                timeline: arrayUnion(timelineEvent)
+            });
+
+            setOrders(prev => prev.map(o =>
+                o.id === order.id ? {
+                    ...o,
+                    refundStatus: 'completed' as RefundStatus,
+                    refundArn: refundArn || order.refundArn || 'Manual',
+                    refundCompletedAt: new Date(),
+                    timeline: [...(o.timeline || []), timelineEvent]
+                } : o
+            ));
+
+            // Send refund completion email to customer
+            try {
+                await fetch('/api/email/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        type: 'refund',
+                        data: {
+                            orderId: order.orderId,
+                            customerName: order.customerName,
+                            customerEmail: order.customerEmail,
+                            refundAmount: order.totalAmount || order.refundAmount,
+                            refundStatus: 'completed',
+                        },
+                    }),
+                });
+            } catch (emailError) {
+                console.error('Failed to send refund email:', emailError);
+            }
+
+            toast.success('Refund marked as complete! Customer has been notified.');
+        } catch (error) {
+            console.error('Failed to mark refund complete:', error);
+            toast.error('Failed to update refund status');
         } finally {
             setUpdatingStatus(null);
         }
@@ -1021,13 +1096,61 @@ export default function OrdersPage() {
 
                                                                 {order.refundStatus !== 'none' && (
                                                                     <div className="pt-3 mt-3 border-t border-dashed dark:border-gray-700">
-                                                                        <div className="flex items-center gap-2 text-purple-600 font-medium mb-2">
-                                                                            <FiDollarSign /> Refund
+                                                                        <div className="flex items-center justify-between mb-2">
+                                                                            <div className="flex items-center gap-2 text-purple-600 font-medium">
+                                                                                <FiDollarSign /> Refund
+                                                                            </div>
+                                                                            {/* Check Status Button for initiated/processing refunds */}
+                                                                            {['initiated', 'processing'].includes(order.refundStatus) && order.cfOrderId && (
+                                                                                <button
+                                                                                    onClick={() => checkRefundStatus(order)}
+                                                                                    disabled={updatingStatus === order.id}
+                                                                                    className="text-xs px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 rounded hover:bg-purple-200 dark:hover:bg-purple-900/50 disabled:opacity-50 flex items-center gap-1"
+                                                                                >
+                                                                                    <FiRefreshCw className={updatingStatus === order.id ? 'animate-spin' : ''} size={12} />
+                                                                                    Check Status
+                                                                                </button>
+                                                                            )}
                                                                         </div>
-                                                                        <div><span className="text-gray-500">Status:</span> <span className={`font-medium ${refundColors.text}`}>{order.refundStatus}</span></div>
+
+                                                                        {/* Status with color-coded badge */}
+                                                                        <div className="mb-2">
+                                                                            <span className="text-gray-500">Status: </span>
+                                                                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${order.refundStatus === 'completed' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' :
+                                                                                order.refundStatus === 'failed' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' :
+                                                                                    order.refundStatus === 'processing' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' :
+                                                                                        'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'
+                                                                                }`}>
+                                                                                {order.refundStatus === 'completed' ? '✓ Completed - Credited to Customer' :
+                                                                                    order.refundStatus === 'failed' ? '✗ Failed' :
+                                                                                        order.refundStatus === 'processing' ? '⏳ Processing' :
+                                                                                            '⏳ Initiated'}
+                                                                            </span>
+                                                                        </div>
+
                                                                         {order.refundAmount && <div><span className="text-gray-500">Amount:</span> {formatCurrency(order.refundAmount)}</div>}
                                                                         {order.cfRefundId && <div><span className="text-gray-500">Refund ID:</span> <span className="font-mono text-xs">{order.cfRefundId}</span></div>}
                                                                         {order.refundArn && <div><span className="text-gray-500">ARN:</span> <span className="font-mono text-xs">{order.refundArn}</span></div>}
+
+                                                                        {/* Timestamps */}
+                                                                        {order.refundInitiatedAt && (
+                                                                            <div className="text-xs text-gray-500 mt-2">
+                                                                                Initiated: {formatDate(order.refundInitiatedAt)}
+                                                                            </div>
+                                                                        )}
+                                                                        {order.refundCompletedAt && order.refundStatus === 'completed' && (
+                                                                            <div className="text-xs text-green-600 dark:text-green-400">
+                                                                                ✓ Credited on: {formatDate(order.refundCompletedAt)}
+                                                                            </div>
+                                                                        )}
+
+                                                                        {/* Processing info message */}
+                                                                        {['initiated', 'processing'].includes(order.refundStatus) && (
+                                                                            <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded text-xs text-blue-600 dark:text-blue-400">
+                                                                                ℹ️ Refund is being processed by the payment gateway. Typically takes 5-7 business days to reflect in customer's account. Click "Check Status" to get latest update.
+                                                                            </div>
+                                                                        )}
+
                                                                         {order.refundStatus === 'failed' && (
                                                                             <div className="mt-2 p-2 bg-red-50 dark:bg-red-900/20 rounded text-xs text-red-600 dark:text-red-400">
                                                                                 ⚠️ Refund failed. This may be due to Sandbox mode limitations. Use the "Retry Refund" button or process manually.
@@ -1137,6 +1260,16 @@ export default function OrdersPage() {
                                                             >
                                                                 <FiRefreshCw className={updatingStatus === order.id ? 'animate-spin' : ''} />
                                                                 Check Refund Status
+                                                            </button>
+                                                        )}
+                                                        {/* Mark Refund Complete - for refunds processed manually outside the system */}
+                                                        {order.orderStatus === 'cancelled' && ['failed', 'initiated', 'processing'].includes(order.refundStatus) && order.paymentStatus === 'paid' && (
+                                                            <button
+                                                                onClick={() => markRefundComplete(order)}
+                                                                disabled={updatingStatus === order.id}
+                                                                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg flex items-center gap-2 disabled:opacity-50"
+                                                            >
+                                                                <FiCheck /> Mark Refund Complete
                                                             </button>
                                                         )}
                                                         <button
