@@ -177,7 +177,7 @@ export default function HotDealsPage() {
                     <p className="text-xs text-gray-500 mt-1">Click the edit button to change price and discount</p>
                 </div>
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm">
+                    <table className="w-full min-w-[800px] text-left text-sm">
                         <thead className="bg-gray-50 dark:bg-gray-900/50 text-gray-500 dark:text-gray-400 font-medium">
                             <tr>
                                 <th className="p-4">#</th>
