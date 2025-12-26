@@ -6,59 +6,174 @@ import { FaWhatsapp } from 'react-icons/fa';
 import Link from 'next/link';
 
 const categories = [
-    { id: 'laptops', name: 'Laptops', fields: ['processor', 'ram', 'storage', 'screenSize'] },
+    // Computers
+    { id: 'laptops', name: 'Laptops', fields: ['processor', 'ram', 'storage', 'screenSize', 'graphics'] },
     { id: 'desktops', name: 'Desktops', fields: ['processor', 'ram', 'storage', 'graphics'] },
-    { id: 'monitors', name: 'Monitors', fields: ['screenSize', 'resolution', 'panelType'] },
-    { id: 'printers', name: 'Printers', fields: ['printerType', 'printSpeed', 'connectivity'] },
-    { id: 'bags', name: 'Bags & Cases', fields: ['bagType', 'laptopSize', 'material'] },
+    { id: 'workstations', name: 'Workstations', fields: ['processor', 'ram', 'storage', 'graphics', 'formFactor'] },
+    // Displays
+    { id: 'monitors', name: 'Monitors', fields: ['screenSize', 'resolution', 'panelType', 'refreshRate'] },
+    // Printers & Supplies
+    { id: 'printers', name: 'Printers', fields: ['printerType', 'printSpeed', 'connectivity', 'functions'] },
+    { id: 'toners', name: 'Toners', fields: ['tonerBrand', 'printerModel', 'tonerColor'] },
+    { id: 'cartridges', name: 'Cartridges', fields: ['cartridgeBrand', 'printerModel', 'cartridgeType'] },
+    // Storage & Memory
+    { id: 'hardDisk', name: 'Hard Disk / SSD', fields: ['storageType', 'storageCapacity', 'formFactorStorage', 'interface'] },
+    { id: 'ram', name: 'RAM / Memory', fields: ['ramType', 'ramCapacity', 'ramSpeed'] },
+    { id: 'usbFlashDrives', name: 'USB Flash Drives', fields: ['usbCapacity', 'usbSpeed'] },
+    // Peripherals
     { id: 'keyboards', name: 'Keyboards', fields: ['keyboardType', 'connectivity', 'backlight'] },
     { id: 'mice', name: 'Mouse', fields: ['mouseType', 'connectivity', 'dpi'] },
-    { id: 'headphones', name: 'Headphones', fields: ['headphoneType', 'connectivity', 'microphone'] },
+    { id: 'keyboardMouseCombo', name: 'Keyboard & Mouse Combo', fields: ['comboType', 'connectivity'] },
+    { id: 'headphones', name: 'Headphones', fields: ['headphoneType', 'connectivity', 'microphone', 'noiseCancellation'] },
+    { id: 'speakers', name: 'Speakers', fields: ['speakerType', 'speakerOutput', 'connectivity', 'subwoofer'] },
+    // Bags & Cases
+    { id: 'bags', name: 'Bags & Cases', fields: ['bagType', 'laptopSize', 'material'] },
+    // Cables & Adapters
+    { id: 'cables', name: 'Cables', fields: ['cableType', 'cableLength'] },
+    { id: 'powerAdapters', name: 'Power Adapters', fields: ['adapterType', 'wattage', 'brand'] },
+    { id: 'docks', name: 'Docking Stations', fields: ['dockType', 'ports', 'connectivity'] },
+    // Optical Drives
+    { id: 'dvdWriters', name: 'DVD Writers', fields: ['driveType', 'connectivity'] },
+    // Security
+    { id: 'cctv', name: 'CCTV / Security', fields: ['cctvType', 'resolution', 'channels', 'storage'] },
+    // Other
     { id: 'accessories', name: 'Other Accessories', fields: [] },
 ];
 
 const fieldLabels: Record<string, string> = {
+    // Computer specs
     processor: 'Preferred Processor',
     ram: 'RAM Requirement',
     storage: 'Storage Requirement',
     screenSize: 'Screen Size',
     graphics: 'Graphics Card',
+    formFactor: 'Form Factor',
+    // Monitor specs
     resolution: 'Resolution',
     panelType: 'Panel Type',
+    refreshRate: 'Refresh Rate',
+    // Printer specs
     printerType: 'Printer Type',
     printSpeed: 'Print Speed Requirement',
     connectivity: 'Connectivity',
-    bagType: 'Bag Type',
-    laptopSize: 'Laptop Size',
-    material: 'Material Preference',
+    functions: 'Functions',
+    // Toner/Cartridge specs
+    tonerBrand: 'Toner Brand',
+    cartridgeBrand: 'Cartridge Brand',
+    printerModel: 'Printer Model',
+    tonerColor: 'Toner Color',
+    cartridgeType: 'Cartridge Type',
+    // Storage specs
+    storageType: 'Storage Type',
+    storageCapacity: 'Capacity',
+    formFactorStorage: 'Form Factor',
+    interface: 'Interface',
+    // RAM specs
+    ramType: 'RAM Type',
+    ramCapacity: 'RAM Capacity',
+    ramSpeed: 'RAM Speed',
+    // USB specs
+    usbCapacity: 'USB Capacity',
+    usbSpeed: 'USB Speed',
+    // Keyboard/Mouse specs
     keyboardType: 'Keyboard Type',
     backlight: 'Backlight',
     mouseType: 'Mouse Type',
     dpi: 'DPI Requirement',
+    comboType: 'Combo Type',
+    // Headphone/Speaker specs
     headphoneType: 'Headphone Type',
     microphone: 'Microphone',
+    noiseCancellation: 'Noise Cancellation',
+    speakerType: 'Speaker Type',
+    speakerOutput: 'Output Power',
+    subwoofer: 'Subwoofer',
+    // Bag specs
+    bagType: 'Bag Type',
+    laptopSize: 'Laptop Size',
+    material: 'Material Preference',
+    // Cable/Adapter specs
+    cableType: 'Cable Type',
+    cableLength: 'Cable Length',
+    adapterType: 'Adapter Type',
+    wattage: 'Wattage',
+    brand: 'Brand',
+    // Dock specs
+    dockType: 'Dock Type',
+    ports: 'Required Ports',
+    // DVD specs
+    driveType: 'Drive Type',
+    // CCTV specs
+    cctvType: 'CCTV Type',
+    channels: 'Number of Channels',
 };
 
 const fieldOptions: Record<string, string[]> = {
-    processor: ['Intel Core i3', 'Intel Core i5', 'Intel Core i7', 'Intel Core Ultra 5', 'Intel Core Ultra 7', 'Intel Core Ultra 9', 'AMD Ryzen 5', 'AMD Ryzen 7', 'Any'],
-    ram: ['8GB', '16GB', '32GB', '64GB', 'Other'],
-    storage: ['256GB SSD', '512GB SSD', '1TB SSD', '2TB SSD', 'Other'],
-    screenSize: ['13"', '14"', '15.6"', '17"', '24"', '27"', '32"', 'Other'],
-    graphics: ['Integrated', 'NVIDIA GeForce', 'AMD Radeon', 'Other'],
-    resolution: ['Full HD (1920x1080)', '2K (2560x1440)', '4K (3840x2160)', 'Other'],
-    panelType: ['IPS', 'VA', 'TN', 'OLED', 'Any'],
-    printerType: ['Inkjet', 'Laser', 'All-in-One', 'Other'],
+    // Computer options
+    processor: ['Intel Core i3', 'Intel Core i5', 'Intel Core i7', 'Intel Core i9', 'Intel Core Ultra 5', 'Intel Core Ultra 7', 'Intel Core Ultra 9', 'Intel Xeon', 'AMD Ryzen 5', 'AMD Ryzen 7', 'AMD Ryzen 9', 'AMD Threadripper', 'Any'],
+    ram: ['4GB', '8GB', '16GB', '32GB', '64GB', '128GB', 'Other'],
+    storage: ['256GB SSD', '512GB SSD', '1TB SSD', '2TB SSD', '1TB HDD', '2TB HDD', 'Other'],
+    screenSize: ['13"', '14"', '15.6"', '17"', '21.5"', '24"', '27"', '32"', '34"', 'Other'],
+    graphics: ['Integrated', 'NVIDIA GeForce GTX', 'NVIDIA GeForce RTX', 'NVIDIA Quadro', 'AMD Radeon', 'AMD Radeon Pro', 'Other'],
+    formFactor: ['Tower', 'Small Form Factor', 'Mini PC', 'All-in-One', 'Rack Mount', 'Any'],
+    // Monitor options
+    resolution: ['Full HD (1920x1080)', '2K (2560x1440)', '4K (3840x2160)', '5K', 'Ultrawide', 'Other'],
+    panelType: ['IPS', 'VA', 'TN', 'OLED', 'Mini-LED', 'Any'],
+    refreshRate: ['60Hz', '75Hz', '120Hz', '144Hz', '165Hz', '240Hz', 'Any'],
+    // Printer options
+    printerType: ['Inkjet', 'Laser', 'All-in-One', 'Photo Printer', 'Label Printer', 'Other'],
     printSpeed: ['Standard', 'High Speed', 'Professional', 'Any'],
-    connectivity: ['USB', 'Wireless', 'Bluetooth', 'USB + Wireless', 'Any'],
-    bagType: ['Backpack', 'Messenger', 'Sleeve', 'Briefcase', 'Other'],
-    laptopSize: ['13"', '14"', '15.6"', '17"', 'Other'],
-    material: ['Nylon', 'Leather', 'Polyester', 'Any'],
-    keyboardType: ['Membrane', 'Mechanical', 'Scissor', 'Any'],
-    backlight: ['Yes', 'No', "Doesn't Matter"],
-    mouseType: ['Wired', 'Wireless', 'Gaming', 'Ergonomic', 'Any'],
+    functions: ['Print Only', 'Print + Scan', 'Print + Scan + Copy', 'Print + Scan + Copy + Fax', 'Any'],
+    // Toner/Cartridge options
+    tonerBrand: ['HP', 'Canon', 'Brother', 'Samsung', 'Epson', 'Lexmark', 'Other'],
+    cartridgeBrand: ['HP', 'Canon', 'Brother', 'Epson', 'Other'],
+    printerModel: ['Please specify in requirements'],
+    tonerColor: ['Black', 'Cyan', 'Magenta', 'Yellow', 'Combo Pack', 'Other'],
+    cartridgeType: ['Black', 'Color', 'Combo Pack', 'Photo'],
+    // Storage options
+    storageType: ['SSD (SATA)', 'SSD (NVMe)', 'HDD', 'External HDD', 'External SSD', 'Other'],
+    storageCapacity: ['128GB', '256GB', '512GB', '1TB', '2TB', '4TB', '8TB', 'Other'],
+    formFactorStorage: ['2.5"', '3.5"', 'M.2', 'Portable', 'Other'],
+    interface: ['SATA', 'NVMe', 'USB 3.0', 'USB-C', 'Thunderbolt', 'Other'],
+    // RAM options
+    ramType: ['DDR4', 'DDR5', 'DDR4 SODIMM', 'DDR5 SODIMM', 'Other'],
+    ramCapacity: ['4GB', '8GB', '16GB', '32GB', '64GB', 'Other'],
+    ramSpeed: ['2400MHz', '2666MHz', '3200MHz', '3600MHz', '4800MHz', '5200MHz', '5600MHz', 'Other'],
+    // USB options
+    usbCapacity: ['8GB', '16GB', '32GB', '64GB', '128GB', '256GB', '512GB', '1TB', 'Other'],
+    usbSpeed: ['USB 2.0', 'USB 3.0', 'USB 3.1', 'USB 3.2', 'Other'],
+    // Peripheral options
+    connectivity: ['USB Wired', 'Wireless (2.4GHz)', 'Bluetooth', 'USB + Bluetooth', 'Any'],
+    keyboardType: ['Membrane', 'Mechanical', 'Scissor', 'Low Profile', 'Any'],
+    backlight: ['Yes', 'RGB', 'No', "Doesn't Matter"],
+    mouseType: ['Wired', 'Wireless', 'Gaming', 'Ergonomic', 'Vertical', 'Any'],
     dpi: ['Standard (800-1600)', 'High (1600-4000)', 'Gaming (4000+)', "Doesn't Matter"],
-    headphoneType: ['Over-Ear', 'On-Ear', 'In-Ear', 'Any'],
+    comboType: ['Wired', 'Wireless', 'Compact', 'Full Size', 'Any'],
+    // Headphone/Speaker options
+    headphoneType: ['Over-Ear', 'On-Ear', 'In-Ear', 'Gaming', 'Any'],
     microphone: ['With Microphone', 'Without Microphone', "Doesn't Matter"],
+    noiseCancellation: ['Active Noise Cancellation', 'Passive', 'None', "Doesn't Matter"],
+    speakerType: ['2.0 Stereo', '2.1 with Subwoofer', '5.1 Surround', 'Soundbar', 'Portable', 'Any'],
+    speakerOutput: ['5W-10W', '10W-20W', '20W-50W', '50W+', "Doesn't Matter"],
+    subwoofer: ['Yes', 'No', "Doesn't Matter"],
+    // Bag options
+    bagType: ['Backpack', 'Messenger', 'Sleeve', 'Briefcase', 'Trolley', 'Other'],
+    laptopSize: ['13"', '14"', '15.6"', '17"', 'Other'],
+    material: ['Nylon', 'Leather', 'Polyester', 'Canvas', 'Any'],
+    // Cable/Adapter options
+    cableType: ['HDMI', 'DisplayPort', 'USB-C', 'USB-A to USB-C', 'Ethernet (RJ45)', 'VGA', 'DVI', 'Power Cable', 'Other'],
+    cableLength: ['0.5m', '1m', '1.5m', '2m', '3m', '5m', 'Other'],
+    adapterType: ['USB-C Hub', 'HDMI Adapter', 'Power Adapter', 'Travel Adapter', 'Other'],
+    wattage: ['30W', '45W', '65W', '90W', '100W', '135W', 'Other'],
+    brand: ['HP', 'Dell', 'Lenovo', 'Apple', 'Universal', 'Other'],
+    // Dock options
+    dockType: ['USB-C Dock', 'Thunderbolt Dock', 'Laptop Stand Dock', 'Port Replicator', 'Other'],
+    ports: ['USB-A', 'USB-C', 'HDMI', 'DisplayPort', 'Ethernet', 'SD Card', 'Multiple'],
+    // DVD options
+    driveType: ['Internal', 'External USB', 'Blu-ray', 'Other'],
+    // CCTV options
+    cctvType: ['IP Camera', 'Analog Camera', 'PTZ Camera', 'Dome Camera', 'Bullet Camera', 'DVR/NVR System', 'Other'],
+    channels: ['4 Channel', '8 Channel', '16 Channel', '32 Channel', 'Other'],
 };
 
 export default function GetQuotePage() {

@@ -14,8 +14,75 @@
   }
 }
 
+/* Ensure proper scaling across all viewport sizes */
 html {
   scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Dynamic viewport scaling for responsive layouts */
+* {
+  box-sizing: border-box;
+}
+
+/* Ensure images and media scale properly */
+img,
+video,
+iframe {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Responsive container utilities */
+.container-fluid {
+  width: 100%;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+@media (min-width: 640px) {
+  .container-fluid {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container-fluid {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+
+/* Responsive table containers - allow horizontal scroll on smaller screens */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Responsive text scaling */
+.text-responsive {
+  font-size: clamp(0.875rem, 2vw, 1rem);
+}
+
+.text-responsive-lg {
+  font-size: clamp(1rem, 2.5vw, 1.25rem);
+}
+
+.text-responsive-xl {
+  font-size: clamp(1.25rem, 3vw, 1.5rem);
+}
+
+/* Ensure admin tables fit viewport */
+.admin-table-container {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.admin-table-container table {
+  min-width: 100%;
 }
 
 @keyframes scroll-pause {
@@ -72,4 +139,19 @@ body {
   color: var(--foreground);
   background: var(--background);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  overflow-x: hidden;
+}
+
+/* Ensure proper grid scaling */
+.grid-responsive {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+/* Fix for wide screens - max content width */
+.max-content-width {
+  max-width: 1920px;
+  margin-left: auto;
+  margin-right: auto;
 }

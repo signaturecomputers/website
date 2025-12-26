@@ -167,17 +167,17 @@ export default function ProductDetailsPage() {
 
     return (
         <div className="bg-white dark:bg-black min-h-screen py-12">
-            <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:pl-2 lg:pr-4">
-                {/* Main Layout with thumbnails at far left */}
-                <div className="flex gap-2">
-                    {/* Thumbnails at far left edge - aligned with navbar logo */}
+            <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+                {/* Main Layout with thumbnails at left */}
+                <div className="flex gap-4 lg:gap-6">
+                    {/* Thumbnails at left - visible on larger screens, properly contained */}
                     {hasMultipleImages && (
-                        <div className="hidden lg:flex flex-col gap-3 w-16 flex-shrink-0 -ml-14">
+                        <div className="hidden lg:flex flex-col gap-3 w-16 xl:w-20 flex-shrink-0">
                             {product.images!.map((img, i) => (
                                 <div
                                     key={i}
                                     onClick={() => setActiveImage(img)}
-                                    className={`w-16 h-16 bg-gray-100 dark:bg-gray-900 rounded-lg cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all flex items-center justify-center overflow-hidden ${activeImage === img ? 'ring-2 ring-blue-500' : 'border border-gray-200 dark:border-gray-700'}`}
+                                    className={`w-16 h-16 xl:w-20 xl:h-20 bg-gray-100 dark:bg-gray-900 rounded-lg cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all flex items-center justify-center overflow-hidden ${activeImage === img ? 'ring-2 ring-blue-500' : 'border border-gray-200 dark:border-gray-700'}`}
                                 >
                                     <img src={img} alt="" className="w-full h-full object-cover" />
                                 </div>
@@ -185,9 +185,9 @@ export default function ProductDetailsPage() {
                         </div>
                     )}
 
-                    {/* Main content grid - Image takes more space */}
-                    <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-8">
-                        {/* Main Image - Scales up/down to fill 4:3 container, no card styling */}
+                    {/* Main content grid - Image and Info */}
+                    <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-[1.2fr_1fr] gap-6 lg:gap-8">
+                        {/* Main Image - Scales to fit container */}
                         <div className="aspect-[4/3]">
                             {activeImage ? (
                                 <img src={activeImage} alt={product.name} className="w-full h-full object-contain" />
