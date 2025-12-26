@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { FiUpload, FiX, FiPlus, FiTrash2, FiSave, FiArrowLeft } from 'react-icons/fi';
+import { FiPlus, FiTrash2, FiSave, FiArrowLeft } from 'react-icons/fi';
 import { toast } from 'sonner';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -10,6 +10,7 @@ import { getProductById, ProductInfo } from '@/lib/products';
 import { updateProduct } from '@/lib/admin-actions';
 import Link from 'next/link';
 import ProductInfoFormSection from '@/components/admin/ProductInfoFormSection';
+import ImageUploadZone from '@/components/admin/ImageUploadZone';
 
 export default function EditProductPage() {
     const router = useRouter();
@@ -321,60 +322,15 @@ export default function EditProductPage() {
                 {/* Images */}
                 <div className="space-y-4">
                     <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Product Images</label>
-
-                    {/* Existing Images */}
-                    {existingImages.length > 0 && (
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                            {existingImages.map((src, index) => (
-                                <div key={`existing-${index}`} className="relative group aspect-square rounded-xl overflow-hidden border border-gray-200">
-                                    <img src={src} alt="Existing" className="w-full h-full object-cover" />
-                                    <button
-                                        type="button"
-                                        onClick={() => removeExistingImage(index)}
-                                        className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                                    >
-                                        <FiX className="w-4 h-4" />
-                                    </button>
-                                    <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs p-1 text-center">Existing</div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-
-                    {/* New Image Previews */}
-                    {newImagePreviews.length > 0 && (
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                            {newImagePreviews.map((src, index) => (
-                                <div key={`new-${index}`} className="relative group aspect-square rounded-xl overflow-hidden border border-gray-200">
-                                    <img src={src} alt="Preview" className="w-full h-full object-cover" />
-                                    <button
-                                        type="button"
-                                        onClick={() => removeNewImage(index)}
-                                        className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                                    >
-                                        <FiX className="w-4 h-4" />
-                                    </button>
-                                    <div className="absolute bottom-0 left-0 right-0 bg-green-600/50 text-white text-xs p-1 text-center">New</div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-
-                    {/* Upload Box */}
-                    <div className="relative">
-                        <input
-                            type="file"
-                            multiple
-                            accept="image/*"
-                            onChange={handleImageChange}
-                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                        />
-                        <div className="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl p-8 flex flex-col items-center justify-center text-gray-500 hover:border-blue-500 hover:text-blue-500 transition-colors bg-gray-50 dark:bg-gray-800/50">
-                            <FiUpload className="w-8 h-8 mb-3" />
-                            <p className="font-medium">Click to upload more images</p>
-                            <p className="text-sm mt-1">PNG, JPG up to 10MB</p>
-                        </div>
-                    </div>
+                    <ImageUploadZone
+                        images={newImages}
+                        setImages={setNewImages}
+                        imagePreviews={newImagePreviews}
+                        setImagePreviews={setNewImagePreviews}
+                        existingUrls={existingImages}
+                        setExistingUrls={setExistingImages}
+                        maxImages={10}
+                    />
                 </div>
 
                 {/* Extended Product Information */}

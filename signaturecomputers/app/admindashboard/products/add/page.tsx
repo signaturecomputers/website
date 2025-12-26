@@ -6,10 +6,11 @@ import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAdminAuth } from '@/context/AdminAuthContext';
 import { createProduct } from '@/lib/admin-actions';
-import { FiUpload, FiPlus, FiTrash2, FiSave, FiArrowLeft } from 'react-icons/fi';
+import { FiPlus, FiTrash2, FiSave, FiArrowLeft } from 'react-icons/fi';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import ProductInfoFormSection from '@/components/admin/ProductInfoFormSection';
+import ImageUploadZone from '@/components/admin/ImageUploadZone';
 import { ProductInfo } from '@/lib/products';
 
 export default function AddProductPage() {
@@ -117,6 +118,8 @@ export default function AddProductPage() {
     };
 
     const removeImage = (index: number) => {
+        // Revoke URL to prevent memory leak
+        URL.revokeObjectURL(imagePreviews[index]);
         setImages(prev => prev.filter((_, i) => i !== index));
         setImagePreviews(prev => prev.filter((_, i) => i !== index));
     };
@@ -321,25 +324,13 @@ export default function AddProductPage() {
                 {/* Images */}
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
                     <h2 className="text-lg font-semibold dark:text-white mb-4">Product Images</h2>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                        {imagePreviews.map((src, idx) => (
-                            <div key={idx} className="relative aspect-square group">
-                                <img src={src} alt="Preview" className="w-full h-full object-cover rounded-lg border dark:border-gray-700" />
-                                <button
-                                    type="button"
-                                    onClick={() => removeImage(idx)}
-                                    className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                                >
-                                    <FiTrash2 size={16} />
-                                </button>
-                            </div>
-                        ))}
-                        <label className="flex flex-col items-center justify-center aspect-square border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                            <FiUpload className="w-8 h-8 text-gray-400 mb-2" />
-                            <span className="text-sm text-gray-500">Upload Image</span>
-                            <input type="file" multiple accept="image/*" onChange={handleImageChange} className="hidden" />
-                        </label>
-                    </div>
+                    <ImageUploadZone
+                        images={images}
+                        setImages={setImages}
+                        imagePreviews={imagePreviews}
+                        setImagePreviews={setImagePreviews}
+                        maxImages={10}
+                    />
                 </div>
 
                 {/* Specs */}

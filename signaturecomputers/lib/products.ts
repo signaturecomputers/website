@@ -170,6 +170,35 @@ export interface ProductInfo {
         oceanBoundPlastic?: boolean;
         recycledKeycaps?: boolean;
     };
+
+    // Custom fields for each section (dynamic fields added by admin)
+    basicCustomFields?: Array<{ label: string; value: string }>;
+    appearanceCustomFields?: Array<{ label: string; value: string }>;
+    osCustomFields?: Array<{ label: string; value: string }>;
+    processorCustomFields?: Array<{ label: string; value: string }>;
+    memoryCustomFields?: Array<{ label: string; value: string }>;
+    storageCustomFields?: Array<{ label: string; value: string }>;
+    displayCustomFields?: Array<{ label: string; value: string }>;
+    graphicsCustomFields?: Array<{ label: string; value: string }>;
+    audioCustomFields?: Array<{ label: string; value: string }>;
+    connectivityCustomFields?: Array<{ label: string; value: string }>;
+    portsCustomFields?: Array<{ label: string; value: string }>;
+    cameraCustomFields?: Array<{ label: string; value: string }>;
+    batteryCustomFields?: Array<{ label: string; value: string }>;
+    securityCustomFields?: Array<{ label: string; value: string }>;
+    dimensionsCustomFields?: Array<{ label: string; value: string }>;
+    warrantyCustomFields?: Array<{ label: string; value: string }>;
+    certificationsCustomFields?: Array<{ label: string; value: string }>;
+    environmentalCustomFields?: Array<{ label: string; value: string }>;
+
+    // Custom labels for default fields (when admin edits them)
+    fieldLabels?: Record<string, string>;
+
+    // Custom section titles (when admin renames sections)
+    sectionTitles?: Record<string, string>;
+
+    // Hidden sections (when admin hides sections)
+    hiddenSections?: string[];
 }
 
 export interface Product {
