@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { AdminAuthProvider } from '@/context/AdminAuthContext';
@@ -16,9 +16,65 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 });
 
+export const viewport: Viewport = {
+  themeColor: '#ffffff',
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+};
+
 export const metadata: Metadata = {
-  title: 'Signature Computers | Premium Tech Store',
-  description: 'Your ultimate destination for premium laptops, desktops, and accessories.',
+  metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'),
+  title: {
+    default: 'Signature Computers | Premium Tech Store',
+    template: '%s | Signature Computers',
+  },
+  description: 'Your ultimate destination for premium laptops, desktops, and accessories. Experience top-tier technology with Signature Computers.',
+  keywords: ['laptops', 'desktops', 'computer accessories', 'gaming laptops', 'premium tech', 'Signature Computers', 'tech store India'],
+  authors: [{ name: 'Signature Computers' }],
+  creator: 'Signature Computers',
+  publisher: 'Signature Computers',
+  icons: {
+    icon: '/favicon.ico',
+    shortcut: '/favicon.ico',
+    apple: '/apple-touch-icon.png',
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'en_IN',
+    url: '/',
+    title: 'Signature Computers | Premium Tech Store',
+    description: 'Your ultimate destination for premium laptops, desktops, and accessories.',
+    siteName: 'Signature Computers',
+    images: [
+      {
+        url: '/og-image.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'Signature Computers - Premium Tech Store',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Signature Computers | Premium Tech Store',
+    description: 'Your ultimate destination for premium laptops, desktops, and accessories.',
+    images: ['/twitter-image.jpg'], // Fallback to OG image if this specific one doesn't exist
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  verification: {
+    google: 'google-site-verification-code', // User to replace this
+  },
 };
 
 export default function RootLayout({
