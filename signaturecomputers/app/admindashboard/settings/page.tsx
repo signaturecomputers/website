@@ -5,7 +5,7 @@ import { doc, getDoc, setDoc, updateDoc, Timestamp } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { db, storage } from "@/lib/firebase";
 import { useAdminAuth } from "@/context/AdminAuthContext";
-import { Save, AlertTriangle, Upload, Trash2, Image as ImageIcon, FileSignature } from "lucide-react";
+import { Save, AlertTriangle, Upload, Trash2, Image as ImageIcon, FileSignature, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 export default function AdminSettings() {
@@ -21,10 +21,56 @@ export default function AdminSettings() {
     const [uploadingSignature, setUploadingSignature] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    // Theme state
+    const [currentTheme, setCurrentTheme] = useState("default");
+    const [themeLoading, setThemeLoading] = useState(true);
+    const [updatingTheme, setUpdatingTheme] = useState(false);
+
     useEffect(() => {
         // Fetch current signature
         fetchSignature();
+        fetchTheme();
     }, []);
+
+    const fetchTheme = async () => {
+        try {
+            const docRef = doc(db, "site_settings", "theme");
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                setCurrentTheme(docSnap.data().currentTheme || "default");
+            }
+        } catch (error) {
+            console.error("Error fetching theme:", error);
+        } finally {
+            setThemeLoading(false);
+        }
+    };
+
+    const handleUpdateTheme = async (newTheme: string) => {
+        if (adminUser?.role !== "admin") {
+            toast.error("Only ADMIN can change the theme");
+            return;
+        }
+
+        setUpdatingTheme(true);
+        try {
+            const docRef = doc(db, "site_settings", "theme");
+            await setDoc(docRef, {
+                currentTheme: newTheme,
+                isActive: newTheme !== "default",
+                updatedBy: adminUser.username,
+                updatedAt: Timestamp.now()
+            }, { merge: true });
+
+            setCurrentTheme(newTheme);
+            toast.success(`Theme updated to ${newTheme}`);
+        } catch (error) {
+            console.error("Error updating theme:", error);
+            toast.error("Failed to update theme");
+        } finally {
+            setUpdatingTheme(false);
+        }
+    };
 
     const fetchSignature = async () => {
         setSignatureLoading(true);
@@ -298,6 +344,61 @@ export default function AdminSettings() {
                             </div>
                         </div>
                     </div>
+                )}
+            </div>
+
+            {/* Theme Configuration Section */}
+            <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                    <Sparkles className="mr-2 text-purple-500" size={20} />
+                    Festival Theme Configuration
+                </h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+                    Select a theme to apply visual effects to the entire website for special occasions.
+                </p>
+
+                {themeLoading ? (
+                    <div className="h-10 w-48 bg-gray-100 dark:bg-gray-700 animate-pulse rounded-md" />
+                ) : (
+                    <div className="flex flex-wrap gap-4">
+                        {[
+                            { id: 'default', name: 'Default (No Effect)', color: 'bg-gray-100 text-gray-700 border-gray-200' },
+                            { id: 'christmas', name: 'Christmas (Snowfall)', color: 'bg-blue-50 text-blue-700 border-blue-200' },
+                            { id: 'newyear', name: 'New Year (Fireworks)', color: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
+                            { id: 'diwali', name: 'Diwali (Lights & Diyas)', color: 'bg-orange-50 text-orange-700 border-orange-200' },
+                            { id: 'valentines', name: 'Valentines Day (Hearts)', color: 'bg-pink-50 text-pink-700 border-pink-200' },
+                            { id: 'republic', name: 'Republic Day (Tricolor)', color: 'bg-slate-50 text-slate-700 border-slate-200' },
+                            { id: 'independence', name: 'Independence Day (Tricolor)', color: 'bg-slate-50 text-slate-700 border-slate-200' },
+                            { id: 'eid', name: 'Eid Ramazan (Moon/Stars)', color: 'bg-green-50 text-green-700 border-green-200' },
+                            { id: 'bakrid', name: 'Bakrid (Moon/Stars)', color: 'bg-green-50 text-green-700 border-green-200' },
+                        ].map((theme) => (
+                            <button
+                                key={theme.id}
+                                onClick={() => handleUpdateTheme(theme.id)}
+                                disabled={updatingTheme || adminUser?.role !== "admin"}
+                                className={`
+                                    relative px-4 py-3 rounded-lg border-2 transition-all duration-200 flex items-center gap-2
+                                    ${currentTheme === theme.id
+                                        ? 'border-indigo-600 bg-indigo-50 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-300 dark:border-indigo-500 ring-2 ring-indigo-200 dark:ring-indigo-900'
+                                        : 'border-transparent bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600 shadow-sm'
+                                    }
+                                    ${updatingTheme ? 'opacity-50 cursor-not-allowed' : ''}
+                                `}
+                            >
+                                <span className={`w-3 h-3 rounded-full ${currentTheme === theme.id ? 'bg-indigo-600' : 'bg-gray-300'}`} />
+                                <span className="font-medium">{theme.name}</span>
+                                {currentTheme === theme.id && (
+                                    <span className="absolute -top-2 -right-2 bg-indigo-600 text-white text-[10px] px-2 py-0.5 rounded-full">
+                                        Active
+                                    </span>
+                                )}
+                            </button>
+                        ))}
+                    </div>
+                )}
+
+                {adminUser?.role !== "admin" && (
+                    <p className="text-xs text-red-500 mt-4">You need ADMIN privileges to change the theme.</p>
                 )}
             </div>
         </div>

@@ -30,6 +30,12 @@ service cloud.firestore {
       allow write: if true;
     }
 
+    // SITE SETTINGS - Festival Themes, etc.
+    match /site_settings/{docId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
     // ============================================
     // PRODUCT CATEGORIES (Main Categories)
     // ============================================

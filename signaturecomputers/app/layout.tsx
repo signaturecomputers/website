@@ -4,6 +4,7 @@ import './globals.css';
 import { AdminAuthProvider } from '@/context/AdminAuthContext';
 import LayoutWrapper from '@/components/LayoutWrapper';
 import { Toaster } from 'sonner';
+import ThemeEffectWrapper from '@/components/ThemeEffectWrapper';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -32,6 +33,7 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <AdminAuthProvider>
+          <ThemeEffectWrapper />
           <LayoutWrapper>
             {children}
           </LayoutWrapper>
