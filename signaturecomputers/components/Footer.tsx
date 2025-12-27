@@ -179,6 +179,7 @@ export default function Footer() {
                         <ul className="space-y-2 text-sm">
                             <li><Link href="/terms" className="hover:text-white hover:pl-1 transition-all">Terms & Conditions</Link></li>
                             <li><Link href="/privacy" className="hover:text-white hover:pl-1 transition-all">Privacy Policy</Link></li>
+                            <li><Link href="/shipping-delivery" className="hover:text-white hover:pl-1 transition-all">Shipping & Delivery Policy</Link></li>
                             <li><Link href="/returns" className="hover:text-white hover:pl-1 transition-all">Refund & Cancellation Policy</Link></li>
                         </ul>
                     </div>

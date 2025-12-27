@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { FiFileText, FiShield, FiRotateCcw, FiCheckCircle, FiPhone, FiMail } from 'react-icons/fi';
+import { FiFileText, FiShield, FiRotateCcw, FiCheckCircle, FiPhone, FiMail, FiTruck } from 'react-icons/fi';
 
 interface LegalPageContentProps {
     pageId: string;
@@ -75,6 +75,7 @@ export default function LegalPageContent({ pageId, defaultTitle }: LegalPageCont
             case 'terms': return <FiFileText className="w-7 h-7" />;
             case 'privacy': return <FiShield className="w-7 h-7" />;
             case 'returns': return <FiRotateCcw className="w-7 h-7" />;
+            case 'shipping-policy': return <FiTruck className="w-7 h-7" />;
             default: return <FiFileText className="w-7 h-7" />;
         }
     };
@@ -84,6 +85,7 @@ export default function LegalPageContent({ pageId, defaultTitle }: LegalPageCont
             case 'terms': return 'Please read these terms carefully before using our services.';
             case 'privacy': return 'Your privacy is important to us. Learn how we protect your data.';
             case 'returns': return 'Our refund and cancellation policy for your orders.';
+            case 'shipping-policy': return 'Information about our delivery areas, timelines, and shipping process.';
             default: return '';
         }
     };
@@ -247,6 +249,15 @@ export default function LegalPageContent({ pageId, defaultTitle }: LegalPageCont
                             >
                                 <FiRotateCcw className="w-4 h-4 text-blue-600" />
                                 Refund & Cancellation Policy
+                            </Link>
+                        )}
+                        {pageId !== 'shipping-policy' && (
+                            <Link
+                                href="/shipping-delivery"
+                                className="px-4 py-2 bg-white border border-gray-200 hover:border-blue-300 hover:bg-blue-50 text-gray-700 rounded-lg transition-all text-sm font-medium flex items-center gap-2"
+                            >
+                                <FiTruck className="w-4 h-4 text-blue-600" />
+                                Shipping & Delivery Policy
                             </Link>
                         )}
                     </div>

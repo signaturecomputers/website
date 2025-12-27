@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { FiSave, FiRefreshCw, FiFileText, FiShield, FiRotateCcw } from 'react-icons/fi';
+import { FiSave, FiRefreshCw, FiFileText, FiShield, FiRotateCcw, FiTruck } from 'react-icons/fi';
 import { toast } from 'sonner';
 
 interface LegalPage {
@@ -15,6 +15,7 @@ const defaultPages: LegalPage[] = [
     { id: 'terms', title: 'Terms & Conditions', content: '' },
     { id: 'privacy', title: 'Privacy Policy', content: '' },
     { id: 'returns', title: 'Return & Refund Policy', content: '' },
+    { id: 'shipping-policy', title: 'Shipping & Delivery Policy', content: '' },
 ];
 
 export default function LegalPagesAdmin() {
@@ -91,6 +92,7 @@ export default function LegalPagesAdmin() {
             case 'terms': return <FiFileText className="w-5 h-5" />;
             case 'privacy': return <FiShield className="w-5 h-5" />;
             case 'returns': return <FiRotateCcw className="w-5 h-5" />;
+            case 'shipping-policy': return <FiTruck className="w-5 h-5" />;
             default: return <FiFileText className="w-5 h-5" />;
         }
     };
@@ -135,8 +137,8 @@ export default function LegalPagesAdmin() {
                                     key={page.id}
                                     onClick={() => setActivePage(page.id)}
                                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${activePage === page.id
-                                            ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
-                                            : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
+                                        ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
+                                        : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
                                         }`}
                                 >
                                     {getIcon(page.id)}
