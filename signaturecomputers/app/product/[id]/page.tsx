@@ -188,9 +188,9 @@ export default function ProductDetailsPage() {
                     {/* Main content grid - Image and Info */}
                     <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-[1.2fr_1fr] gap-6 lg:gap-8">
                         {/* Main Image - Scales to fit container */}
-                        <div className="aspect-[4/3]">
+                        <div className="aspect-[4/3] overflow-hidden flex items-center justify-center bg-gray-50 dark:bg-gray-900 rounded-lg">
                             {activeImage ? (
-                                <img src={activeImage} alt={product.name} className="w-full h-full object-contain" />
+                                <img src={activeImage} alt={product.name} className="max-w-full max-h-full object-contain" />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center">
                                     <span className="text-gray-400">No Image</span>
