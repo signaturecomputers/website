@@ -48,7 +48,7 @@ export const metadata: Metadata = {
     siteName: 'Signature Computers',
     images: [
       {
-        url: '/og-image.jpg',
+        url: '/og-image.png',
         width: 1200,
         height: 630,
         alt: 'Signature Computers - Premium Tech Store',
