@@ -69,13 +69,19 @@ function FilterCheckbox({
     onChange: () => void;
 }) {
     return (
-        <label className="flex items-center gap-3 py-1.5 cursor-pointer group">
+        <label className="flex items-center gap-3 py-1.5 cursor-pointer group select-none">
             <div className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-all
                 ${checked
                     ? 'bg-blue-600 border-blue-600'
                     : 'border-gray-300 dark:border-gray-600 group-hover:border-blue-400'}`}
             >
                 {checked && <FiCheck className="text-white" size={12} />}
+                <input
+                    type="checkbox"
+                    className="hidden"
+                    checked={checked}
+                    onChange={onChange}
+                />
             </div>
             <span className={`text-sm flex-1 ${checked ? 'text-gray-900 dark:text-white font-medium' : 'text-gray-600 dark:text-gray-400'}`}>
                 {label}
@@ -87,6 +93,11 @@ function FilterCheckbox({
 
 
 // Helper functions for normalization
+const normalizeText = (text: string) => {
+    if (!text) return '';
+    return text.trim().replace(/\w\S*/g, (w) => (w.replace(/^\w/, (c) => c.toUpperCase())));
+};
+
 const normalizeGraphics = (gpu: string): string => {
     if (!gpu) return '';
     const lower = gpu.toLowerCase();
@@ -125,6 +136,46 @@ const normalizeOS = (os: string): string => {
     return os.trim();
 };
 
+const normalizeStorage = (storage: string): string => {
+    if (!storage) return '';
+    let val = storage.toLowerCase().trim();
+    // Normalize units
+    if (val.includes('tb')) return val.replace('tb', ' TB').replace(/\s+/g, ' ').toUpperCase();
+    if (val.includes('gb')) return val.replace('gb', ' GB').replace(/\s+/g, ' ').toUpperCase();
+    return storage.trim();
+};
+
+const normalizeDisplaySize = (size: string): string => {
+    if (!size) return '';
+    let val = size.toLowerCase().trim();
+    // Remove "inch" or "inches" to normalize, then add back standard "Inch"
+    val = val.replace(/inches?/g, '').trim();
+    // Special case: if val ends with "inch" (case insensitive) from previous failed normalization or bad data
+    val = val.replace(/inch$/i, '').trim();
+    return `${val} Inch`;
+};
+
+const normalizeRAM = (ram: string): string => {
+    if (!ram) return '';
+    let val = ram.toLowerCase().trim();
+    if (val.includes('gb')) return val.replace('gb', ' GB').replace(/\s+/g, ' ').toUpperCase();
+    // If it's just a number, append GB
+    if (/^\d+$/.test(val)) return `${val} GB`;
+    return ram.trim();
+};
+
+const normalizeFormFactor = (ff: string): string => {
+    if (!ff) return '';
+    const lower = ff.toLowerCase().trim();
+    if (lower.includes('mini') && lower.includes('pc')) return 'Mini PC';
+    if (lower.includes('desktop')) return 'Desktop';
+    if (lower.includes('tower')) return 'Tower';
+    if (lower.includes('sff') || lower.includes('small') && lower.includes('form')) return 'SFF';
+    if (lower.includes('all-in-one') || lower.includes('aio')) return 'All-in-One';
+    if (lower.includes('laptop') || lower.includes('notebook')) return 'Laptop';
+    return ff.trim();
+};
+
 export default function ProductFilters({
     products,
     onFilterChange,
@@ -140,6 +191,8 @@ export default function ProductFilters({
     const [selectedDisplaySizes, setSelectedDisplaySizes] = useState<string[]>([]);
     const [selectedOS, setSelectedOS] = useState<string[]>([]);
     const [selectedGraphics, setSelectedGraphics] = useState<string[]>([]);
+    const [selectedFormFactors, setSelectedFormFactors] = useState<string[]>([]);
+
     const [showMobileFilters, setShowMobileFilters] = useState(false);
 
     // Calculate price bounds from products
@@ -165,44 +218,41 @@ export default function ProductFilters({
         const displaySizes = new Map<string, number>();
         const os = new Map<string, number>();
         const graphics = new Map<string, number>();
+        const formFactors = new Map<string, number>();
+        const colors = new Map<string, number>();
 
         products.forEach(product => {
             // Brand
             if (product.brand) {
-                const brand = product.brand.trim();
+                const brand = normalizeText(product.brand);
                 brands.set(brand, (brands.get(brand) || 0) + 1);
             }
 
             // From productInfo
             const info = product.productInfo;
             if (info) {
-                // Processor Brand/Generation
-                if (info.processor?.brand) {
-                    const proc = info.processor.brand.trim();
+                // Processor Name (Primary) -> Check Name then Brand
+                const procRaw = info.processor?.name || info.processor?.brand;
+                if (procRaw) {
+                    const proc = normalizeText(procRaw);
                     processors.set(proc, (processors.get(proc) || 0) + 1);
-                } else if (info.processor?.name) {
-                    const procName = info.processor.name.trim();
-                    const procBrand = procName.split(' ')[0];
-                    if (procBrand) {
-                        processors.set(procBrand, (processors.get(procBrand) || 0) + 1);
-                    }
                 }
 
                 // RAM Capacity
                 if (info.memory?.capacity) {
-                    const ramVal = info.memory.capacity.trim();
+                    const ramVal = normalizeRAM(info.memory.capacity);
                     ram.set(ramVal, (ram.get(ramVal) || 0) + 1);
                 }
 
                 // Storage Capacity
                 if (info.storage?.primaryStorage?.capacity) {
-                    const storageVal = info.storage.primaryStorage.capacity.trim();
+                    const storageVal = normalizeStorage(info.storage.primaryStorage.capacity);
                     storage.set(storageVal, (storage.get(storageVal) || 0) + 1);
                 }
 
                 // Display Size
                 if (info.display?.size) {
-                    const displayVal = info.display.size.trim();
+                    const displayVal = normalizeDisplaySize(info.display.size);
                     displaySizes.set(displayVal, (displaySizes.get(displayVal) || 0) + 1);
                 }
 
@@ -221,29 +271,47 @@ export default function ProductFilters({
                         graphics.set(gpuVal, (graphics.get(gpuVal) || 0) + 1);
                     }
                 }
+
+                // Form Factor
+                if (info.appearance?.formFactor) {
+                    const ffVal = normalizeFormFactor(info.appearance.formFactor);
+                    if (ffVal) formFactors.set(ffVal, (formFactors.get(ffVal) || 0) + 1);
+                }
+
+
             }
 
             // Fallback to specs object
             if (product.specs) {
                 if (!info?.processor && product.specs['Processor']) {
-                    const procName = product.specs['Processor'].trim();
-                    const procBrand = procName.split(' ')[0];
-                    if (procBrand && !processors.has(procBrand)) {
-                        processors.set(procBrand, (processors.get(procBrand) || 0) + 1);
-                    }
+                    const proc = normalizeText(product.specs['Processor']);
+                    processors.set(proc, (processors.get(proc) || 0) + 1);
                 }
                 if (!info?.memory && product.specs['RAM']) {
-                    const ramVal = product.specs['RAM'].trim();
+                    const ramVal = normalizeRAM(product.specs['RAM']);
                     if (!ram.has(ramVal)) {
                         ram.set(ramVal, (ram.get(ramVal) || 0) + 1);
                     }
                 }
                 if (!info?.storage && product.specs['Storage']) {
-                    const storageVal = product.specs['Storage'].trim();
+                    const storageVal = normalizeStorage(product.specs['Storage']);
                     if (!storage.has(storageVal)) {
                         storage.set(storageVal, (storage.get(storageVal) || 0) + 1);
                     }
                 }
+                // Fallback Display Size
+                if (!info?.display && product.specs['Display']) {
+                    const displayVal = normalizeDisplaySize(product.specs['Display']);
+                    if (!displaySizes.has(displayVal)) {
+                        displaySizes.set(displayVal, (displaySizes.get(displayVal) || 0) + 1);
+                    }
+                } else if (!info?.display && product.specs['Screen Size']) { // Common alternative key
+                    const displayVal = normalizeDisplaySize(product.specs['Screen Size']);
+                    if (!displaySizes.has(displayVal)) {
+                        displaySizes.set(displayVal, (displaySizes.get(displayVal) || 0) + 1);
+                    }
+                }
+
                 // Fallback OS/Graphics normalization if in specs
                 if (!info?.operatingSystem && product.specs['Operating System']) {
                     const osVal = normalizeOS(product.specs['Operating System']);
@@ -253,6 +321,13 @@ export default function ProductFilters({
                     const gpuVal = normalizeGraphics(product.specs['Graphics']);
                     if (gpuVal) graphics.set(gpuVal, (graphics.get(gpuVal) || 0) + 1);
                 }
+
+                // Fallback Form Factor/Color
+                if (!info?.appearance?.formFactor && product.specs['Form Factor']) {
+                    const ffVal = normalizeFormFactor(product.specs['Form Factor']);
+                    if (ffVal && !formFactors.has(ffVal)) formFactors.set(ffVal, (formFactors.get(ffVal) || 0) + 1);
+                }
+
             }
         });
 
@@ -269,7 +344,8 @@ export default function ProductFilters({
             storage: mapToArray(storage),
             displaySizes: mapToArray(displaySizes),
             os: mapToArray(os),
-            graphics: mapToArray(graphics)
+            graphics: mapToArray(graphics),
+            formFactors: mapToArray(formFactors)
         };
     }, [products]);
 
@@ -282,40 +358,53 @@ export default function ProductFilters({
 
         // Brand filter
         if (selectedBrands.length > 0) {
-            filtered = filtered.filter(p => selectedBrands.includes(p.brand));
+            filtered = filtered.filter(p => {
+                const brand = normalizeText(p.brand);
+                return selectedBrands.includes(brand);
+            });
         }
 
         // Processor filter
         if (selectedProcessors.length > 0) {
             filtered = filtered.filter(p => {
-                const procBrand = p.productInfo?.processor?.brand ||
-                    p.productInfo?.processor?.name?.split(' ')[0] ||
-                    p.specs?.['Processor']?.split(' ')[0];
-                return procBrand && selectedProcessors.includes(procBrand);
+                // Try Name -> Brand -> Specs
+                const procRaw = p.productInfo?.processor?.name ||
+                    p.productInfo?.processor?.brand ||
+                    p.specs?.['Processor'];
+
+                if (!procRaw) return false;
+                const proc = normalizeText(procRaw);
+                return selectedProcessors.includes(proc);
             });
         }
 
         // RAM filter
         if (selectedRAM.length > 0) {
             filtered = filtered.filter(p => {
-                const ramVal = p.productInfo?.memory?.capacity || p.specs?.['RAM'];
-                return ramVal && selectedRAM.includes(ramVal.trim());
+                const ramValOriginal = p.productInfo?.memory?.capacity || p.specs?.['RAM'];
+                if (!ramValOriginal) return false;
+                const ramVal = normalizeRAM(ramValOriginal);
+                return selectedRAM.includes(ramVal);
             });
         }
 
         // Storage filter
         if (selectedStorage.length > 0) {
             filtered = filtered.filter(p => {
-                const storageVal = p.productInfo?.storage?.primaryStorage?.capacity || p.specs?.['Storage'];
-                return storageVal && selectedStorage.includes(storageVal.trim());
+                const storageValOriginal = p.productInfo?.storage?.primaryStorage?.capacity || p.specs?.['Storage'];
+                if (!storageValOriginal) return false;
+                const storageVal = normalizeStorage(storageValOriginal);
+                return selectedStorage.includes(storageVal);
             });
         }
 
         // Display Size filter
         if (selectedDisplaySizes.length > 0) {
             filtered = filtered.filter(p => {
-                const displayVal = p.productInfo?.display?.size;
-                return displayVal && selectedDisplaySizes.includes(displayVal.trim());
+                const displayValOriginal = p.productInfo?.display?.size || p.specs?.['Display'] || p.specs?.['Screen Size'];
+                if (!displayValOriginal) return false;
+                const displayVal = normalizeDisplaySize(displayValOriginal);
+                return selectedDisplaySizes.includes(displayVal);
             });
         }
 
@@ -339,8 +428,18 @@ export default function ProductFilters({
             });
         }
 
+        // Form Factor Filter
+        if (selectedFormFactors.length > 0) {
+            filtered = filtered.filter(p => {
+                const ffValRaw = p.productInfo?.appearance?.formFactor || p.specs?.['Form Factor'];
+                if (!ffValRaw) return false;
+                const ffVal = normalizeFormFactor(ffValRaw);
+                return selectedFormFactors.includes(ffVal);
+            });
+        }
+
         onFilterChange(filtered);
-    }, [products, priceRange, selectedBrands, selectedProcessors, selectedRAM, selectedStorage, selectedDisplaySizes, selectedOS, selectedGraphics, onFilterChange]);
+    }, [products, priceRange, selectedBrands, selectedProcessors, selectedRAM, selectedStorage, selectedDisplaySizes, selectedOS, selectedGraphics, selectedFormFactors, onFilterChange]);
 
     // Calculate active filter count
     const activeFilterCount =
@@ -351,7 +450,8 @@ export default function ProductFilters({
         selectedDisplaySizes.length +
         selectedOS.length +
         selectedGraphics.length +
-        (priceRange[0] > 0 || priceRange[1] < priceBounds.max ? 1 : 0);
+        selectedFormFactors.length +
+        (priceRange[0] > priceBounds.min || priceRange[1] < priceBounds.max ? 1 : 0);
 
     // Clear all filters
     const clearAllFilters = () => {
@@ -362,7 +462,8 @@ export default function ProductFilters({
         setSelectedDisplaySizes([]);
         setSelectedOS([]);
         setSelectedGraphics([]);
-        setPriceRange([0, priceBounds.max]);
+        setSelectedFormFactors([]);
+        setPriceRange([priceBounds.min, priceBounds.max]);
     };
 
     // Toggle filter helper
@@ -411,7 +512,7 @@ export default function ProductFilters({
             </div>
 
             {/* Price Range */}
-            <FilterAccordion title="Price" count={priceRange[0] > 0 || priceRange[1] < priceBounds.max ? 1 : 0}>
+            <FilterAccordion title="Price" count={priceRange[0] > priceBounds.min || priceRange[1] < priceBounds.max ? 1 : 0}>
                 <div className="space-y-4">
                     <div className="flex items-center justify-between text-sm">
                         <span className="text-gray-600 dark:text-gray-400">{formatPrice(priceRange[0])}</span>
@@ -420,11 +521,16 @@ export default function ProductFilters({
                     <div className="relative">
                         <input
                             type="range"
-                            min={0}
+                            min={priceBounds.min}
                             max={priceBounds.max}
                             step={1000}
                             value={priceRange[1]}
-                            onChange={(e) => setPriceRange([priceRange[0], Number(e.target.value)])}
+                            onChange={(e) => {
+                                const val = Number(e.target.value);
+                                if (val >= priceRange[0]) {
+                                    setPriceRange([priceRange[0], val]);
+                                }
+                            }}
                             className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-600"
                         />
                     </div>
@@ -433,8 +539,15 @@ export default function ProductFilters({
                             <label className="text-xs text-gray-500 mb-1 block">Min</label>
                             <input
                                 type="number"
+                                min={priceBounds.min}
+                                max={priceRange[1]}
                                 value={priceRange[0]}
-                                onChange={(e) => setPriceRange([Number(e.target.value), priceRange[1]])}
+                                onChange={(e) => {
+                                    const val = Number(e.target.value);
+                                    if (val >= priceBounds.min && val <= priceRange[1]) {
+                                        setPriceRange([val, priceRange[1]]);
+                                    }
+                                }}
                                 className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 dark:text-white"
                             />
                         </div>
@@ -442,8 +555,15 @@ export default function ProductFilters({
                             <label className="text-xs text-gray-500 mb-1 block">Max</label>
                             <input
                                 type="number"
+                                min={priceRange[0]}
+                                max={priceBounds.max}
                                 value={priceRange[1]}
-                                onChange={(e) => setPriceRange([priceRange[0], Number(e.target.value)])}
+                                onChange={(e) => {
+                                    const val = Number(e.target.value);
+                                    if (val >= priceRange[0] && val <= priceBounds.max) {
+                                        setPriceRange([priceRange[0], val]);
+                                    }
+                                }}
                                 className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 dark:text-white"
                             />
                         </div>
@@ -462,6 +582,23 @@ export default function ProductFilters({
                                 count={count}
                                 checked={selectedBrands.includes(value)}
                                 onChange={() => toggleFilter(value, selectedBrands, setSelectedBrands)}
+                            />
+                        ))}
+                    </div>
+                </FilterAccordion>
+            )}
+
+            {/* Form Factor */}
+            {filterOptions.formFactors.length > 0 && (
+                <FilterAccordion title="Form Factor" count={selectedFormFactors.length}>
+                    <div className="space-y-1">
+                        {filterOptions.formFactors.map(({ value, count }) => (
+                            <FilterCheckbox
+                                key={value}
+                                label={value}
+                                count={count}
+                                checked={selectedFormFactors.includes(value)}
+                                onChange={() => toggleFilter(value, selectedFormFactors, setSelectedFormFactors)}
                             />
                         ))}
                     </div>
@@ -569,6 +706,8 @@ export default function ProductFilters({
                     </div>
                 </FilterAccordion>
             )}
+
+
         </div>
     );
 

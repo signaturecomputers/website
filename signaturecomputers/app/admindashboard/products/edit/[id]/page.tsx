@@ -258,17 +258,44 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setSubmitting(true);
+        console.log('Starting product update...');
+
+        // Strict Category Check
+        if (!formData.category) {
+            toast.error('Product category is missing. Cannot save.');
+            setSubmitting(false);
+            return;
+        }
 
         try {
-            // 1. Upload NEW Images
-            const newImageUrls = await Promise.all(
-                images.map(async (file) => {
-                    const fileName = `products/${Date.now()}_${file.name}`;
-                    const storageRef = ref(storage, fileName);
-                    await uploadBytes(storageRef, file);
-                    return await getDownloadURL(storageRef);
-                })
-            );
+            // 1. Upload NEW Images Sequentially (More reliable)
+            let newImageUrls: string[] = [];
+            if (images.length > 0) {
+                console.log(`Uploading ${images.length} new images...`);
+
+                // Use sequential loop instead of Promise.all to avoid potential race conditions/throttling
+                for (let i = 0; i < images.length; i++) {
+                    const file = images[i];
+                    try {
+                        console.log(`Uploading file ${i + 1}/${images.length}: ${file.name}`);
+
+                        // Sanitize filename
+                        const cleanName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
+                        const fileName = `products/${Date.now()}_${Math.random().toString(36).substring(2, 9)}_${cleanName}`;
+                        const storageRef = ref(storage, fileName);
+
+                        await uploadBytes(storageRef, file);
+                        const url = await getDownloadURL(storageRef);
+
+                        console.log(`File ${i + 1} uploaded successfully: ${url}`);
+                        newImageUrls.push(url);
+                    } catch (uploadError) {
+                        console.error(`Failed to upload image ${file.name}:`, uploadError);
+                        toast.error(`Failed to upload ${file.name}. Continuing with others...`);
+                        // Continue loop even if one fails
+                    }
+                }
+            }
 
             // Combine existing and new images
             const allImages = [...existingImages, ...newImageUrls];
@@ -291,16 +318,23 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                 productInfo: productInfo,
             };
 
+            console.log('Update payload:', productData);
+
             // 3. Update Firestore
             const docRef = doc(db, formData.category, productId);
             await updateDoc(docRef, productData);
+            console.log('Firestore document updated successfully.');
 
             toast.success('Product updated successfully!');
             router.push('/admindashboard/products');
 
         } catch (error) {
             console.error('Error updating product:', error);
-            toast.error('Failed to update product.');
+            if (error instanceof Error) {
+                toast.error(`Update failed: ${error.message}`);
+            } else {
+                toast.error('Failed to update product due to an unknown error.');
+            }
         } finally {
             setSubmitting(false);
         }
