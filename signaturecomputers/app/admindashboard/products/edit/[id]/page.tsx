@@ -279,13 +279,21 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                     try {
                         console.log(`Uploading file ${i + 1}/${images.length}: ${file.name}`);
 
-                        // Sanitize filename
-                        const cleanName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
-                        const fileName = `products/${Date.now()}_${Math.random().toString(36).substring(2, 9)}_${cleanName}`;
-                        const storageRef = ref(storage, fileName);
+                        // Use /api/upload endpoint (same as Add Product page) to avoid CORS
+                        const uploadFormData = new FormData();
+                        uploadFormData.append('file', file);
 
-                        await uploadBytes(storageRef, file);
-                        const url = await getDownloadURL(storageRef);
+                        const response = await fetch('/api/upload', {
+                            method: 'POST',
+                            body: uploadFormData,
+                        });
+
+                        if (!response.ok) {
+                            throw new Error('Upload failed');
+                        }
+
+                        const data = await response.json();
+                        const url = data.url;
 
                         console.log(`File ${i + 1} uploaded successfully: ${url}`);
                         newImageUrls.push(url);

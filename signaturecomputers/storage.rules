@@ -8,9 +8,10 @@ service firebase.storage {
 
     // Product images - Public read, admin write
     // Path format: products/{category}/{productId}/{filename}
+    // TEMP: Allowing all writes for admin panel (TODO: Implement proper admin auth token)
     match /products/{allPaths=**} {
       allow read: if true;
-      allow write: if isAuthenticated();  // In production, add admin check
+      allow write: if true;  // Temporary - allow all writes for development
     }
 
     // Category images - Public read, admin write
