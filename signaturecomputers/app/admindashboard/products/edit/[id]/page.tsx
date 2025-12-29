@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { doc, getDoc, updateDoc, collection, getDocs } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -46,9 +46,13 @@ const DEFAULT_CATEGORIES = [
     { id: 'dvd-writers', name: 'DVD Writers', group: 'Accessories' },
 ];
 
-export default function EditProductPage({ params }: { params: { id: string } }) {
+export default function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
     const { adminUser } = useAdminAuth();
     const router = useRouter();
+
+    // Unwrap params
+    const { id: productId } = use(params);
+
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [notFound, setNotFound] = useState(false);
@@ -73,8 +77,6 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
     // Category State
     const [allCategories, setAllCategories] = useState<CategoryData[]>(DEFAULT_CATEGORIES);
     const [loadingCategories, setLoadingCategories] = useState(true);
-
-    const productId = params.id;
 
     useEffect(() => {
         fetchData();

@@ -19,6 +19,40 @@ interface Product {
     [key: string]: any;
 }
 
+interface CategoryData {
+    id: string;
+    name: string; // Display name
+    parentId?: string | null;
+    group?: string | null; // For UI grouping
+    deleted?: boolean;
+    isCustom?: boolean;
+}
+
+const DEFAULT_CATEGORIES: CategoryData[] = [
+    { id: 'all', name: 'All Products', group: null }, // Special case for filter
+    { id: 'laptops', name: 'Laptops', group: null },
+    { id: 'desktops', name: 'Desktops', group: null },
+    { id: 'workstations', name: 'Workstations', group: null },
+    { id: 'monitors', name: 'Monitors', group: null },
+    { id: 'cctv', name: 'CCTV', group: null },
+    // Printers group
+    { id: 'printers', name: 'All Printers', group: 'Printers' },
+    { id: 'toners', name: 'Toners', group: 'Printers' },
+    { id: 'cartridges', name: 'Cartridges', group: 'Printers' },
+    // Accessories group
+    { id: 'accessories', name: 'All Accessories', group: 'Accessories' },
+    { id: 'keyboards', name: 'Keyboards', group: 'Accessories' },
+    { id: 'headphones', name: 'Headphones', group: 'Accessories' },
+    { id: 'cables', name: 'Cables', group: 'Accessories' },
+    { id: 'power-adapters', name: 'Power Adapters', group: 'Accessories' },
+    { id: 'mouse', name: 'Mouse', group: 'Accessories' },
+    { id: 'keyboard-mouse-combo', name: 'Keyboard & Mouse Combo', group: 'Accessories' },
+    { id: 'bags', name: 'Bags', group: 'Accessories' },
+    { id: 'docks', name: 'Docks', group: 'Accessories' },
+    { id: 'usb-flashdrives', name: 'USB Flash Drives', group: 'Accessories' },
+    { id: 'dvd-writers', name: 'DVD Writers', group: 'Accessories' },
+];
+
 export default function ProductsPage() {
     const searchParams = useSearchParams();
     const categoryFromUrl = searchParams.get('category');
@@ -27,43 +61,82 @@ export default function ProductsPage() {
     const [loading, setLoading] = useState(true);
     const [selectedCategory, setSelectedCategory] = useState(categoryFromUrl || 'all');
     const [searchQuery, setSearchQuery] = useState('');
+    const [categories, setCategories] = useState<CategoryData[]>(DEFAULT_CATEGORIES);
 
-    const categories = [
-        { id: 'all', name: 'All Products', group: null },
-        { id: 'laptops', name: 'Laptops', group: null },
-        { id: 'desktops', name: 'Desktops', group: null },
-        { id: 'monitors', name: 'Monitors', group: null },
-        // Printers group
-        { id: 'printers', name: 'All Printers', group: 'Printers' },
-        { id: 'toners', name: 'Toners', group: 'Printers' },
-        { id: 'cartridges', name: 'Cartridges', group: 'Printers' },
-        // Accessories group
-        { id: 'accessories', name: 'All Accessories', group: 'Accessories' },
-        { id: 'keyboards', name: 'Keyboards', group: 'Accessories' },
-        { id: 'headphones', name: 'Headphones', group: 'Accessories' },
-        { id: 'cables', name: 'Cables', group: 'Accessories' },
-        { id: 'power-adapters', name: 'Power Adapters', group: 'Accessories' },
-        { id: 'mouse', name: 'Mouse', group: 'Accessories' },
-        { id: 'keyboard-mouse-combo', name: 'Keyboard & Mouse Combo', group: 'Accessories' },
-        { id: 'bags', name: 'Bags', group: 'Accessories' },
-        { id: 'docks', name: 'Docks', group: 'Accessories' },
-        { id: 'usb-flashdrives', name: 'USB Flash Drives', group: 'Accessories' },
-        { id: 'dvd-writers', name: 'DVD Writers', group: 'Accessories' },
-    ];
+    useEffect(() => {
+        fetchCategories();
+    }, []);
 
     useEffect(() => {
         fetchProducts();
-    }, [selectedCategory]);
+    }, [selectedCategory, categories]); // Re-fetch products if category selection changes or categories load
+
+    const mapParentToGroup = (parentId: string | undefined | null) => {
+        if (!parentId) return null;
+        if (parentId === 'printers-group') return 'Printers';
+        if (parentId === 'accessories') return 'Accessories';
+        return parentId;
+    };
+
+    const fetchCategories = async () => {
+        try {
+            const customCatsSnapshot = await getDocs(collection(db, 'custom_categories'));
+            const customCategories = customCatsSnapshot.docs.map(doc => {
+                const data = doc.data();
+                return {
+                    id: doc.id,
+                    name: data.name,
+                    parentId: data.parentId,
+                    group: mapParentToGroup(data.parentId),
+                    isCustom: true,
+                    deleted: false
+                };
+            });
+
+            const metadataSnapshot = await getDocs(collection(db, 'category_metadata'));
+            const metadataMap: Record<string, { name?: string, deleted?: boolean }> = {};
+            metadataSnapshot.docs.forEach(doc => {
+                const data = doc.data();
+                metadataMap[doc.id] = { name: data.name, deleted: data.deleted };
+            });
+
+            const mergedCategories = [
+                ...DEFAULT_CATEGORIES,
+                ...customCategories
+            ].map(cat => {
+                const meta = metadataMap[cat.id];
+                return {
+                    ...cat,
+                    name: meta?.name || cat.name,
+                    deleted: meta?.deleted || false
+                };
+            }).filter(cat => !cat.deleted || cat.id === 'all'); // Always keep 'all'
+
+            setCategories(mergedCategories);
+
+        } catch (error) {
+            console.error('Failed to fetch categories:', error);
+            // Fallback to default, but ensure 'all' is there
+            setCategories(DEFAULT_CATEGORIES);
+        }
+    };
 
     const fetchProducts = async () => {
+        if (categories.length === 1 && categories[0].id === 'all' && loading) {
+            // Avoid fetching if categories haven't loaded fully unless it's just the initial state
+        }
+
         setLoading(true);
         try {
             if (selectedCategory === 'all') {
-                // Fetch from all categories
-                const allCategories = categories.filter(c => c.id !== 'all').map(c => c.id);
+                // Fetch from all known categories
+                const allCategoryIds = categories.filter(c => c.id !== 'all').map(c => c.id);
+                // Remove duplicates if any
+                const uniqueCategoryIds = Array.from(new Set(allCategoryIds));
+
                 const allProducts: Product[] = [];
 
-                await Promise.all(allCategories.map(async (category) => {
+                await Promise.all(uniqueCategoryIds.map(async (category) => {
                     try {
                         const querySnapshot = await getDocs(collection(db, category));
                         querySnapshot.docs.forEach(doc => {
@@ -74,7 +147,8 @@ export default function ProductsPage() {
                             } as Product);
                         });
                     } catch (err) {
-                        console.warn(`Failed to fetch ${category}:`, err);
+                        // Ignore errors for collections that might not exist yet or empty
+                        // console.warn(`Failed to fetch ${category}:`, err);
                     }
                 }));
 
@@ -90,7 +164,7 @@ export default function ProductsPage() {
             }
         } catch (error) {
             console.warn('Warning: Failed to fetch products (likely permissions):', error);
-            toast.error('Failed to load products (check rules)');
+            toast.error('Failed to load products');
         } finally {
             setLoading(false);
         }
@@ -145,6 +219,9 @@ export default function ProductsPage() {
         product.brand.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+    // Get unique groups for optgroups
+    const groups = Array.from(new Set(categories.map(c => c.group))).filter(Boolean) as string[];
+
     return (
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -177,24 +254,22 @@ export default function ProductsPage() {
                         onChange={(e) => setSelectedCategory(e.target.value)}
                         className="p-2 pr-8 rounded-lg border dark:bg-gray-900 dark:border-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500"
                     >
-                        {/* Ungrouped items */}
-                        {categories.filter(c => !c.group).map(cat => (
+                        {/* Always show "All Products" first */}
+                        <option value="all">All Products</option>
+
+                        {/* Ungrouped items (except 'all') */}
+                        {categories.filter(c => !c.group && c.id !== 'all').map(cat => (
                             <option key={cat.id} value={cat.id}>{cat.name}</option>
                         ))}
 
-                        {/* Printers group */}
-                        <optgroup label="Printers">
-                            {categories.filter(c => c.group === 'Printers').map(cat => (
-                                <option key={cat.id} value={cat.id}>{cat.name}</option>
-                            ))}
-                        </optgroup>
-
-                        {/* Accessories group */}
-                        <optgroup label="Accessories">
-                            {categories.filter(c => c.group === 'Accessories').map(cat => (
-                                <option key={cat.id} value={cat.id}>{cat.name}</option>
-                            ))}
-                        </optgroup>
+                        {/* Grouped items */}
+                        {groups.map(group => (
+                            <optgroup key={group} label={group}>
+                                {categories.filter(c => c.group === group).map(cat => (
+                                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                ))}
+                            </optgroup>
+                        ))}
                     </select>
                 </div>
             </div>
@@ -243,7 +318,7 @@ export default function ProductsPage() {
                                         {selectedCategory === 'all' && (
                                             <td className="p-4">
                                                 <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 capitalize">
-                                                    {product.category}
+                                                    {categories.find(c => c.id === product.category)?.name || product.category}
                                                 </span>
                                             </td>
                                         )}

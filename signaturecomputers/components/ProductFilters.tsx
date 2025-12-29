@@ -85,6 +85,46 @@ function FilterCheckbox({
     );
 }
 
+
+// Helper functions for normalization
+const normalizeGraphics = (gpu: string): string => {
+    if (!gpu) return '';
+    const lower = gpu.toLowerCase();
+
+    // Intel
+    if (lower.includes('intel') && lower.includes('uhd')) return 'Intel UHD Graphics';
+    if (lower.includes('intel') && lower.includes('iris') && lower.includes('xe')) return 'Intel Iris Xe Graphics';
+    if (lower.includes('intel') && lower.includes('arc')) return 'Intel Arc Graphics';
+
+    // AMD
+    if (lower.includes('amd') && lower.includes('radeon')) return 'AMD Radeon Graphics';
+
+    // NVIDIA
+    if (lower.includes('rtx') && lower.includes('3050')) return 'NVIDIA RTX 3050';
+    if (lower.includes('rtx') && lower.includes('4050')) return 'NVIDIA RTX 4050';
+    if (lower.includes('rtx') && lower.includes('4060')) return 'NVIDIA RTX 4060';
+    if (lower.includes('rtx') && lower.includes('3060')) return 'NVIDIA RTX 3060';
+    if (lower.includes('gtx') && lower.includes('1650')) return 'NVIDIA GTX 1650';
+
+    return gpu.trim(); // Fallback to original
+};
+
+const normalizeOS = (os: string): string => {
+    if (!os) return '';
+    const lower = os.toLowerCase().replace(/[^a-z0-9]/g, ''); // remove spaces and special chars
+
+    if (lower.includes('freedos')) return 'Free DOS';
+    if (lower.includes('win11pro') || lower.includes('windows11pro') || lower.includes('windows11professional')) return 'Windows 11 Pro';
+    if (lower.includes('win11home') || lower.includes('windows11home')) return 'Windows 11 Home';
+    if (lower.includes('win10pro') || lower.includes('windows10pro') || lower.includes('windows10professional')) return 'Windows 10 Pro';
+    if (lower.includes('win10home') || lower.includes('windows10home')) return 'Windows 10 Home';
+    if (lower.includes('ubuntu')) return 'Ubuntu';
+    if (lower.includes('linux')) return 'Linux';
+    if (lower.includes('macos')) return 'macOS';
+
+    return os.trim();
+};
+
 export default function ProductFilters({
     products,
     onFilterChange,
@@ -168,15 +208,18 @@ export default function ProductFilters({
 
                 // Operating System
                 if (info.operatingSystem?.os) {
-                    const osVal = info.operatingSystem.os.trim();
-                    os.set(osVal, (os.get(osVal) || 0) + 1);
+                    const osVal = normalizeOS(info.operatingSystem.os);
+                    if (osVal) {
+                        os.set(osVal, (os.get(osVal) || 0) + 1);
+                    }
                 }
 
                 // Graphics
                 if (info.graphics?.gpu) {
-                    const gpuVal = info.graphics.gpu.trim();
-                    const gpuShort = gpuVal.length > 30 ? gpuVal.substring(0, 30) + '...' : gpuVal;
-                    graphics.set(gpuShort, (graphics.get(gpuShort) || 0) + 1);
+                    const gpuVal = normalizeGraphics(info.graphics.gpu);
+                    if (gpuVal) {
+                        graphics.set(gpuVal, (graphics.get(gpuVal) || 0) + 1);
+                    }
                 }
             }
 
@@ -200,6 +243,15 @@ export default function ProductFilters({
                     if (!storage.has(storageVal)) {
                         storage.set(storageVal, (storage.get(storageVal) || 0) + 1);
                     }
+                }
+                // Fallback OS/Graphics normalization if in specs
+                if (!info?.operatingSystem && product.specs['Operating System']) {
+                    const osVal = normalizeOS(product.specs['Operating System']);
+                    if (osVal) os.set(osVal, (os.get(osVal) || 0) + 1);
+                }
+                if (!info?.graphics && product.specs['Graphics']) {
+                    const gpuVal = normalizeGraphics(product.specs['Graphics']);
+                    if (gpuVal) graphics.set(gpuVal, (graphics.get(gpuVal) || 0) + 1);
                 }
             }
         });
@@ -270,18 +322,20 @@ export default function ProductFilters({
         // OS filter
         if (selectedOS.length > 0) {
             filtered = filtered.filter(p => {
-                const osVal = p.productInfo?.operatingSystem?.os;
-                return osVal && selectedOS.includes(osVal.trim());
+                const osValRaw = p.productInfo?.operatingSystem?.os || p.specs?.['Operating System'];
+                if (!osValRaw) return false;
+                const osVal = normalizeOS(osValRaw);
+                return selectedOS.includes(osVal);
             });
         }
 
         // Graphics filter
         if (selectedGraphics.length > 0) {
             filtered = filtered.filter(p => {
-                const gpuVal = p.productInfo?.graphics?.gpu;
-                if (!gpuVal) return false;
-                const gpuShort = gpuVal.length > 30 ? gpuVal.substring(0, 30) + '...' : gpuVal;
-                return selectedGraphics.includes(gpuShort);
+                const gpuValRaw = p.productInfo?.graphics?.gpu || p.specs?.['Graphics'];
+                if (!gpuValRaw) return false;
+                const gpuVal = normalizeGraphics(gpuValRaw);
+                return selectedGraphics.includes(gpuVal);
             });
         }
 
