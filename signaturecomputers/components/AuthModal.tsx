@@ -329,6 +329,12 @@ export default function AuthModal() {
                                 mode === 'login' ? 'Login' : 'Create Account'
                             )}
                         </button>
+
+                        {mode === 'login' && (
+                            <p className="text-xs text-center text-gray-500 mt-3">
+                                By logging in, you agree to our <Link href="/terms" className="text-blue-600 hover:underline">Terms & Conditions</Link>, <Link href="/privacy" className="text-blue-600 hover:underline">Privacy Policy</Link> and <Link href="/returns" className="text-blue-600 hover:underline">Refund & Cancellation Policy</Link>.
+                            </p>
+                        )}
                     </form>
 
                     <div className="relative my-6">
