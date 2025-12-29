@@ -50,7 +50,7 @@ export default function Hero() {
                         {/* LEFT: Text Content */}
                         <div className="flex-1 lg:flex-none lg:w-[58%] sm:text-center lg:text-left z-20 pl-0 lg:pl-6 self-center pr-8">
                             <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold tracking-wide text-blue-700 bg-blue-100 mb-4 uppercase">
-                                HP Direct Dealer & Distributor
+                                HP Authorized Distributor and Reseller
                             </span>
                             <h1 className="text-4xl tracking-tight font-extrabold text-gray-900 sm:text-5xl md:text-6xl mb-6">
                                 Your Complete <br className="hidden lg:block" />

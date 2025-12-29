@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAdminAuth } from '@/context/AdminAuthContext';
 import { createProduct } from '@/lib/admin-actions';
@@ -12,6 +12,39 @@ import { toast } from 'sonner';
 import ProductInfoFormSection from '@/components/admin/ProductInfoFormSection';
 import ImageUploadZone from '@/components/admin/ImageUploadZone';
 import { ProductInfo } from '@/lib/products';
+
+interface CategoryData {
+    id: string;
+    name: string; // Display name
+    parentId?: string | null;
+    group?: string | null; // For UI grouping
+    deleted?: boolean;
+    isCustom?: boolean;
+}
+
+const DEFAULT_CATEGORIES = [
+    { id: 'laptops', name: 'Laptops', group: null },
+    { id: 'desktops', name: 'Desktops', group: null },
+    { id: 'workstations', name: 'Workstations', group: null },
+    { id: 'monitors', name: 'Monitors', group: null },
+    { id: 'cctv', name: 'CCTV', group: null },
+    // Printers group
+    { id: 'printers', name: 'Printers', group: 'Printers' },
+    { id: 'toners', name: 'Toners', group: 'Printers' },
+    { id: 'cartridges', name: 'Cartridges', group: 'Printers' },
+    // Accessories group
+    { id: 'accessories', name: 'Accessories', group: 'Accessories' },
+    { id: 'keyboards', name: 'Keyboards', group: 'Accessories' },
+    { id: 'headphones', name: 'Headphones', group: 'Accessories' },
+    { id: 'cables', name: 'Cables', group: 'Accessories' },
+    { id: 'power-adapters', name: 'Power Adapters', group: 'Accessories' },
+    { id: 'mouse', name: 'Mouse', group: 'Accessories' },
+    { id: 'keyboard-mouse-combo', name: 'Keyboard & Mouse Combo', group: 'Accessories' },
+    { id: 'bags', name: 'Bags', group: 'Accessories' },
+    { id: 'docks', name: 'Docks', group: 'Accessories' },
+    { id: 'usb-flashdrives', name: 'USB Flash Drives', group: 'Accessories' },
+    { id: 'dvd-writers', name: 'DVD Writers', group: 'Accessories' },
+];
 
 export default function AddProductPage() {
     const { adminUser } = useAdminAuth();
@@ -34,33 +67,75 @@ export default function AddProductPage() {
     const [imagePreviews, setImagePreviews] = useState<string[]>([]);
     const [productInfo, setProductInfo] = useState<ProductInfo>({});
 
-    const categories = [
-        { id: 'laptops', name: 'Laptops', group: null },
-        { id: 'desktops', name: 'Desktops', group: null },
-        { id: 'monitors', name: 'Monitors', group: null },
-        // Printers group
-        { id: 'printers', name: 'All Printers', group: 'Printers' },
-        { id: 'toners', name: 'Toners', group: 'Printers' },
-        { id: 'cartridges', name: 'Cartridges', group: 'Printers' },
-        // Accessories group
-        { id: 'accessories', name: 'All Accessories', group: 'Accessories' },
-        { id: 'keyboards', name: 'Keyboards', group: 'Accessories' },
-        { id: 'headphones', name: 'Headphones', group: 'Accessories' },
-        { id: 'cables', name: 'Cables', group: 'Accessories' },
-        { id: 'power-adapters', name: 'Power Adapters', group: 'Accessories' },
-        { id: 'mouse', name: 'Mouse', group: 'Accessories' },
-        { id: 'keyboard-mouse-combo', name: 'Keyboard & Mouse Combo', group: 'Accessories' },
-        { id: 'bags', name: 'Bags', group: 'Accessories' },
-        { id: 'docks', name: 'Docks', group: 'Accessories' },
-        { id: 'usb-flashdrives', name: 'USB Flash Drives', group: 'Accessories' },
-        { id: 'dvd-writers', name: 'DVD Writers', group: 'Accessories' },
-    ];
+    // Category State
+    const [allCategories, setAllCategories] = useState<CategoryData[]>(DEFAULT_CATEGORIES);
+    const [loadingCategories, setLoadingCategories] = useState(true);
+
+    useEffect(() => {
+        fetchCategories();
+    }, []);
+
+    const fetchCategories = async () => {
+        try {
+            // 1. Fetch Custom Categories
+            const customCatsSnapshot = await getDocs(collection(db, 'custom_categories'));
+            const customCategories = customCatsSnapshot.docs.map(doc => {
+                const data = doc.data();
+                return {
+                    id: doc.id,
+                    name: data.name,
+                    parentId: data.parentId, // This maps to our 'group' logic roughly
+                    group: mapParentToGroup(data.parentId),
+                    isCustom: true,
+                    deleted: false // Will be checked against metadata
+                };
+            });
+
+            // 2. Fetch Category Metadata (for deleted status and custom names)
+            const metadataSnapshot = await getDocs(collection(db, 'category_metadata'));
+            const metadataMap: Record<string, { name?: string, deleted?: boolean }> = {};
+            metadataSnapshot.docs.forEach(doc => {
+                const data = doc.data();
+                metadataMap[doc.id] = { name: data.name, deleted: data.deleted };
+            });
+
+            // 3. Merge and Filter
+            const mergedCategories = [
+                ...DEFAULT_CATEGORIES,
+                ...customCategories
+            ].map(cat => {
+                const meta = metadataMap[cat.id];
+                return {
+                    ...cat,
+                    name: meta?.name || cat.name, // Use custom name if exists
+                    deleted: meta?.deleted || false
+                };
+            }).filter(cat => !cat.deleted); // Exclude deleted categories
+
+            setAllCategories(mergedCategories);
+        } catch (error) {
+            console.error('Failed to fetch categories:', error);
+            // Fallback to defaults if fetch fails
+        } finally {
+            setLoadingCategories(false);
+        }
+    };
+
+    const mapParentToGroup = (parentId: string | undefined | null) => {
+        if (!parentId) return null;
+        if (parentId === 'printers-group') return 'Printers';
+        if (parentId === 'accessories') return 'Accessories';
+        // Check if parentId matches any main category ID, if so, maybe group by that?
+        // For now, simple mapping
+        return parentId;
+    };
 
     // Handlers
     // Spec templates with specific order
     const SPEC_TEMPLATES: Record<string, string[]> = {
         laptops: ['Processor', 'Operating System', 'Display Size', 'Graphics', 'RAM', 'Storage'],
         desktops: ['Processor', 'Operating System', 'Display Size', 'Graphics', 'RAM', 'Storage'],
+        workstations: ['Processor', 'Operating System', 'Graphics', 'RAM', 'Storage', 'Power Supply'],
     };
 
     // Auto-populate specs based on category
@@ -73,15 +148,13 @@ export default function AddProductPage() {
         const isGenericDefault = specs.length === 3 && specs[0].key === 'Processor';
         const isEmpty = specs.length === 0 || (specs.length === 1 && specs[0].key === '');
 
-        // Check if current form matches Laptop or Desktop keys (ignoring values, or check emptiness if safer)
-        const isLaptopTemplate = JSON.stringify(currentKeys) === JSON.stringify(SPEC_TEMPLATES['laptops']);
-        const isDesktopTemplate = JSON.stringify(currentKeys) === JSON.stringify(SPEC_TEMPLATES['desktops']);
+        // Check if current form matches a known template
+        const isTemplateMatch = Object.values(SPEC_TEMPLATES).some(
+            template => JSON.stringify(currentKeys) === JSON.stringify(template)
+        );
 
-        // If we are in a "template" state (Generic, Empty, Laptop, or Desktop), allow switching to the new one
-        if (SPEC_TEMPLATES[newCategory] && (isEmpty || isGenericDefault || isLaptopTemplate || isDesktopTemplate)) {
-            // Preserve values if keys match, otherwise clear? 
-            // For simplicity and to ensure "Video Connector" appears, we'll reset to the new template with empty values.
-            // (User can fill them in. If they had data, it might be lost, but this is a setup step).
+        // If we are in a "template" state (Generic, Empty, or matching a template), allow switching to the new one
+        if (SPEC_TEMPLATES[newCategory] && (isEmpty || isGenericDefault || isTemplateMatch)) {
             setSpecs(SPEC_TEMPLATES[newCategory].map(key => ({ key, value: '' })));
         } else if (isGenericDefault && !SPEC_TEMPLATES[newCategory]) {
             // Reset to generic default if moving away from a template category to a generic one
@@ -199,6 +272,23 @@ export default function AddProductPage() {
         }
     };
 
+    // Group categories for display
+    const groupedCategories = allCategories.reduce((acc, cat) => {
+        const group = cat.group || 'Other';
+        if (!acc[group]) acc[group] = [];
+        acc[group].push(cat);
+        return acc;
+    }, {} as Record<string, CategoryData[]>);
+
+    // Sort: Null group (Main) first, then others
+    const ungrouped = groupedCategories['Other'] || [];
+    const printerGroup = groupedCategories['Printers'] || [];
+    const accessoryGroup = groupedCategories['Accessories'] || [];
+    const otherGroups = Object.keys(groupedCategories)
+        .filter(key => key !== 'Other' && key !== 'Printers' && key !== 'Accessories')
+        .map(key => ({ name: key, cats: groupedCategories[key] }));
+
+
     return (
         <div className="max-w-4xl mx-auto pb-12">
             <div className="flex items-center gap-4 mb-8">
@@ -285,25 +375,41 @@ export default function AddProductPage() {
                             value={formData.category}
                             onChange={handleCategoryChange}
                             className="w-full p-2.5 rounded-lg border dark:bg-gray-900 dark:border-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500"
+                            disabled={loadingCategories}
                         >
+                            {loadingCategories && <option>Loading categories...</option>}
+
                             {/* Ungrouped items */}
-                            {categories.filter(c => !c.group).map(cat => (
+                            {ungrouped.map(cat => (
                                 <option key={cat.id} value={cat.id}>{cat.name}</option>
                             ))}
 
                             {/* Printers group */}
-                            <optgroup label="Printers">
-                                {categories.filter(c => c.group === 'Printers').map(cat => (
-                                    <option key={cat.id} value={cat.id}>{cat.name}</option>
-                                ))}
-                            </optgroup>
+                            {printerGroup.length > 0 && (
+                                <optgroup label="Printers">
+                                    {printerGroup.map(cat => (
+                                        <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                    ))}
+                                </optgroup>
+                            )}
 
                             {/* Accessories group */}
-                            <optgroup label="Accessories">
-                                {categories.filter(c => c.group === 'Accessories').map(cat => (
-                                    <option key={cat.id} value={cat.id}>{cat.name}</option>
-                                ))}
-                            </optgroup>
+                            {accessoryGroup.length > 0 && (
+                                <optgroup label="Accessories">
+                                    {accessoryGroup.map(cat => (
+                                        <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                    ))}
+                                </optgroup>
+                            )}
+
+                            {/* Any other dynamic groups */}
+                            {otherGroups.map(group => (
+                                <optgroup key={group.name} label={group.name || 'Custom'}>
+                                    {group.cats.map(cat => (
+                                        <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                    ))}
+                                </optgroup>
+                            ))}
                         </select>
                     </div>
 
