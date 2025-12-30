@@ -2,7 +2,7 @@
 
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
-import { doc, getDoc, updateDoc, collection, getDocs } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, setDoc, collection, getDocs, deleteDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
 import { useAdminAuth } from '@/context/AdminAuthContext';
@@ -56,6 +56,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [notFound, setNotFound] = useState(false);
+    const [originalCategory, setOriginalCategory] = useState(''); // Track original category for moving products
 
     // Form State
     const [formData, setFormData] = useState({
@@ -127,6 +128,9 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                 category: productCategory,
                 description: productData.description || '',
             });
+
+            // Store original category for later comparison
+            setOriginalCategory(productCategory);
 
             // Specs
             if (productData.specs) {
@@ -328,12 +332,34 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
 
             console.log('Update payload:', productData);
 
-            // 3. Update Firestore
-            const docRef = doc(db, formData.category, productId);
-            await updateDoc(docRef, productData);
-            console.log('Firestore document updated successfully.');
+            // 3. Check if category has changed
+            const categoryChanged = originalCategory !== formData.category;
 
-            toast.success('Product updated successfully!');
+            if (categoryChanged) {
+                console.log(`Category changed from '${originalCategory}' to '${formData.category}'. Moving product...`);
+
+                // Add to new collection with same ID using setDoc
+                const newDocRef = doc(db, formData.category, productId);
+                await setDoc(newDocRef, {
+                    ...productData,
+                    createdAt: new Date().toISOString(), // Reset created date for new collection
+                    createdBy: adminUser?.username || 'admin'
+                });
+
+                // Delete from old collection
+                const oldDocRef = doc(db, originalCategory, productId);
+                await deleteDoc(oldDocRef);
+
+                console.log('Product moved to new collection successfully.');
+                toast.success('Product category changed and saved successfully!');
+            } else {
+                // Just update in same collection
+                const docRef = doc(db, formData.category, productId);
+                await updateDoc(docRef, productData);
+                console.log('Firestore document updated successfully.');
+                toast.success('Product updated successfully!');
+            }
+
             router.push('/admindashboard/products');
 
         } catch (error) {
@@ -457,15 +483,65 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
 
                     <div>
                         <label className="block text-sm font-medium mb-2 dark:text-gray-300">Category</label>
-                        <div className="relative">
-                            <input
-                                type="text"
-                                disabled
-                                value={categoryDisplayName}
-                                className="w-full p-2.5 rounded-lg border bg-gray-100 text-gray-500 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-400 cursor-not-allowed"
-                            />
-                            <p className="text-xs text-gray-500 mt-1">Category cannot be changed after creation.</p>
-                        </div>
+                        <select
+                            name="category"
+                            required
+                            value={formData.category}
+                            onChange={handleInputChange}
+                            className="w-full p-2.5 rounded-lg border dark:bg-gray-900 dark:border-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500"
+                        >
+                            <option value="">Select Category</option>
+
+                            {/* Standalone Categories */}
+                            <optgroup label="Main Categories">
+                                {allCategories
+                                    .filter(cat => !cat.group && !cat.deleted)
+                                    .map(cat => (
+                                        <option key={cat.id} value={cat.id}>
+                                            {cat.name}
+                                        </option>
+                                    ))}
+                            </optgroup>
+
+                            {/* Printers Group */}
+                            {allCategories.some(cat => cat.group === 'Printers' && !cat.deleted) && (
+                                <optgroup label="Printers">
+                                    {allCategories
+                                        .filter(cat => cat.group === 'Printers' && !cat.deleted)
+                                        .map(cat => (
+                                            <option key={cat.id} value={cat.id}>
+                                                {cat.name}
+                                            </option>
+                                        ))}
+                                </optgroup>
+                            )}
+
+                            {/* Accessories Group */}
+                            {allCategories.some(cat => cat.group === 'Accessories' && !cat.deleted) && (
+                                <optgroup label="Accessories">
+                                    {allCategories
+                                        .filter(cat => cat.group === 'Accessories' && !cat.deleted)
+                                        .map(cat => (
+                                            <option key={cat.id} value={cat.id}>
+                                                {cat.name}
+                                            </option>
+                                        ))}
+                                </optgroup>
+                            )}
+
+                            {/* Custom Categories */}
+                            {allCategories.some(cat => cat.isCustom && !cat.deleted) && (
+                                <optgroup label="Custom Categories">
+                                    {allCategories
+                                        .filter(cat => cat.isCustom && !cat.deleted)
+                                        .map(cat => (
+                                            <option key={cat.id} value={cat.id}>
+                                                {cat.name}
+                                            </option>
+                                        ))}
+                                </optgroup>
+                            )}
+                        </select>
                     </div>
 
                     <div>
