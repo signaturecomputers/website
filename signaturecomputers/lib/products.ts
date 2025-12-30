@@ -396,11 +396,15 @@ export async function searchProducts(query: string): Promise<SearchResults> {
         // Fetch all products
         const allProducts = await getAllProducts();
 
-        // Filter products by name or brand
+        // Filter products by name, brand, or part number
         const matchingProducts = allProducts.filter(product => {
             const name = product.name?.toLowerCase() || '';
             const brand = product.brand?.toLowerCase() || '';
-            return name.includes(searchTerm) || brand.includes(searchTerm);
+            const partNo = product.productInfo?.partNo?.toLowerCase() || '';
+
+            return name.includes(searchTerm) ||
+                brand.includes(searchTerm) ||
+                partNo.includes(searchTerm);
         }).slice(0, 5); // Limit to 5 products
 
         // Find matching categories
@@ -422,3 +426,24 @@ export async function searchProducts(query: string): Promise<SearchResults> {
     }
 }
 
+// Find product by exact part number match
+export async function findProductByPartNumber(partNumber: string): Promise<Product | null> {
+    if (!partNumber || !partNumber.trim()) {
+        return null;
+    }
+
+    const searchTerm = partNumber.toLowerCase().trim();
+
+    try {
+        const allProducts = await getAllProducts();
+        const matchingProduct = allProducts.find(product => {
+            const partNo = product.productInfo?.partNo?.toLowerCase() || '';
+            return partNo === searchTerm;
+        });
+
+        return matchingProduct || null;
+    } catch (error) {
+        console.error('Error finding product by part number:', error);
+        return null;
+    }
+}

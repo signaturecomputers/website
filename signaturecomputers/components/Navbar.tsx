@@ -20,10 +20,26 @@ export default function Navbar() {
     const [searchQuery, setSearchQuery] = useState('');
     const [isSearchFocused, setIsSearchFocused] = useState(false);
 
-    const handleSearch = (e: React.FormEvent) => {
+    const handleSearch = async (e: React.FormEvent) => {
         e.preventDefault();
         if (searchQuery.trim()) {
-            router.push(`/products?search=${encodeURIComponent(searchQuery)}`);
+            // Search for products matching the query
+            const { searchProducts } = await import('@/lib/products');
+            const results = await searchProducts(searchQuery.trim());
+
+            // If exactly one product found, navigate directly to it
+            if (results.products.length === 1) {
+                const product = results.products[0];
+                setIsSearchFocused(false);
+                setIsOpen(false);
+                setSearchQuery('');
+                router.push(`/product/${product.id}`);
+            } else {
+                // Multiple results or no results - go to search results page
+                setIsSearchFocused(false);
+                setIsOpen(false);
+                router.push(`/products?search=${encodeURIComponent(searchQuery)}`);
+            }
         }
     };
 
