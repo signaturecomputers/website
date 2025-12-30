@@ -62,6 +62,29 @@ function InfoRow({ label, value }: { label: string; value: string | number | boo
     );
 }
 
+// Helper to render custom fields from arrays like basicCustomFields, portsCustomFields, etc.
+function renderCustomFields(customFields: { label: string; value: string }[] | undefined) {
+    if (!customFields || customFields.length === 0) return null;
+
+    return customFields
+        .filter(field => field.label && field.value) // Only show fields with both label and value
+        .map((field, idx) => (
+            <InfoRow key={`custom-${idx}`} label={field.label} value={field.value} />
+        ));
+}
+
+// Helper to get custom section title if set by admin
+function getSectionTitle(productInfo: any, defaultTitle: string, sectionKey: string): string {
+    const titles = productInfo?.sectionTitles || {};
+    return titles[sectionKey] || defaultTitle;
+}
+
+// Helper to get custom field label if set by admin
+function getFieldLabel(productInfo: any, defaultLabel: string, fieldKey: string): string {
+    const labels = productInfo?.fieldLabels || {};
+    return labels[fieldKey] || defaultLabel;
+}
+
 export default function ProductInfoSection({ productInfo, isAdmin = false }: ProductInfoSectionProps) {
     if (!productInfo || !hasContent(productInfo)) {
         return (
@@ -71,208 +94,225 @@ export default function ProductInfoSection({ productInfo, isAdmin = false }: Pro
         );
     }
 
+    // Cast to any to access custom fields
+    const customProductInfo = productInfo as any;
+
     return (
         <div className="space-y-4">
             {/* Basic Info */}
-            {(productInfo.title || productInfo.series || productInfo.recommendedUsage || productInfo.idealFor?.length || (isAdmin && productInfo.partNo)) && (
-                <InfoSection title="Product Overview" icon={FiPackage}>
+            {(productInfo.title || productInfo.series || productInfo.recommendedUsage || productInfo.idealFor?.length || (isAdmin && productInfo.partNo) || customProductInfo.basicCustomFields?.length > 0) && (
+                <InfoSection title={getSectionTitle(customProductInfo, "Product Overview", "basic")} icon={FiPackage}>
                     <dl>
-                        <InfoRow label="Title" value={productInfo.title} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "Title", "basic_title")} value={productInfo.title} />
                         {isAdmin && productInfo.partNo && (
-                            <InfoRow label="Part Number" value={productInfo.partNo} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Part Number", "basic_partNo")} value={productInfo.partNo} />
                         )}
-                        <InfoRow label="Series" value={productInfo.series} />
-                        <InfoRow label="Recommended Usage" value={productInfo.recommendedUsage} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "Series", "basic_series")} value={productInfo.series} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "Recommended Usage", "basic_recommendedUsage")} value={productInfo.recommendedUsage} />
                         {productInfo.idealFor && productInfo.idealFor.length > 0 && (
-                            <InfoRow label="Ideal For" value={productInfo.idealFor.join(', ')} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Ideal For", "basic_idealFor")} value={productInfo.idealFor.join(', ')} />
                         )}
+                        {renderCustomFields(customProductInfo.basicCustomFields)}
                     </dl>
                 </InfoSection>
             )}
 
             {/* Appearance */}
-            {hasContent(productInfo.appearance) && (
-                <InfoSection title="Appearance" icon={FiBox}>
+            {(hasContent(productInfo.appearance) || customProductInfo.appearanceCustomFields?.length > 0) && (
+                <InfoSection title={getSectionTitle(customProductInfo, "Appearance", "appearance")} icon={FiBox}>
                     <dl>
-                        <InfoRow label="Color" value={productInfo.appearance?.color} />
-                        <InfoRow label="Design" value={productInfo.appearance?.design} />
-                        <InfoRow label="Form Factor" value={productInfo.appearance?.formFactor} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "Color", "appearance_color")} value={productInfo.appearance?.color} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "Design", "appearance_design")} value={productInfo.appearance?.design} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "Form Factor", "appearance_formFactor")} value={productInfo.appearance?.formFactor} />
+                        {renderCustomFields(customProductInfo.appearanceCustomFields)}
                     </dl>
                 </InfoSection>
             )}
 
             {/* Operating System */}
-            {hasContent(productInfo.operatingSystem) && (
-                <InfoSection title="Operating System" icon={FiSettings}>
+            {(hasContent(productInfo.operatingSystem) || customProductInfo.osCustomFields?.length > 0) && (
+                <InfoSection title={getSectionTitle(customProductInfo, "Operating System", "os")} icon={FiSettings}>
                     <dl>
-                        <InfoRow label="OS" value={productInfo.operatingSystem?.os} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "OS", "os_os")} value={productInfo.operatingSystem?.os} />
+                        {renderCustomFields(customProductInfo.osCustomFields)}
                     </dl>
                 </InfoSection>
             )}
 
             {/* Processor */}
-            {hasContent(productInfo.processor) && (
-                <InfoSection title="Processor" icon={FiCpu}>
+            {(hasContent(productInfo.processor) || customProductInfo.processorCustomFields?.length > 0) && (
+                <InfoSection title={getSectionTitle(customProductInfo, "Processor", "processor")} icon={FiCpu}>
                     <dl>
-                        <InfoRow label="Processor Name" value={productInfo.processor?.name} />
-                        <InfoRow label="Brand" value={productInfo.processor?.brand} />
-                        <InfoRow label="Generation" value={productInfo.processor?.generation} />
-                        <InfoRow label="Max Clock Speed" value={productInfo.processor?.maxClockSpeed} />
-                        <InfoRow label="Cores" value={productInfo.processor?.cores} />
-                        <InfoRow label="Threads" value={productInfo.processor?.threads} />
-                        <InfoRow label="Cache" value={productInfo.processor?.cache} />
-                        <InfoRow label="Technology" value={productInfo.processor?.technology} />
-                        <InfoRow label="Chipset" value={productInfo.processor?.chipset} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "Processor Name", "processor_name")} value={productInfo.processor?.name} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "Brand", "processor_brand")} value={productInfo.processor?.brand} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "Generation", "processor_generation")} value={productInfo.processor?.generation} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "Max Clock Speed", "processor_maxClockSpeed")} value={productInfo.processor?.maxClockSpeed} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "Cores", "processor_cores")} value={productInfo.processor?.cores} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "Threads", "processor_threads")} value={productInfo.processor?.threads} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "Cache", "processor_cache")} value={productInfo.processor?.cache} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "Technology", "processor_technology")} value={productInfo.processor?.technology} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "Chipset", "processor_chipset")} value={productInfo.processor?.chipset} />
+                        {renderCustomFields(customProductInfo.processorCustomFields)}
                     </dl>
                 </InfoSection>
             )}
 
             {/* Memory */}
-            {hasContent(productInfo.memory) && (
-                <InfoSection title="Memory (RAM)" icon={FiHardDrive}>
+            {(hasContent(productInfo.memory) || customProductInfo.memoryCustomFields?.length > 0) && (
+                <InfoSection title={getSectionTitle(customProductInfo, "Memory (RAM)", "memory")} icon={FiHardDrive}>
                     <dl>
-                        <InfoRow label="Capacity" value={productInfo.memory?.capacity} />
-                        <InfoRow label="Type" value={productInfo.memory?.type} />
-                        <InfoRow label="Speed" value={productInfo.memory?.speed} />
-                        <InfoRow label="Layout" value={productInfo.memory?.layout} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "Capacity", "memory_capacity")} value={productInfo.memory?.capacity} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "Type", "memory_type")} value={productInfo.memory?.type} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "Speed", "memory_speed")} value={productInfo.memory?.speed} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "Layout", "memory_layout")} value={productInfo.memory?.layout} />
+                        {renderCustomFields(customProductInfo.memoryCustomFields)}
                     </dl>
                 </InfoSection>
             )}
 
             {/* Storage */}
-            {hasContent(productInfo.storage) && (
-                <InfoSection title="Storage" icon={FiHardDrive}>
+            {(hasContent(productInfo.storage) || customProductInfo.storageCustomFields?.length > 0) && (
+                <InfoSection title={getSectionTitle(customProductInfo, "Storage", "storage")} icon={FiHardDrive}>
                     <dl>
                         {hasContent(productInfo.storage?.primaryStorage) && (
                             <>
-                                <InfoRow label="Primary Storage Type" value={productInfo.storage?.primaryStorage?.type} />
-                                <InfoRow label="Primary Storage Capacity" value={productInfo.storage?.primaryStorage?.capacity} />
+                                <InfoRow label={getFieldLabel(customProductInfo, "Primary Storage Type", "storage_primary_type")} value={productInfo.storage?.primaryStorage?.type} />
+                                <InfoRow label={getFieldLabel(customProductInfo, "Primary Storage Capacity", "storage_primary_capacity")} value={productInfo.storage?.primaryStorage?.capacity} />
                             </>
                         )}
                         {hasContent(productInfo.storage?.cloudStorage) && (
                             <>
-                                <InfoRow label="Cloud Storage Service" value={productInfo.storage?.cloudStorage?.service} />
-                                <InfoRow label="Cloud Storage Capacity" value={productInfo.storage?.cloudStorage?.capacity} />
-                                <InfoRow label="Cloud Storage Duration" value={productInfo.storage?.cloudStorage?.duration} />
+                                <InfoRow label={getFieldLabel(customProductInfo, "Cloud Storage Service", "storage_cloud_service")} value={productInfo.storage?.cloudStorage?.service} />
+                                <InfoRow label={getFieldLabel(customProductInfo, "Cloud Storage Capacity", "storage_cloud_capacity")} value={productInfo.storage?.cloudStorage?.capacity} />
+                                <InfoRow label={getFieldLabel(customProductInfo, "Cloud Storage Duration", "storage_cloud_duration")} value={productInfo.storage?.cloudStorage?.duration} />
                             </>
                         )}
+                        {renderCustomFields(customProductInfo.storageCustomFields)}
                     </dl>
                 </InfoSection>
             )}
 
             {/* Display */}
-            {hasContent(productInfo.display) && (
-                <InfoSection title="Display" icon={FiMonitor}>
+            {(hasContent(productInfo.display) || customProductInfo.displayCustomFields?.length > 0) && (
+                <InfoSection title={getSectionTitle(customProductInfo, "Display", "display")} icon={FiMonitor}>
                     <dl>
-                        <InfoRow label="Size" value={productInfo.display?.size} />
-                        <InfoRow label="Diagonal" value={productInfo.display?.diagonal} />
-                        <InfoRow label="Resolution" value={productInfo.display?.resolution} />
-                        <InfoRow label="Aspect Ratio" value={productInfo.display?.aspectRatio} />
-                        <InfoRow label="Panel Type" value={productInfo.display?.panel} />
-                        <InfoRow label="Brightness" value={productInfo.display?.brightness} />
-                        <InfoRow label="Color Gamut" value={productInfo.display?.colorGamut} />
-                        <InfoRow label="Anti-Glare" value={productInfo.display?.antiGlare} />
-                        <InfoRow label="Touchscreen" value={productInfo.display?.touchscreen} />
-                        <InfoRow label="Flicker-Free" value={productInfo.display?.flickerFree} />
-                        <InfoRow label="Screen-to-Body Ratio" value={productInfo.display?.screenToBodyRatio} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "Size", "display_size")} value={productInfo.display?.size} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "Diagonal", "display_diagonal")} value={productInfo.display?.diagonal} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "Resolution", "display_resolution")} value={productInfo.display?.resolution} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "Aspect Ratio", "display_aspectRatio")} value={productInfo.display?.aspectRatio} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "Panel Type", "display_panel")} value={productInfo.display?.panel} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "Brightness", "display_brightness")} value={productInfo.display?.brightness} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "Color Gamut", "display_colorGamut")} value={productInfo.display?.colorGamut} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "Anti-Glare", "display_antiGlare")} value={productInfo.display?.antiGlare} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "Touchscreen", "display_touchscreen")} value={productInfo.display?.touchscreen} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "Flicker-Free", "display_flickerFree")} value={productInfo.display?.flickerFree} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "Screen-to-Body Ratio", "display_screenToBodyRatio")} value={productInfo.display?.screenToBodyRatio} />
+                        {renderCustomFields(customProductInfo.displayCustomFields)}
                     </dl>
                 </InfoSection>
             )}
 
             {/* Graphics */}
-            {hasContent(productInfo.graphics) && (
-                <InfoSection title="Graphics" icon={FiMonitor}>
+            {(hasContent(productInfo.graphics) || customProductInfo.graphicsCustomFields?.length > 0) && (
+                <InfoSection title={getSectionTitle(customProductInfo, "Graphics", "graphics")} icon={FiMonitor}>
                     <dl>
-                        <InfoRow label="GPU" value={productInfo.graphics?.gpu} />
-                        <InfoRow label="Dedicated Graphics" value={productInfo.graphics?.dedicated} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "GPU", "graphics_gpu")} value={productInfo.graphics?.gpu} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "Dedicated Graphics", "graphics_dedicated")} value={productInfo.graphics?.dedicated} />
+                        {renderCustomFields(customProductInfo.graphicsCustomFields)}
                     </dl>
                 </InfoSection>
             )}
 
             {/* Audio & Input */}
-            {hasContent(productInfo.audioAndInput) && (
-                <InfoSection title="Audio & Input" icon={FiSpeaker}>
+            {(hasContent(productInfo.audioAndInput) || customProductInfo.audioCustomFields?.length > 0) && (
+                <InfoSection title={getSectionTitle(customProductInfo, "Audio & Input", "audio")} icon={FiSpeaker}>
                     <dl>
-                        <InfoRow label="Speakers" value={productInfo.audioAndInput?.speakers} />
-                        <InfoRow label="Touchpad" value={productInfo.audioAndInput?.touchpad} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "Speakers", "audio_speakers")} value={productInfo.audioAndInput?.speakers} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "Touchpad", "audio_touchpad")} value={productInfo.audioAndInput?.touchpad} />
                         {hasContent(productInfo.audioAndInput?.keyboard) && (
                             <>
-                                <InfoRow label="Keyboard Type" value={productInfo.audioAndInput?.keyboard?.type} />
-                                <InfoRow label="Backlit Keyboard" value={productInfo.audioAndInput?.keyboard?.backlit} />
-                                <InfoRow label="Keyboard Color" value={productInfo.audioAndInput?.keyboard?.color} />
+                                <InfoRow label={getFieldLabel(customProductInfo, "Keyboard Type", "audio_keyboard_type")} value={productInfo.audioAndInput?.keyboard?.type} />
+                                <InfoRow label={getFieldLabel(customProductInfo, "Backlit Keyboard", "audio_keyboard_backlit")} value={productInfo.audioAndInput?.keyboard?.backlit} />
+                                <InfoRow label={getFieldLabel(customProductInfo, "Keyboard Color", "audio_keyboard_color")} value={productInfo.audioAndInput?.keyboard?.color} />
                             </>
                         )}
+                        {renderCustomFields(customProductInfo.audioCustomFields)}
                     </dl>
                 </InfoSection>
             )}
 
             {/* Connectivity */}
-            {hasContent(productInfo.connectivity) && (
-                <InfoSection title="Connectivity" icon={FiWifi}>
+            {(hasContent(productInfo.connectivity) || customProductInfo.connectivityCustomFields?.length > 0) && (
+                <InfoSection title={getSectionTitle(customProductInfo, "Connectivity", "connectivity")} icon={FiWifi}>
                     <dl>
-                        <InfoRow label="WiFi" value={productInfo.connectivity?.wifi} />
-                        <InfoRow label="Bluetooth" value={productInfo.connectivity?.bluetooth} />
-                        <InfoRow label="Modern Standby" value={productInfo.connectivity?.modernStandby} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "WiFi", "connectivity_wifi")} value={productInfo.connectivity?.wifi} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "Bluetooth", "connectivity_bluetooth")} value={productInfo.connectivity?.bluetooth} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "Modern Standby", "connectivity_modernStandby")} value={productInfo.connectivity?.modernStandby} />
+                        {renderCustomFields(customProductInfo.connectivityCustomFields)}
                     </dl>
                 </InfoSection>
             )}
 
             {/* Ports */}
-            {hasContent(productInfo.ports) && (
-                <InfoSection title="Ports & Connections" icon={FiSettings}>
+            {(hasContent(productInfo.ports) || customProductInfo.portsCustomFields?.length > 0) && (
+                <InfoSection title={getSectionTitle(customProductInfo, "Ports & Connections", "ports")} icon={FiSettings}>
                     <dl>
-                        <InfoRow label="USB Type-C" value={productInfo.ports?.usbTypeC} />
-                        <InfoRow label="USB Type-A" value={productInfo.ports?.usbTypeA} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "USB Type-C", "ports_usbTypeC")} value={productInfo.ports?.usbTypeC} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "USB Type-A", "ports_usbTypeA")} value={productInfo.ports?.usbTypeA} />
                         {hasContent(productInfo.ports?.hdmi) && (
                             <InfoRow
-                                label="HDMI"
+                                label={getFieldLabel(customProductInfo, "HDMI", "ports_hdmi")}
                                 value={`${productInfo.ports?.hdmi?.count || 1}x HDMI ${productInfo.ports?.hdmi?.version || ''}`}
                             />
                         )}
-                        <InfoRow label="Audio Jack" value={productInfo.ports?.audioJack} />
-                        <InfoRow label="Power Port" value={productInfo.ports?.powerPort} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "Audio Jack", "ports_audioJack")} value={productInfo.ports?.audioJack} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "Power Port", "ports_powerPort")} value={productInfo.ports?.powerPort} />
+                        {renderCustomFields(customProductInfo.portsCustomFields)}
                     </dl>
                 </InfoSection>
             )}
 
             {/* Camera */}
-            {hasContent(productInfo.camera) && (
-                <InfoSection title="Camera" icon={FiCamera}>
+            {(hasContent(productInfo.camera) || customProductInfo.cameraCustomFields?.length > 0) && (
+                <InfoSection title={getSectionTitle(customProductInfo, "Camera", "camera")} icon={FiCamera}>
                     <dl>
-                        <InfoRow label="Webcam" value={productInfo.camera?.webcam} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "Webcam", "camera_webcam")} value={productInfo.camera?.webcam} />
                         {productInfo.camera?.features && productInfo.camera.features.length > 0 && (
-                            <InfoRow label="Features" value={productInfo.camera.features.join(', ')} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Features", "camera_features")} value={productInfo.camera.features.join(', ')} />
                         )}
+                        {renderCustomFields(customProductInfo.cameraCustomFields)}
                     </dl>
                 </InfoSection>
             )}
 
             {/* Battery & Power */}
-            {hasContent(productInfo.batteryAndPower) && (
-                <InfoSection title="Battery & Power" icon={FiBattery}>
+            {(hasContent(productInfo.batteryAndPower) || customProductInfo.batteryCustomFields?.length > 0) && (
+                <InfoSection title={getSectionTitle(customProductInfo, "Battery & Power", "battery")} icon={FiBattery}>
                     <dl>
-                        <InfoRow label="Battery Type" value={productInfo.batteryAndPower?.batteryType} />
-                        <InfoRow label="Capacity" value={productInfo.batteryAndPower?.capacity} />
-                        <InfoRow label="Charger" value={productInfo.batteryAndPower?.charger} />
-                        <InfoRow label="Fast Charge" value={productInfo.batteryAndPower?.fastCharge} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "Battery Type", "battery_batteryType")} value={productInfo.batteryAndPower?.batteryType} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "Capacity", "battery_capacity")} value={productInfo.batteryAndPower?.capacity} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "Charger", "battery_charger")} value={productInfo.batteryAndPower?.charger} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "Fast Charge", "battery_fastCharge")} value={productInfo.batteryAndPower?.fastCharge} />
+                        {renderCustomFields(customProductInfo.batteryCustomFields)}
                     </dl>
                 </InfoSection>
             )}
 
             {/* Security */}
-            {hasContent(productInfo.security) && (
-                <InfoSection title="Security" icon={FiShield}>
+            {(hasContent(productInfo.security) || customProductInfo.securityCustomFields?.length > 0) && (
+                <InfoSection title={getSectionTitle(customProductInfo, "Security", "security")} icon={FiShield}>
                     <dl>
-                        <InfoRow label="TPM" value={productInfo.security?.tpm} />
-                        <InfoRow label="Mic Mute Key" value={productInfo.security?.micMuteKey} />
-                        <InfoRow label="Camera Privacy Shutter" value={productInfo.security?.cameraPrivacyShutter} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "TPM", "security_tpm")} value={productInfo.security?.tpm} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "Mic Mute Key", "security_micMuteKey")} value={productInfo.security?.micMuteKey} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "Camera Privacy Shutter", "security_cameraPrivacyShutter")} value={productInfo.security?.cameraPrivacyShutter} />
+                        {renderCustomFields(customProductInfo.securityCustomFields)}
                     </dl>
                 </InfoSection>
             )}
 
             {/* Software */}
             {hasContent(productInfo.software) && productInfo.software?.preInstalled && productInfo.software.preInstalled.length > 0 && (
-                <InfoSection title="Pre-installed Software" icon={FiPackage}>
+                <InfoSection title={getSectionTitle(customProductInfo, "Pre-installed Software", "software")} icon={FiPackage}>
                     <dl>
                         {productInfo.software.preInstalled.map((sw, idx) => (
                             <InfoRow
@@ -286,46 +326,50 @@ export default function ProductInfoSection({ productInfo, isAdmin = false }: Pro
             )}
 
             {/* Dimensions & Weight */}
-            {hasContent(productInfo.dimensionsAndWeight) && (
-                <InfoSection title="Dimensions & Weight" icon={FiBox}>
+            {(hasContent(productInfo.dimensionsAndWeight) || customProductInfo.dimensionsCustomFields?.length > 0) && (
+                <InfoSection title={getSectionTitle(customProductInfo, "Dimensions & Weight", "dimensions")} icon={FiBox}>
                     <dl>
                         {hasContent(productInfo.dimensionsAndWeight?.dimensions) && (
                             <>
-                                <InfoRow label="Front Dimensions" value={productInfo.dimensionsAndWeight?.dimensions?.front} />
-                                <InfoRow label="Rear Dimensions" value={productInfo.dimensionsAndWeight?.dimensions?.rear} />
+                                <InfoRow label={getFieldLabel(customProductInfo, "Front Dimensions", "dimensions_front")} value={productInfo.dimensionsAndWeight?.dimensions?.front} />
+                                <InfoRow label={getFieldLabel(customProductInfo, "Rear Dimensions", "dimensions_rear")} value={productInfo.dimensionsAndWeight?.dimensions?.rear} />
                             </>
                         )}
-                        <InfoRow label="Weight" value={productInfo.dimensionsAndWeight?.weight} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "Weight", "dimensions_weight")} value={productInfo.dimensionsAndWeight?.weight} />
+                        {renderCustomFields(customProductInfo.dimensionsCustomFields)}
                     </dl>
                 </InfoSection>
             )}
 
             {/* Warranty */}
-            {hasContent(productInfo.warranty) && (
-                <InfoSection title="Warranty" icon={FiAward}>
+            {(hasContent(productInfo.warranty) || customProductInfo.warrantyCustomFields?.length > 0) && (
+                <InfoSection title={getSectionTitle(customProductInfo, "Warranty", "warranty")} icon={FiAward}>
                     <dl>
-                        <InfoRow label="Duration" value={productInfo.warranty?.duration} />
-                        <InfoRow label="Coverage" value={productInfo.warranty?.coverage} />
-                        <InfoRow label="On-Site Service" value={productInfo.warranty?.onSiteService} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "Duration", "warranty_duration")} value={productInfo.warranty?.duration} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "Coverage", "warranty_coverage")} value={productInfo.warranty?.coverage} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "On-Site Service", "warranty_onSiteService")} value={productInfo.warranty?.onSiteService} />
+                        {renderCustomFields(customProductInfo.warrantyCustomFields)}
                     </dl>
                 </InfoSection>
             )}
 
             {/* Certifications */}
-            {hasContent(productInfo.certifications) && (
-                <InfoSection title="Certifications" icon={FiAward}>
+            {(hasContent(productInfo.certifications) || customProductInfo.certificationsCustomFields?.length > 0) && (
+                <InfoSection title={getSectionTitle(customProductInfo, "Certifications", "certifications")} icon={FiAward}>
                     <dl>
-                        <InfoRow label="Energy Star" value={productInfo.certifications?.energyStar} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "Energy Star", "certifications_energyStar")} value={productInfo.certifications?.energyStar} />
+                        {renderCustomFields(customProductInfo.certificationsCustomFields)}
                     </dl>
                 </InfoSection>
             )}
 
             {/* Environmental */}
-            {hasContent(productInfo.environmental) && (
-                <InfoSection title="Environmental" icon={FiPackage}>
+            {(hasContent(productInfo.environmental) || customProductInfo.environmentalCustomFields?.length > 0) && (
+                <InfoSection title={getSectionTitle(customProductInfo, "Environmental", "environmental")} icon={FiPackage}>
                     <dl>
-                        <InfoRow label="Ocean-Bound Plastic" value={productInfo.environmental?.oceanBoundPlastic} />
-                        <InfoRow label="Recycled Keycaps" value={productInfo.environmental?.recycledKeycaps} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "Ocean-Bound Plastic", "environmental_oceanBoundPlastic")} value={productInfo.environmental?.oceanBoundPlastic} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "Recycled Keycaps", "environmental_recycledKeycaps")} value={productInfo.environmental?.recycledKeycaps} />
+                        {renderCustomFields(customProductInfo.environmentalCustomFields)}
                     </dl>
                 </InfoSection>
             )}

@@ -57,7 +57,7 @@ export default function ProductDetailsPage() {
                 quantity: quantity
             });
             toast.success('Added to cart!', {
-                description: `${product.name} (Qty: ${quantity})`,
+                description: `${product.productInfo?.title || product.name} (Qty: ${quantity})`,
                 duration: 3000,
             });
         }
@@ -141,7 +141,7 @@ export default function ProductDetailsPage() {
         if (product) {
             setIsSaved(isInSaved(product.id));
             // Update page title for SEO
-            document.title = `${product.name} | Signature Computers`;
+            document.title = `${product.productInfo?.title || product.name} | Signature Computers`;
         }
         // Reset title on unmount
         return () => {
@@ -190,7 +190,7 @@ export default function ProductDetailsPage() {
                         {/* Main Image - Scales to fit container */}
                         <div className="aspect-[4/3] overflow-hidden flex items-center justify-center bg-gray-50 dark:bg-gray-900 rounded-lg">
                             {activeImage ? (
-                                <img src={activeImage} alt={product.name} className="max-w-full max-h-full object-contain" />
+                                <img src={activeImage} alt={product.productInfo?.title || product.name} className="max-w-full max-h-full object-contain" />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center">
                                     <span className="text-gray-400">No Image</span>
@@ -215,7 +215,7 @@ export default function ProductDetailsPage() {
                                 </div>
                             )}
 
-                            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">{product.name}</h1>
+                            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">{product.productInfo?.title || product.name}</h1>
 
                             <div className="flex items-center mb-4">
                                 <div className="flex text-yellow-400">
