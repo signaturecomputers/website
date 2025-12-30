@@ -37,6 +37,8 @@ interface CheckoutModalProps {
         [key: string]: unknown;
     };
     quantity: number;
+    windowsInstallation?: boolean;
+    windowsInstallationPrice?: number;
 }
 
 interface BillingAddress {
@@ -51,7 +53,7 @@ interface BillingAddress {
     isDefault?: boolean;
 }
 
-export default function CheckoutModal({ isOpen, onClose, product, quantity }: CheckoutModalProps) {
+export default function CheckoutModal({ isOpen, onClose, product, quantity, windowsInstallation, windowsInstallationPrice }: CheckoutModalProps) {
     const { user } = useAuth();
     const router = useRouter();
     const [loading, setLoading] = useState(false);
@@ -128,7 +130,9 @@ export default function CheckoutModal({ isOpen, onClose, product, quantity }: Ch
 
     if (!isOpen) return null;
 
-    const totalAmount = product.price * quantity;
+    const productTotal = product.price * quantity;
+    const windowsTotal = windowsInstallation && windowsInstallationPrice ? windowsInstallationPrice * quantity : 0;
+    const totalAmount = productTotal + windowsTotal;
     const selectedAddress = savedAddresses.find(a => a.id === selectedAddressId);
 
     const handleNewAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -251,8 +255,6 @@ export default function CheckoutModal({ isOpen, onClose, product, quantity }: Ch
     const createPendingOrder = async (cfOrderId: string) => {
         if (!user || !selectedAddress) return null;
 
-        const addressString = `${selectedAddress.addressLine1}${selectedAddress.addressLine2 ? ', ' + selectedAddress.addressLine2 : ''}, ${selectedAddress.city}, ${selectedAddress.state} - ${selectedAddress.pincode}`;
-
         // Generate uniform order ID: SC-YYYYMMDD-XXXX
         const now = new Date();
         const dateStr = now.getFullYear().toString() +
@@ -260,8 +262,9 @@ export default function CheckoutModal({ isOpen, onClose, product, quantity }: Ch
             now.getDate().toString().padStart(2, '0');
         const randomPart = Math.floor(1000 + Math.random() * 9000);
         const orderId = `SC-${dateStr}-${randomPart}`;
+        const fullAddress = `${selectedAddress.addressLine1}${selectedAddress.addressLine2 ? ', ' + selectedAddress.addressLine2 : ''}, ${selectedAddress.city}, ${selectedAddress.state} - ${selectedAddress.pincode}`;
 
-        const orderData = {
+        const orderData: any = {
             orderId,
             cfOrderId,
             productId: product.id,
@@ -271,18 +274,31 @@ export default function CheckoutModal({ isOpen, onClose, product, quantity }: Ch
             partNumber: product.productInfo?.partNo || '',
             quantity: quantity,
             unitPrice: product.price,
+            windowsInstallation: windowsInstallation || false,
             totalAmount: totalAmount,
             customerId: user.uid,
             customerEmail: user.email,
             customerName: selectedAddress.fullName,
             phone: selectedAddress.phone,
-            address: addressString,
-            billingAddress: selectedAddress,
+            address: fullAddress,
+            shippingAddress: {
+                addressLine1: selectedAddress.addressLine1,
+                addressLine2: selectedAddress.addressLine2,
+                city: selectedAddress.city,
+                state: selectedAddress.state,
+                pincode: selectedAddress.pincode
+            },
+            paymentMethod: 'online',
             paymentStatus: 'pending',
             status: 'pending',
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp()
         };
+
+        // Only add windowsInstallationPrice if it exists
+        if (windowsInstallation && windowsInstallationPrice) {
+            orderData.windowsInstallationPrice = windowsInstallationPrice;
+        }
 
         await addDoc(collection(db, 'orders'), orderData);
 
@@ -407,16 +423,16 @@ export default function CheckoutModal({ isOpen, onClose, product, quantity }: Ch
                                                     <div
                                                         key={addr.id}
                                                         className={`relative border rounded-lg p-4 cursor-pointer transition-all ${selectedAddressId === addr.id
-                                                                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                                                                : 'border-gray-200 dark:border-gray-700 hover:border-blue-300'
+                                                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                                                            : 'border-gray-200 dark:border-gray-700 hover:border-blue-300'
                                                             }`}
                                                         onClick={() => setSelectedAddressId(addr.id)}
                                                     >
                                                         <div className="flex items-start justify-between">
                                                             <div className="flex items-start gap-3">
                                                                 <div className={`mt-1 w-5 h-5 rounded-full border-2 flex items-center justify-center ${selectedAddressId === addr.id
-                                                                        ? 'border-blue-600 bg-blue-600'
-                                                                        : 'border-gray-300'
+                                                                    ? 'border-blue-600 bg-blue-600'
+                                                                    : 'border-gray-300'
                                                                     }`}>
                                                                     {selectedAddressId === addr.id && (
                                                                         <FiCheck className="text-white text-xs" />
@@ -593,12 +609,18 @@ export default function CheckoutModal({ isOpen, onClose, product, quantity }: Ch
                                         <p className="font-medium dark:text-white">x{quantity}</p>
                                     </div>
                                     <div className="border-t dark:border-gray-700 pt-2 mt-2">
-                                        <div className="flex justify-between">
-                                            <span className="text-gray-600 dark:text-gray-400">Subtotal</span>
-                                            <span className="dark:text-white">₹{totalAmount.toLocaleString()}</span>
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-gray-600 dark:text-gray-400">Product Price</span>
+                                            <span className="dark:text-white">₹{productTotal.toLocaleString()}</span>
                                         </div>
-                                        <div className="flex justify-between font-bold text-lg mt-2">
-                                            <span className="dark:text-white">Total</span>
+                                        {windowsInstallation && windowsInstallationPrice && (
+                                            <div className="flex justify-between text-sm">
+                                                <span className="text-gray-600 dark:text-gray-400">Windows 11 Pro OEM Key</span>
+                                                <span className="dark:text-white">₹{windowsTotal.toLocaleString()}</span>
+                                            </div>
+                                        )}
+                                        <div className="flex justify-between font-bold text-lg mt-2 pt-2 border-t dark:border-gray-700">
+                                            <span className="dark:text-white">Grand Total</span>
                                             <span className="text-blue-600">₹{totalAmount.toLocaleString()}</span>
                                         </div>
                                     </div>

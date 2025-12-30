@@ -136,7 +136,7 @@ export default function CheckoutPage() {
             const orderId = `SC-${dateStr}-${randomPart}`;
             const fullAddress = `${formData.address}, ${formData.city}, ${formData.state} - ${formData.zip}`;
 
-            const orderData = {
+            const orderData: any = {
                 orderId,
                 cfOrderId, // Link to Cashfree order
                 productId: item.id,
@@ -146,7 +146,8 @@ export default function CheckoutPage() {
                 partNumber: (item as { partNumber?: string }).partNumber || product.productInfo?.partNo || '',
                 quantity: item.quantity,
                 unitPrice: item.price,
-                totalAmount: item.price * item.quantity,
+                windowsInstallation: item.windowsInstallation || false,
+                totalAmount: item.price * item.quantity + (item.windowsInstallation && item.windowsInstallationPrice ? item.windowsInstallationPrice * item.quantity : 0),
                 customerId: user.uid,
                 customerEmail: user.email,
                 customerName: formData.name,
@@ -165,6 +166,11 @@ export default function CheckoutPage() {
                 updatedAt: serverTimestamp()
             };
 
+            // Only add windowsInstallationPrice if it exists
+            if (item.windowsInstallation && item.windowsInstallationPrice) {
+                orderData.windowsInstallationPrice = item.windowsInstallationPrice;
+            }
+
             // Create the pending order
             await addDoc(collection(db, 'orders'), orderData);
 
@@ -178,7 +184,7 @@ export default function CheckoutPage() {
                 partNumber: (item as { partNumber?: string }).partNumber || product.productInfo?.partNo || '',
                 quantity: item.quantity,
                 unitPrice: item.price,
-                totalAmount: item.price * item.quantity
+                totalAmount: item.price * item.quantity + (item.windowsInstallation && item.windowsInstallationPrice ? item.windowsInstallationPrice * item.quantity : 0)
             });
         }
 
@@ -425,12 +431,20 @@ export default function CheckoutPage() {
                             <h2 className="text-xl font-semibold mb-6 dark:text-white">Your Order</h2>
                             <ul className="divide-y divide-gray-200 dark:divide-gray-800 max-h-[400px] overflow-y-auto">
                                 {cart.map((item) => (
-                                    <li key={item.id} className="py-4 flex justify-between">
-                                        <div>
-                                            <p className="text-sm font-medium text-gray-900 dark:text-white">{item.name}</p>
-                                            <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
+                                    <li key={item.id} className="py-4">
+                                        <div className="flex justify-between mb-1">
+                                            <div>
+                                                <p className="text-sm font-medium text-gray-900 dark:text-white">{item.name}</p>
+                                                <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
+                                            </div>
+                                            <p className="text-sm font-medium text-gray-900 dark:text-white">₹{(item.price * item.quantity).toLocaleString()}</p>
                                         </div>
-                                        <p className="text-sm font-medium text-gray-900 dark:text-white">₹{(item.price * item.quantity).toLocaleString()}</p>
+                                        {item.windowsInstallation && item.windowsInstallationPrice && (
+                                            <div className="flex justify-between mt-1 pl-4 border-l-2 border-blue-500">
+                                                <p className="text-xs text-gray-600 dark:text-gray-400">+ Windows 11 Pro OEM</p>
+                                                <p className="text-xs font-medium text-blue-600">₹{(item.windowsInstallationPrice * item.quantity).toLocaleString()}</p>
+                                            </div>
+                                        )}
                                     </li>
                                 ))}
                             </ul>

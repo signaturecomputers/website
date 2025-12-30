@@ -26,10 +26,17 @@ export default function AdminSettings() {
     const [themeLoading, setThemeLoading] = useState(true);
     const [updatingTheme, setUpdatingTheme] = useState(false);
 
+    // Windows Installation state
+    const [windowsPrice, setWindowsPrice] = useState(5000);
+    const [windowsPriceLoading, setWindowsPriceLoading] = useState(true);
+    const [updatingWindowsPrice, setUpdatingWindowsPrice] = useState(false);
+    const [newWindowsPrice, setNewWindowsPrice] = useState("");
+
     useEffect(() => {
         // Fetch current signature
         fetchSignature();
         fetchTheme();
+        fetchWindowsPrice();
     }, []);
 
     const fetchTheme = async () => {
@@ -209,6 +216,57 @@ export default function AdminSettings() {
             toast.error('Failed to remove signature');
         } finally {
             setUploadingSignature(false);
+        }
+    };
+
+    const fetchWindowsPrice = async () => {
+        setWindowsPriceLoading(true);
+        try {
+            const docRef = doc(db, "site_settings", "windowsInstallation");
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                setWindowsPrice(docSnap.data().price || 5000);
+            }
+        } catch (error) {
+            console.error("Error fetching Windows installation price:", error);
+        } finally {
+            setWindowsPriceLoading(false);
+        }
+    };
+
+    const handleUpdateWindowsPrice = async (e: React.FormEvent) => {
+        e.preventDefault();
+        const priceValue = parseInt(newWindowsPrice);
+
+        if (!newWindowsPrice || isNaN(priceValue) || priceValue < 0) {
+            toast.error("Please enter a valid price");
+            return;
+        }
+
+        if (adminUser?.role !== "admin") {
+            toast.error("Only ADMIN can update Windows installation price");
+            return;
+        }
+
+        setUpdatingWindowsPrice(true);
+        try {
+            const docRef = doc(db, "site_settings", "windowsInstallation");
+            await setDoc(docRef, {
+                price: priceValue,
+                serviceName: "Windows 11 Pro OEM Key & Installation",
+                enabled: true,
+                updatedBy: adminUser.username,
+                updatedAt: Timestamp.now()
+            }, { merge: true });
+
+            setWindowsPrice(priceValue);
+            setNewWindowsPrice("");
+            toast.success("Windows installation price updated successfully!");
+        } catch (error) {
+            console.error("Error updating Windows price:", error);
+            toast.error("Failed to update Windows installation price");
+        } finally {
+            setUpdatingWindowsPrice(false);
         }
     };
 
@@ -399,6 +457,68 @@ export default function AdminSettings() {
 
                 {adminUser?.role !== "admin" && (
                     <p className="text-xs text-red-500 mt-4">You need ADMIN privileges to change the theme.</p>
+                )}
+            </div>
+
+            {/* Windows Installation Pricing Section */}
+            <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                    <svg className="mr-2 text-blue-500" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                        <line x1="9" y1="3" x2="9" y2="21" />
+                        <line x1="15" y1="3" x2="15" y2="21" />
+                        <line x1="3" y1="9" x2="21" y2="9" />
+                        <line x1="3" y1="15" x2="21" y2="15" />
+                    </svg>
+                    Windows Installation Pricing
+                </h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+                    Configure the price for Windows 11 Pro OEM Key & Installation service for Free DOS products. This price will be added to the product price when customers select the Windows installation option.
+                </p>
+
+                {windowsPriceLoading ? (
+                    <div className="h-10 w-64 bg-gray-100 dark:bg-gray-700 animate-pulse rounded-md" />
+                ) : (
+                    <div className="space-y-4">
+                        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                            <p className="text-sm font-medium text-blue-900 dark:text-blue-300 mb-1">Current Price</p>
+                            <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">₹{windowsPrice.toLocaleString()}</p>
+                            <p className="text-xs text-blue-700 dark:text-blue-400 mt-1">For Windows 11 Pro OEM Key & Installation</p>
+                        </div>
+
+                        <form onSubmit={handleUpdateWindowsPrice} className="space-y-4 max-w-md">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Update Windows Installation Price (₹)
+                                </label>
+                                <input
+                                    type="number"
+                                    value={newWindowsPrice}
+                                    onChange={(e) => setNewWindowsPrice(e.target.value)}
+                                    placeholder={windowsPrice.toString()}
+                                    min="0"
+                                    step="100"
+                                    className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                />
+                                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                    Enter the new price for Windows installation service
+                                </p>
+                            </div>
+
+                            <button
+                                type="submit"
+                                disabled={updatingWindowsPrice || adminUser?.role !== "admin"}
+                                className="flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <Save className="mr-2 h-4 w-4" />
+                                {updatingWindowsPrice ? "Updating..." : "Update Price"}
+                            </button>
+
+                            {adminUser?.role !== "admin" && (
+                                <p className="text-xs text-red-500">You need ADMIN privileges to update the Windows installation price.</p>
+                            )}
+                        </form>
+                    </div>
                 )}
             </div>
         </div>

@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
 export default function CartPage() {
-    const { cart, savedItems, removeFromCart, updateQuantity, cartTotal, cartCount, removeFromSaved, moveToCart, saveForLater, isLoading } = useCart();
+    const { cart, savedItems, removeFromCart, updateQuantity, toggleWindowsInstallation, cartTotal, cartCount, removeFromSaved, moveToCart, saveForLater, isLoading } = useCart();
     const router = useRouter();
 
     const handleMoveToCart = (item: { id: string; name: string; price: number; image: string }) => {
@@ -83,8 +83,37 @@ export default function CartPage() {
                                         <div>
                                             <h3 className="text-lg font-medium text-gray-900 dark:text-white">{item.name}</h3>
                                             <p className="text-blue-600 font-bold">₹{item.price.toLocaleString()}</p>
+
+                                            {/* Windows Installation Add-on */}
+                                            {item.windowsInstallation && item.windowsInstallationPrice && (
+                                                <div className="mt-2 pl-4 border-l-2 border-blue-500 bg-blue-50 dark:bg-blue-900/20 rounded-r-lg py-2 pr-3">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-2">
+                                                            <svg className="w-4 h-4 text-blue-600" viewBox="0 0 24 24" fill="currentColor">
+                                                                <path d="M0,0V11.111H11.111V0ZM11.111,11.111V24H24V11.111ZM0,11.111V24H11.111V11.111ZM11.111,0V11.111H24V0Z" />
+                                                            </svg>
+                                                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Windows 11 Pro OEM</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-3">
+                                                            <span className="text-sm font-semibold text-blue-600">+₹{item.windowsInstallationPrice.toLocaleString()}</span>
+                                                            <button
+                                                                onClick={() => {
+                                                                    toggleWindowsInstallation(item.id);
+                                                                    toast.info('Windows installation removed');
+                                                                }}
+                                                                className="text-red-500 hover:text-red-700 transition-colors p-1"
+                                                                title="Remove Windows installation"
+                                                            >
+                                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                                </svg>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
-                                        <div className="flex items-center justify-between">
+                                        <div className="flex items-center justify-between mt-3">
                                             <div className="flex items-center border border-gray-300 dark:border-gray-700 rounded-md">
                                                 <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="px-3 py-1 hover:bg-gray-200 dark:hover:bg-gray-800">-</button>
                                                 <span className="px-3 py-1 text-sm font-medium">{item.quantity}</span>

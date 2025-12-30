@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { toast } from 'sonner';
 
 interface CartItem {
@@ -12,6 +12,8 @@ interface CartItem {
     price: number;
     image: string;
     quantity: number;
+    windowsInstallation?: boolean;
+    windowsInstallationPrice?: number;
 }
 
 interface SavedItem {
@@ -27,6 +29,7 @@ interface CartContextType {
     addToCart: (item: CartItem) => void;
     removeFromCart: (itemId: string) => void;
     updateQuantity: (itemId: string, quantity: number) => void;
+    toggleWindowsInstallation: (itemId: string, windowsPrice?: number) => void;
     clearCart: () => void;
     saveForLater: (item: SavedItem) => boolean;
     removeFromSaved: (itemId: string) => void;
@@ -44,6 +47,7 @@ const CartContext = createContext<CartContextType>({
     addToCart: () => { },
     removeFromCart: () => { },
     updateQuantity: () => { },
+    toggleWindowsInstallation: () => { },
     clearCart: () => { },
     saveForLater: () => false,
     removeFromSaved: () => { },
@@ -94,25 +98,45 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         }
     }, []);
 
-    // Save cart to Firestore
+    // Save cart to Firestore (for logged-in users)
     const saveCart = useCallback(async (userId: string, items: CartItem[], saved: SavedItem[]) => {
         if (isSyncing.current) {
             console.log('[Cart] Skipping save - sync in progress');
             return;
         }
-        console.log('[Cart] Saving cart to Firestore for user:', userId, {
-            itemCount: items.length,
-            savedCount: saved.length
-        });
+
         try {
-            await setDoc(doc(db, 'carts', userId), {
-                items: items,
-                savedItems: saved,
-                updatedAt: new Date().toISOString()
+            // Filter out undefined values from cart items
+            const cleanedItems = items.map(item => {
+                const cleanedItem: any = { ...item };
+                // Remove undefined fields
+                Object.keys(cleanedItem).forEach(key => {
+                    if (cleanedItem[key] === undefined) {
+                        delete cleanedItem[key];
+                    }
+                });
+                return cleanedItem;
             });
-            console.log('[Cart] Saved to Firestore successfully');
+
+            const cleanedSavedItems = saved.map(item => {
+                const cleanedItem: any = { ...item };
+                // Remove undefined fields
+                Object.keys(cleanedItem).forEach(key => {
+                    if (cleanedItem[key] === undefined) {
+                        delete cleanedItem[key];
+                    }
+                });
+                return cleanedItem;
+            });
+
+            await setDoc(doc(db, 'carts', userId), {
+                items: cleanedItems,
+                savedItems: cleanedSavedItems,
+                updatedAt: serverTimestamp()
+            });
+            console.log('[Cart] Saved to Firestore:', { itemCount: cleanedItems.length, savedCount: cleanedSavedItems.length });
         } catch (error) {
-            console.error('[Cart] Error saving to Firestore:', error);
+            console.error('[Cart] Error saving cart:', error);
         }
     }, []);
 
@@ -262,9 +286,26 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }, []);
 
     const updateQuantity = useCallback((itemId: string, quantity: number) => {
-        setCart((prev) =>
-            prev.map((i) => (i.id === itemId ? { ...i, quantity: Math.max(1, quantity) } : i))
-        );
+        if (quantity <= 0) {
+            removeFromCart(itemId);
+            return;
+        }
+        setCart((prev) => prev.map((item) => item.id === itemId ? { ...item, quantity } : item));
+    }, [removeFromCart]);
+
+    // Toggle Windows installation for cart item
+    const toggleWindowsInstallation = useCallback((itemId: string, windowsPrice?: number) => {
+        setCart((prev) => prev.map((item) => {
+            if (item.id === itemId) {
+                const hasWindows = item.windowsInstallation;
+                return {
+                    ...item,
+                    windowsInstallation: !hasWindows,
+                    windowsInstallationPrice: !hasWindows ? windowsPrice : undefined
+                };
+            }
+            return item;
+        }));
     }, []);
 
     const clearCart = useCallback(() => {
@@ -306,7 +347,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         return savedItems.some((i) => i.id === itemId);
     }, [savedItems]);
 
-    const cartTotal = cart.reduce((total, item) => total + item.price * item.quantity, 0);
+    const cartTotal = cart.reduce((total, item) => {
+        const itemTotal = item.price * item.quantity;
+        const windowsTotal = item.windowsInstallation && item.windowsInstallationPrice
+            ? item.windowsInstallationPrice * item.quantity
+            : 0;
+        return total + itemTotal + windowsTotal;
+    }, 0);
     const cartCount = cart.reduce((count, item) => count + item.quantity, 0);
 
     return (
@@ -316,6 +363,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             addToCart,
             removeFromCart,
             updateQuantity,
+            toggleWindowsInstallation,
             clearCart,
             saveForLater,
             removeFromSaved,

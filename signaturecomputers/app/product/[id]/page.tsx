@@ -9,6 +9,8 @@ import ProductInfoSection from '@/components/ProductInfoSection';
 import { useAdminAuth } from '@/context/AdminAuthContext';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
+import { isFreeDOSProduct, getWindowsInstallationPrice } from '@/lib/windowsInstallationConfig';
+import CheckoutModal from '@/components/CheckoutModal';
 
 export default function ProductDetailsPage() {
     const params = useParams();
@@ -29,35 +31,61 @@ export default function ProductDetailsPage() {
     const [activeImage, setActiveImage] = useState('');
     const [isSaved, setIsSaved] = useState(false);
 
+    // Windows installation state
+    const [isFreeDOS, setIsFreeDOS] = useState(false);
+    const [windowsInstallation, setWindowsInstallation] = useState(false);
+    const [windowsPrice, setWindowsPrice] = useState(5000);
+    const [showWindowsModal, setShowWindowsModal] = useState(false);
+    const [modalDismissed, setModalDismissed] = useState(false);
+
     const handleBuyNow = () => {
         if (!user) {
             toast.error('Please login to checkout');
             router.push('/login');
             return;
         }
+
+        // Show modal if Free DOS product, no Windows selected, and modal not dismissed yet
+        if (isFreeDOS && !windowsInstallation && !modalDismissed) {
+            setShowWindowsModal(true);
+            return;
+        }
+
+        // Proceed with adding to cart
         if (product) {
             addToCart({
                 id: product.id,
                 name: product.name,
                 price: product.price,
                 image: product.images?.[0] || '',
-                quantity: quantity
+                quantity: quantity,
+                windowsInstallation: windowsInstallation,
+                windowsInstallationPrice: windowsInstallation ? windowsPrice : undefined,
             });
             router.push('/checkout');
         }
     };
 
     const handleAddToCart = () => {
+        // Show modal if Free DOS product, no Windows selected, and modal not dismissed yet
+        if (isFreeDOS && !windowsInstallation && !modalDismissed) {
+            setShowWindowsModal(true);
+            return;
+        }
+
+        // Proceed with adding to cart
         if (product) {
             addToCart({
                 id: product.id,
                 name: product.name,
                 price: product.price,
                 image: product.images?.[0] || '',
-                quantity: quantity
+                quantity: quantity,
+                windowsInstallation: windowsInstallation,
+                windowsInstallationPrice: windowsInstallation ? windowsPrice : undefined,
             });
             toast.success('Added to cart!', {
-                description: `${product.productInfo?.title || product.name} (Qty: ${quantity})`,
+                description: `${product.productInfo?.title || product.name} (Qty: ${quantity})${windowsInstallation ? ' + Windows 11 Pro' : ''}`,
                 duration: 3000,
             });
         }
@@ -120,6 +148,16 @@ export default function ProductDetailsPage() {
                 setProduct(data);
                 setActiveImage(data.images?.[0] || '');
 
+                // Check if product is Free DOS
+                const isFreeDOSValue = isFreeDOSProduct(data);
+                setIsFreeDOS(isFreeDOSValue);
+
+                // Fetch Windows installation price if Free DOS
+                if (isFreeDOSValue) {
+                    const price = await getWindowsInstallationPrice();
+                    setWindowsPrice(price);
+                }
+
                 // Fetch related products from same category
                 const related = await getRelatedProducts(data.category, data.id, 4);
                 setRelatedProducts(related);
@@ -148,6 +186,41 @@ export default function ProductDetailsPage() {
             document.title = 'Signature Computers | Premium Tech Store';
         };
     }, [product, isInSaved]);
+
+    // Handler to add to cart from modal
+    const handleAddFromModal = (includeWindows: boolean) => {
+        setShowWindowsModal(false);
+        setModalDismissed(true);
+
+        if (includeWindows) {
+            setWindowsInstallation(true);
+        }
+
+        // Add to cart
+        if (product) {
+            addToCart({
+                id: product.id,
+                name: product.name,
+                price: product.price,
+                image: product.images?.[0] || '',
+                quantity: quantity,
+                windowsInstallation: includeWindows,
+                windowsInstallationPrice: includeWindows ? windowsPrice : undefined,
+            });
+
+            // Show success toast
+            toast.success('Added to cart!', {
+                description: `${product.productInfo?.title || product.name} (Qty: ${quantity})${includeWindows ? ' + Windows 11 Pro' : ''}`,
+                duration: 3000,
+            });
+        }
+    };
+
+    // Handler to close modal without adding
+    const handleCloseModal = () => {
+        setShowWindowsModal(false);
+        setModalDismissed(true);
+    };
 
     if (loading) {
         return (
@@ -249,6 +322,54 @@ export default function ProductDetailsPage() {
                                         See more specifications
                                         <FiChevronDown size={14} />
                                     </button>
+                                </div>
+                            )}
+
+                            {/* Windows Installation Option for Free DOS Products */}
+                            {isFreeDOS && (
+                                <div className="border-t border-gray-100 dark:border-gray-800 pt-4 mb-4">
+                                    <div
+                                        onClick={() => setWindowsInstallation(!windowsInstallation)}
+                                        className={`cursor-pointer transition-all duration-200 rounded-xl p-4 ${windowsInstallation
+                                            ? 'bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-500'
+                                            : 'bg-gray-50 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 hover:border-blue-300'
+                                            }`}
+                                    >
+                                        <div className="flex items-start gap-3">
+                                            <div className={`mt-0.5 w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${windowsInstallation
+                                                ? 'border-blue-600 bg-blue-600'
+                                                : 'border-gray-300 dark:border-gray-600'
+                                                }`}>
+                                                {windowsInstallation && (
+                                                    <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                                    </svg>
+                                                )}
+                                            </div>
+                                            <div className="flex-1">
+                                                <div className="flex items-center justify-between mb-1">
+                                                    <h4 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                                        <svg className="w-5 h-5 text-blue-600" viewBox="0 0 24 24" fill="currentColor">
+                                                            <path d="M0,0V11.111H11.111V0ZM11.111,11.111V24H24V11.111ZM0,11.111V24H11.111V11.111ZM11.111,0V11.111H24V0Z" />
+                                                        </svg>
+                                                        Windows 11 Pro OEM Installation Available
+                                                    </h4>
+                                                    <span className="text-xl font-bold text-blue-600">+₹{windowsPrice.toLocaleString()}</span>
+                                                </div>
+                                                <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                                                    This product comes with Free DOS. Check this option to have <strong>Windows 11 Pro</strong> pre-installed by our expert team with a genuine OEM key included.
+                                                </p>
+                                                {windowsInstallation && (
+                                                    <div className="mt-2 flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                                                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                                        </svg>
+                                                        Windows 11 Pro OEM added - ₹{windowsPrice.toLocaleString()} will be added to your total
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             )}
 
@@ -451,6 +572,83 @@ export default function ProductDetailsPage() {
                     </div>
                 )}
             </div>
+
+            {/* Windows Installation Modal */}
+            {showWindowsModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                    <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200">
+                        {/* Close Button */}
+                        <button
+                            onClick={handleCloseModal}
+                            className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                            aria-label="Close"
+                        >
+                            <svg className="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+
+                        {/* Warning Icon */}
+                        <div className="flex justify-center mb-4">
+                            <div className="w-16 h-16 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+                                <svg className="w-8 h-8 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                            </div>
+                        </div>
+
+                        {/* Title */}
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white text-center mb-3">
+                            No OS Pre-installed
+                        </h3>
+
+                        {/* Description */}
+                        <p className="text-gray-600 dark:text-gray-400 text-center mb-6">
+                            This product comes with <strong className="text-gray-900 dark:text-white">Free DOS</strong>.
+                            Would you like to add <strong className="text-blue-600">Windows 11 Pro OEM</strong> installation for <strong className="text-blue-600">₹{windowsPrice.toLocaleString()}</strong>?
+                        </p>
+
+                        {/* Windows Option Box */}
+                        <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-800 rounded-xl">
+                            <div className="flex items-start gap-3">
+                                <svg className="w-6 h-6 text-blue-600 mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M0,0V11.111H11.111V0ZM11.111,11.111V24H24V11.111ZM0,11.111V24H11.111V11.111ZM11.111,0V11.111H24V0Z" />
+                                </svg>
+                                <div className="flex-1">
+                                    <p className="font-semibold text-gray-900 dark:text-white mb-1">Windows 11 Pro OEM Key & Installation</p>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                                        Pre-installed by our expert team with genuine OEM key included
+                                    </p>
+                                </div>
+                                <span className="text-xl font-bold text-blue-600">+₹{windowsPrice.toLocaleString()}</span>
+                            </div>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="space-y-3">
+                            <button
+                                onClick={() => handleAddFromModal(true)}
+                                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-xl transition-colors flex items-center justify-center gap-2"
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                                </svg>
+                                Add with Windows 11 Pro (₹{(product.price * quantity + windowsPrice * quantity).toLocaleString()})
+                            </button>
+                            <button
+                                onClick={() => handleAddFromModal(false)}
+                                className="w-full bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white font-medium py-3 px-6 rounded-xl transition-colors"
+                            >
+                                Continue without Windows (₹{(product.price * quantity).toLocaleString()})
+                            </button>
+                        </div>
+
+                        <p className="text-xs text-gray-500 dark:text-gray-400 text-center mt-4">
+                            You can also check the Windows installation option above before adding to cart
+                        </p>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
