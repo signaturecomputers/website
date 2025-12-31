@@ -85,6 +85,203 @@ function getFieldLabel(productInfo: any, defaultLabel: string, fieldKey: string)
     return labels[fieldKey] || defaultLabel;
 }
 
+// Helper to render category specific fields that are not part of the standard ProductInfo interface
+function renderCategorySpecificFields(productInfo: any) {
+    const sections = [];
+
+    // Helper to check if a specific field exists in productInfo
+    const has = (key: string) => productInfo[key] !== undefined && productInfo[key] !== null && productInfo[key] !== '';
+
+    // Monitors: Display specific Monitor fields
+    if (has('screenSizeCm') || has('resolutionNative') || has('panelType') || has('brightnessNits') || has('displayInputs')) {
+        sections.push(
+            <InfoSection key="monitor-specs" title={getSectionTitle(productInfo, "Monitor Specifications", "monitorSpecs")} icon={FiMonitor}>
+                <dl>
+                    <InfoRow label={getFieldLabel(productInfo, "Screen Size (cm)", "monitor_screenSize")} value={productInfo.screenSizeCm} />
+                    <InfoRow label={getFieldLabel(productInfo, "Native Resolution", "monitor_resolution")} value={productInfo.resolutionNative} />
+                    <InfoRow label={getFieldLabel(productInfo, "Panel Type", "monitor_panelType")} value={productInfo.panelType} />
+                    <InfoRow label={getFieldLabel(productInfo, "Brightness", "monitor_brightness")} value={productInfo.brightnessNits} />
+                    <InfoRow label={getFieldLabel(productInfo, "Response Time", "monitor_responseTime")} value={productInfo.responseTime} />
+                    <InfoRow label={getFieldLabel(productInfo, "Refresh Rate", "monitor_refreshRate")} value={productInfo.refreshRate} />
+                    <InfoRow label={getFieldLabel(productInfo, "Aspect Ratio", "monitor_aspectRatio")} value={productInfo.aspectRatio} />
+                    <InfoRow label={getFieldLabel(productInfo, "Contrast Ratio", "monitor_contrastRatio")} value={productInfo.contrastRatio} />
+                    <InfoRow label={getFieldLabel(productInfo, "Color Support", "monitor_colorSupport")} value={productInfo.colorSupport} />
+                    <InfoRow label={getFieldLabel(productInfo, "Display Inputs", "monitor_displayInputs")} value={productInfo.displayInputs} />
+                </dl>
+            </InfoSection>
+        );
+    }
+
+    // Monitors: Power
+    if (has('inputVoltage') || has('operatingTemp') || has('powerMaximum')) {
+        sections.push(
+            <InfoSection key="monitor-power" title={getSectionTitle(productInfo, "Power", "power")} icon={FiBattery}>
+                <dl>
+                    <InfoRow label={getFieldLabel(productInfo, "Input Voltage", "monitor_inputVoltage")} value={productInfo.inputVoltage} />
+                    <InfoRow label={getFieldLabel(productInfo, "Operating Temperature", "monitor_operatingTemp")} value={productInfo.operatingTemp} />
+                    <InfoRow label={getFieldLabel(productInfo, "Power Consumption (Max)", "monitor_powerMaximum")} value={productInfo.powerMaximum} />
+                    <InfoRow label={getFieldLabel(productInfo, "Power Consumption (Typical)", "monitor_powerTypical")} value={productInfo.powerTypical} />
+                    <InfoRow label={getFieldLabel(productInfo, "Power Consumption (Standby)", "monitor_powerStandby")} value={productInfo.powerStandby} />
+                </dl>
+            </InfoSection>
+        );
+    }
+
+    // Monitors: Dimensions
+    if (has('dimNoStandWidth') || has('dimWithStandWidth')) {
+        sections.push(
+            <InfoSection key="monitor-dimensions" title={getSectionTitle(productInfo, "Dimensions & Weight", "dimensions")} icon={FiBox}>
+                <dl>
+                    {/* Dimensions Without Stand */}
+                    {(has('dimNoStandWidth') || has('dimNoStandDepth') || has('dimNoStandHeight')) && (
+                        <>
+                            <div className="py-2 text-sm font-medium text-gray-900 dark:text-white border-b border-gray-100 dark:border-gray-800">Dimensions Without Stand (cm)</div>
+                            <InfoRow label={getFieldLabel(productInfo, "Width", "monitor_dimNoStandWidth")} value={productInfo.dimNoStandWidth} />
+                            <InfoRow label={getFieldLabel(productInfo, "Depth", "monitor_dimNoStandDepth")} value={productInfo.dimNoStandDepth} />
+                            <InfoRow label={getFieldLabel(productInfo, "Height", "monitor_dimNoStandHeight")} value={productInfo.dimNoStandHeight} />
+                        </>
+                    )}
+                    {/* Dimensions With Stand */}
+                    {(has('dimWithStandWidth') || has('dimWithStandDepth') || has('dimWithStandHeight')) && (
+                        <>
+                            <div className="py-2 text-sm font-medium text-gray-900 dark:text-white border-b border-gray-100 dark:border-gray-800 mt-2">Dimensions With Stand (cm)</div>
+                            <InfoRow label={getFieldLabel(productInfo, "Width", "monitor_dimWithStandWidth")} value={productInfo.dimWithStandWidth} />
+                            <InfoRow label={getFieldLabel(productInfo, "Depth", "monitor_dimWithStandDepth")} value={productInfo.dimWithStandDepth} />
+                            <InfoRow label={getFieldLabel(productInfo, "Height", "monitor_dimWithStandHeight")} value={productInfo.dimWithStandHeight} />
+                        </>
+                    )}
+                    <InfoRow label={getFieldLabel(productInfo, "Weight", "monitor_weight")} value={productInfo.weight} />
+                </dl>
+            </InfoSection>
+        );
+    }
+
+    // Monitors: In The Box & Notes/Cables
+    if (has('inTheBox') || has('includedCables')) {
+        sections.push(
+            <InfoSection key="monitor-box" title={getSectionTitle(productInfo, "In The Box", "inTheBox")} icon={FiPackage}>
+                <dl>
+                    <InfoRow label={getFieldLabel(productInfo, "Contents", "monitor_inTheBox")} value={productInfo.inTheBox} />
+                    <InfoRow label={getFieldLabel(productInfo, "Included Cables", "monitor_includedCables")} value={productInfo.includedCables} />
+                </dl>
+            </InfoSection>
+        );
+    }
+
+
+    // Input Devices (Keyboard, Mouse, Combo)
+    if (has('connectionType') || has('scrolling') || has('sensorResolution') || has('numberOfButtons')) {
+        sections.push(
+            <InfoSection key="input-specs" title={getSectionTitle(productInfo, "Device Specifications", "inputSpecs")} icon={FiSettings}>
+                <dl>
+                    <InfoRow label={getFieldLabel(productInfo, "Connection Type", "input_connectionType")} value={productInfo.connectionType} />
+                    <InfoRow label={getFieldLabel(productInfo, "Connectivity", "input_connectivity")} value={productInfo.connectivity} />
+                    <InfoRow label={getFieldLabel(productInfo, "Sensor Resolution", "mouse_sensorResolution")} value={productInfo.sensorResolution} />
+                    <InfoRow label={getFieldLabel(productInfo, "Number of Buttons", "mouse_numberOfButtons")} value={productInfo.numberOfButtons} />
+                    <InfoRow label={getFieldLabel(productInfo, "Myscrolling", "mouse_scrolling")} value={productInfo.scrolling} />
+                </dl>
+            </InfoSection>
+        );
+    }
+
+    // Audio (Headphones)
+    if (has('micSensitivity') || has('speakerSize') || has('impedance') || has('frequency')) {
+        sections.push(
+            <InfoSection key="audio-specs" title={getSectionTitle(productInfo, "Audio Specifications", "audioSpecs")} icon={FiSpeaker}>
+                <dl>
+                    <InfoRow label={getFieldLabel(productInfo, "Microphone Sensitivity", "headphone_micSensitivity")} value={productInfo.micSensitivity} />
+                    <InfoRow label={getFieldLabel(productInfo, "Microphone Type", "headphone_micType")} value={productInfo.micType} />
+                    <InfoRow label={getFieldLabel(productInfo, "Speaker Sensitivity", "headphone_speakerSensitivity")} value={productInfo.speakerSensitivity} />
+                    <InfoRow label={getFieldLabel(productInfo, "Speaker Size", "headphone_speakerSize")} value={productInfo.speakerSize} />
+                    <InfoRow label={getFieldLabel(productInfo, "Impedance", "headphone_impedance")} value={productInfo.impedance} />
+                    <InfoRow label={getFieldLabel(productInfo, "Frequency Response", "headphone_frequency")} value={productInfo.frequency} />
+                    <InfoRow label={getFieldLabel(productInfo, "Connectivity", "headphone_connectivity")} value={productInfo.connectivity} />
+                </dl>
+            </InfoSection>
+        );
+    }
+
+    // Power Adapters
+    if (has('inputVoltage') || has('output') || has('connectorType')) {
+        sections.push(
+            <InfoSection key="adapter-specs" title={getSectionTitle(productInfo, "Adapter Specifications", "adapterSpecs")} icon={FiBattery}>
+                <dl>
+                    <InfoRow label={getFieldLabel(productInfo, "Input Voltage", "adapter_inputVoltage")} value={productInfo.inputVoltage} />
+                    <InfoRow label={getFieldLabel(productInfo, "Output", "adapter_output")} value={productInfo.output} />
+                    <InfoRow label={getFieldLabel(productInfo, "Connector Type", "adapter_connectorType")} value={productInfo.connectorType} />
+                    <InfoRow label={getFieldLabel(productInfo, "Special Features", "adapter_specialFeatures")} value={productInfo.specialFeatures} />
+                </dl>
+            </InfoSection>
+        );
+    }
+
+    // Docks
+    if (has('ports') && !productInfo.ports?.usbTypeC) { // Check if it's the ad-hoc 'ports' string, not the object
+        sections.push(
+            <InfoSection key="dock-specs" title={getSectionTitle(productInfo, "Dock Specifications", "dockSpecs")} icon={FiSettings}>
+                <dl>
+                    <InfoRow label={getFieldLabel(productInfo, "Ports", "dock_ports")} value={productInfo.ports} />
+                    <InfoRow label={getFieldLabel(productInfo, "Connectivity", "dock_connectivity")} value={productInfo.connectivity} />
+                    <InfoRow label={getFieldLabel(productInfo, "Security Management", "dock_security")} value={productInfo.securityManagement} />
+                    <InfoRow label={getFieldLabel(productInfo, "Max Displays", "dock_maxDisplays")} value={productInfo.maxDisplays} />
+                </dl>
+            </InfoSection>
+        );
+    }
+
+    // USB Flash Drives & Storage
+    if (has('capacityNative') || has('interface')) {
+        sections.push(
+            <InfoSection key="storage-specs" title={getSectionTitle(productInfo, "Storage Specifications", "storageSpecs")} icon={FiHardDrive}>
+                <dl>
+                    <InfoRow label={getFieldLabel(productInfo, "Capacity", "usb_capacity")} value={productInfo.capacityNative} />
+                    <InfoRow label={getFieldLabel(productInfo, "Interface", "usb_interface")} value={productInfo.interface} />
+                    <InfoRow label={getFieldLabel(productInfo, "Connectivity", "usb_connectivity")} value={productInfo.connectivity} />
+                </dl>
+            </InfoSection>
+        );
+    }
+
+    // Bags
+    if (has('material') || has('compartments')) {
+        sections.push(
+            <InfoSection key="bag-specs" title={getSectionTitle(productInfo, "Bag Specifications", "bagSpecs")} icon={FiPackage}>
+                <dl>
+                    <InfoRow label={getFieldLabel(productInfo, "Material", "bag_material")} value={productInfo.material} />
+                    <InfoRow label={getFieldLabel(productInfo, "Compartments", "bag_compartments")} value={productInfo.compartments} />
+                    <InfoRow label={getFieldLabel(productInfo, "Laptop Size Support", "bag_laptopSize")} value={productInfo.laptopSize} />
+                </dl>
+            </InfoSection>
+        );
+    }
+
+    // Generic 'dimensions' string if used (some accessories use this instead of the object)
+    if (has('dimensions') && typeof productInfo.dimensions === 'string') {
+        sections.push(
+            <InfoSection key="generic-dimensions" title={getSectionTitle(productInfo, "Dimensions", "dimensions")} icon={FiBox}>
+                <dl>
+                    <InfoRow label={getFieldLabel(productInfo, "Dimensions", "generic_dimensions")} value={productInfo.dimensions} />
+                    {has('minDimensions') && <InfoRow label={getFieldLabel(productInfo, "Minimum Dimensions", "generic_minDimensions")} value={productInfo.minDimensions} />}
+                    {has('weight') && typeof productInfo.weight === 'string' && <InfoRow label={getFieldLabel(productInfo, "Weight", "generic_weight")} value={productInfo.weight} />}
+                </dl>
+            </InfoSection>
+        );
+    }
+
+    // Generic 'whatsInBox' string if used
+    if (has('whatsInBox')) {
+        sections.push(
+            <InfoSection key="generic-box" title={getSectionTitle(productInfo, "In The Box", "boxContents")} icon={FiPackage}>
+                <dl>
+                    <InfoRow label={getFieldLabel(productInfo, "What's in the box", "generic_whatsInBox")} value={productInfo.whatsInBox} />
+                </dl>
+            </InfoSection>
+        );
+    }
+
+    return sections;
+}
+
 export default function ProductInfoSection({ productInfo, isAdmin = false }: ProductInfoSectionProps) {
     if (!productInfo || !hasContent(productInfo)) {
         return (
@@ -116,6 +313,10 @@ export default function ProductInfoSection({ productInfo, isAdmin = false }: Pro
                     </dl>
                 </InfoSection>
             )}
+
+
+            {/* Category Specific Fields */}
+            {renderCategorySpecificFields(customProductInfo)}
 
             {/* Appearance */}
             {(hasContent(productInfo.appearance) || customProductInfo.appearanceCustomFields?.length > 0) && (
@@ -357,7 +558,11 @@ export default function ProductInfoSection({ productInfo, isAdmin = false }: Pro
             {(hasContent(productInfo.certifications) || customProductInfo.certificationsCustomFields?.length > 0) && (
                 <InfoSection title={getSectionTitle(customProductInfo, "Certifications", "certifications")} icon={FiAward}>
                     <dl>
-                        <InfoRow label={getFieldLabel(customProductInfo, "Energy Star", "certifications_energyStar")} value={productInfo.certifications?.energyStar} />
+                        {typeof customProductInfo.certifications === 'string' ? (
+                            <InfoRow label={getFieldLabel(customProductInfo, "Certifications", "monitor_certifications")} value={customProductInfo.certifications} />
+                        ) : (
+                            <InfoRow label={getFieldLabel(customProductInfo, "Energy Star", "certifications_energyStar")} value={productInfo.certifications?.energyStar} />
+                        )}
                         {renderCustomFields(customProductInfo.certificationsCustomFields)}
                     </dl>
                 </InfoSection>
