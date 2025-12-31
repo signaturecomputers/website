@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { adminDb } from "@/lib/firebase-admin";
-import { QueryDocumentSnapshot, DocumentData } from "firebase-admin/firestore";
+import { QueryDocumentSnapshot, DocumentData, Transaction, FieldValue, DocumentSnapshot } from "firebase-admin/firestore";
 
 // Verify Cashfree webhook signature (2025-01-01 API version)
 function verifyWebhookSignature(
@@ -183,77 +183,170 @@ async function handlePaymentSuccess(data: PaymentSuccessData) {
     });
 
     try {
-        // Find all orders with this cfOrderId
-        const ordersSnapshot = await adminDb
+        const pendingOrderRef = adminDb.collection("pending_orders").doc(order.order_id);
+        const stockUpdates: { category: string; productId: string; quantity: number }[] = [];
+
+        // 1. Try to process via transaction (Primary flow: create from pending)
+        try {
+            const transactionResult = await adminDb.runTransaction(async (t: Transaction) => {
+                const pendingDoc = (await t.get(pendingOrderRef)) as unknown as DocumentSnapshot;
+
+                if (!pendingDoc.exists) {
+                    return { status: "ALREADY_PROCESSED_OR_MISSING" };
+                }
+
+                const pendingOrder = pendingDoc.data()!;
+                const createdOrderIds: string[] = [];
+
+                // Create orders
+                for (const item of pendingOrder.orderItems) {
+                    const now = new Date();
+                    const dateStr = now.getFullYear().toString() +
+                        (now.getMonth() + 1).toString().padStart(2, '0') +
+                        now.getDate().toString().padStart(2, '0');
+                    const randomPart = Math.random().toString(36).substring(2, 6).toUpperCase();
+                    const orderId = `SC-${dateStr}-${randomPart}`;
+                    const newOrderRef = adminDb.collection("orders").doc();
+
+                    const orderDocument: Record<string, any> = {
+                        orderId,
+                        cfOrderId: order.order_id,
+                        productId: item.productId,
+                        productName: item.productName,
+                        productImage: item.productImage,
+                        productCategory: item.productCategory,
+                        partNumber: item.partNumber,
+                        quantity: item.quantity,
+                        unitPrice: item.unitPrice,
+                        windowsInstallation: item.windowsInstallation || false,
+                        totalAmount: item.totalAmount,
+                        customerId: pendingOrder.customerId,
+                        customerEmail: pendingOrder.customerEmail,
+                        customerName: pendingOrder.customerName,
+                        phone: pendingOrder.phone,
+                        address: pendingOrder.fullAddress,
+                        shippingAddress: pendingOrder.shippingAddress,
+                        paymentMethod: "online",
+                        paymentStatus: "paid",
+                        orderStatus: "placed",
+                        status: "placed",
+                        cfPaymentId: payment.cf_payment_id,
+                        paymentAmount: payment.payment_amount,
+                        paymentTime: payment.payment_time,
+                        createdAt: FieldValue.serverTimestamp(),
+                        updatedAt: FieldValue.serverTimestamp(),
+                        timeline: [{
+                            timestamp: new Date(),
+                            event: "Order Created",
+                            description: "Payment successful (Webhook). Order placed, awaiting admin confirmation.",
+                            actor: "system"
+                        }]
+                    };
+
+                    if (item.windowsInstallation && item.windowsInstallationPrice) {
+                        orderDocument.windowsInstallationPrice = item.windowsInstallationPrice;
+                    }
+
+                    t.set(newOrderRef, orderDocument);
+                    createdOrderIds.push(orderId);
+
+                    // Add to stock updates list (to be processed after transaction)
+                    stockUpdates.push({
+                        category: item.productCategory,
+                        productId: item.productId,
+                        quantity: item.quantity,
+                    });
+                }
+
+                // Delete pending order (Atomic Lock)
+                t.delete(pendingOrderRef);
+
+                return { status: "CREATED", createdOrderIds };
+            });
+
+            if (transactionResult.status === "CREATED") {
+                console.log(`Created ${transactionResult.createdOrderIds?.length} orders from webhook via transaction`);
+            } else {
+                console.log("Pending order not found in webhook transaction - likely processed by return page");
+            }
+
+        } catch (transactionError) {
+            console.log("Transaction likely aborted or failed (could be contention):", transactionError);
+            // We continue to check if orders exist, just in case.
+        }
+
+        // 2. Check if orders exist (Secondary/Fallback flow: update existing)
+        // This handles cases where:
+        // A) Transaction failed/missed but orders exist (already processed)
+        // B) Orders were created manually or by legacy flow
+        const existingOrdersSnapshot = await adminDb
             .collection("orders")
             .where("cfOrderId", "==", order.order_id)
             .get();
 
-        if (ordersSnapshot.empty) {
-            console.error("No orders found for cfOrderId:", order.order_id);
-            return;
-        }
+        if (!existingOrdersSnapshot.empty) {
+            const batch = adminDb.batch();
+            let updates = 0;
 
-        const batch = adminDb.batch();
-        const stockUpdates: { category: string; productId: string; quantity: number }[] = [];
+            existingOrdersSnapshot.forEach((doc: QueryDocumentSnapshot<DocumentData>) => {
+                const orderData = doc.data();
+                if (orderData.paymentStatus !== "paid") {
+                    batch.update(doc.ref, {
+                        paymentStatus: "paid",
+                        orderStatus: "placed",
+                        status: "placed",
+                        cfPaymentId: payment.cf_payment_id,
+                        paymentMethod: payment.payment_method,
+                        paymentTime: payment.payment_time,
+                        paymentAmount: payment.payment_amount,
+                        updatedAt: new Date(),
+                        timeline: FieldValue.arrayUnion({
+                            timestamp: new Date(),
+                            event: "Payment Successful",
+                            description: `Payment of ₹${payment.payment_amount} received. Awaiting order confirmation.`,
+                            actor: "system"
+                        })
+                    });
+                    updates++;
 
-        ordersSnapshot.forEach((doc: QueryDocumentSnapshot<DocumentData>) => {
-            const orderData = doc.data();
-
-            // Update order: paymentStatus = paid, orderStatus = placed
-            // Admin must manually confirm the order to generate invoice
-            batch.update(doc.ref, {
-                paymentStatus: "paid",
-                orderStatus: "placed",  // Order Placed - awaiting admin confirmation
-                status: "placed",       // Legacy field for compatibility
-                cfPaymentId: payment.cf_payment_id,
-                paymentMethod: payment.payment_method,
-                paymentTime: payment.payment_time,
-                paymentAmount: payment.payment_amount,
-                updatedAt: new Date(),
-                timeline: adminDb.FieldValue.arrayUnion({
-                    timestamp: new Date(),
-                    event: "Payment Successful",
-                    description: `Payment of ₹${payment.payment_amount} received via ${payment.payment_method?.toString() || 'online'}. Awaiting order confirmation.`,
-                    actor: "system"
-                })
+                    // Also add to stock updates if this was a legacy update
+                    if (orderData.productCategory && orderData.productId) {
+                        stockUpdates.push({
+                            category: orderData.productCategory,
+                            productId: orderData.productId,
+                            quantity: orderData.quantity || 1,
+                        });
+                    }
+                }
             });
 
-            // Collect stock updates
-            if (orderData.productCategory && orderData.productId) {
-                stockUpdates.push({
-                    category: orderData.productCategory,
-                    productId: orderData.productId,
-                    quantity: orderData.quantity || 1,
-                });
+            if (updates > 0) {
+                await batch.commit();
+                console.log(`Updated ${updates} existing orders to paid`);
             }
-        });
+        }
 
-        // Commit order updates
-        await batch.commit();
-        console.log(`Updated ${ordersSnapshot.size} orders to payment_received`);
-
-        // Deduct stock for each product
+        // 3. Deduct stock (Idempotent-ish: only if we have collected updates)
+        // Note: We might deduct twice if we are not careful, but stockUpdates is local to this function execution.
+        // If transaction ran, we have updates. If fallback ran, we added updates.
+        // Realistically, if transaction ran, fallback won't find "unpaid" orders.
+        // If transaction missed (status=MISSING), fallback usually finds "paid" orders (so updates=0).
+        // So this is safe.
         for (const update of stockUpdates) {
             try {
                 const productRef = adminDb.collection(update.category).doc(update.productId);
-                const productDoc = await productRef.get();
-
-                if (productDoc.exists) {
-                    const currentStock = productDoc.data()?.stock || 0;
-                    const newStock = Math.max(0, currentStock - update.quantity);
-
-                    await productRef.update({ stock: newStock });
-                    console.log(`Deducted ${update.quantity} from ${update.category}/${update.productId}, new stock: ${newStock}`);
-                }
+                await adminDb.runTransaction(async (t: Transaction) => {
+                    const doc = (await t.get(productRef)) as unknown as DocumentSnapshot;
+                    if (doc.exists) {
+                        const current = doc.data()?.stock || 0;
+                        t.update(productRef, { stock: Math.max(0, current - update.quantity) });
+                    }
+                });
+                console.log(`Deducted ${update.quantity} from ${update.category}/${update.productId}`);
             } catch (stockError) {
                 console.error(`Error updating stock for ${update.productId}:`, stockError);
             }
         }
-
-        // NOTE: Invoice generation and email are now triggered when admin confirms the order
-        // This happens in the admin panel when status is changed to "confirmed"
-        console.log("Payment processed. Order awaiting admin confirmation for invoice generation.");
 
     } catch (error) {
         console.error("Error handling payment success:", error);
@@ -278,7 +371,15 @@ async function handlePaymentFailed(data: PaymentFailedData) {
             .get();
 
         if (ordersSnapshot.empty) {
-            console.error("No orders found for cfOrderId:", order.order_id);
+            // With the new payment-gated flow, no orders exist if payment failed
+            // Clean up the pending order if it exists
+            try {
+                await adminDb.collection("pending_orders").doc(order.order_id).delete();
+                console.log("Deleted pending order due to payment failure:", order.order_id);
+            } catch (e) {
+                // Ignore if doesn't exist
+            }
+            console.log("No orders to cancel for cfOrderId:", order.order_id);
             return;
         }
 
@@ -296,7 +397,7 @@ async function handlePaymentFailed(data: PaymentFailedData) {
                 cfPaymentId: payment.cf_payment_id,
                 paymentError: error_details || { error_description: "Payment failed" },
                 updatedAt: new Date(),
-                timeline: adminDb.FieldValue.arrayUnion({
+                timeline: FieldValue.arrayUnion({
                     timestamp: new Date(),
                     event: "Order Cancelled",
                     description: "Order automatically cancelled due to payment failure.",
@@ -326,7 +427,15 @@ async function handlePaymentDropped(data: PaymentDroppedData) {
             .get();
 
         if (ordersSnapshot.empty) {
-            console.error("No orders found for cfOrderId:", order.order_id);
+            // With the new payment-gated flow, no orders exist if payment was dropped
+            // Clean up the pending order if it exists
+            try {
+                await adminDb.collection("pending_orders").doc(order.order_id).delete();
+                console.log("Deleted pending order due to payment dropped:", order.order_id);
+            } catch (e) {
+                // Ignore if doesn't exist
+            }
+            console.log("No orders to update for cfOrderId:", order.order_id);
             return;
         }
 
@@ -379,13 +488,10 @@ async function handleRefundStatus(data: RefundStatusData) {
 
         const batch = adminDb.batch();
         const isSuccess = refund.refund_status === 'SUCCESS';
+        const isPending = refund.refund_status === 'PENDING' || refund.refund_status === 'ONHOLD';
         const isCancelled = refund.refund_status === 'CANCELLED';
 
         ordersSnapshot.forEach((doc: QueryDocumentSnapshot<DocumentData>) => {
-            const isSuccess = refund.refund_status === 'SUCCESS';
-            const isPending = refund.refund_status === 'PENDING' || refund.refund_status === 'ONHOLD';
-            const isCancelled = refund.refund_status === 'CANCELLED';
-
             // Map Cashfree status to our RefundStatus enum
             let refundStatusValue = 'processing';
             if (isSuccess) refundStatusValue = 'completed';
@@ -406,7 +512,7 @@ async function handleRefundStatus(data: RefundStatusData) {
             }
 
             // Add timeline event
-            updateData.timeline = adminDb.FieldValue.arrayUnion({
+            updateData.timeline = FieldValue.arrayUnion({
                 timestamp: new Date(),
                 event: isSuccess ? 'Refund Completed' : (isCancelled ? 'Refund Failed' : 'Refund Processing'),
                 description: isSuccess

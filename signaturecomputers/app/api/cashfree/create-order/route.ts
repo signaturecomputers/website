@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { adminDb } from "@/lib/firebase-admin";
+import { FieldValue } from "firebase-admin/firestore";
 
 // Get credentials (trim whitespace)
 const clientId = process.env.CASHFREE_CLIENT_ID?.trim() || "";
@@ -18,9 +20,39 @@ console.log("Cashfree Config:", {
     secretKeyLength: secretKey.length,
 });
 
+interface OrderItem {
+    productId: string;
+    productName: string;
+    productImage: string;
+    productCategory: string;
+    partNumber: string;
+    quantity: number;
+    unitPrice: number;
+    totalAmount: number;
+    windowsInstallation?: boolean;
+    windowsInstallationPrice?: number;
+}
+
+interface CreateOrderRequest {
+    amount: number;
+    customer_id: string;
+    customer_name: string;
+    email: string;
+    phone: string;
+    order_id?: string;
+    orderItems: OrderItem[];
+    shippingAddress: {
+        addressLine1: string;
+        city: string;
+        state: string;
+        pincode: string;
+    };
+    fullAddress: string;
+}
+
 export async function POST(request: NextRequest) {
     try {
-        const body = await request.json();
+        const body: CreateOrderRequest = await request.json();
 
         // Check credentials are set
         if (!clientId || !secretKey) {
@@ -56,12 +88,20 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const returnBaseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-        const orderId = body.order_id || `order_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+        // Validate order items
+        if (!body.orderItems || body.orderItems.length === 0) {
+            return NextResponse.json(
+                { error: "Order items are required" },
+                { status: 400 }
+            );
+        }
 
-        // Create order request body
+        const returnBaseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+        const cfOrderId = body.order_id || `CF-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+
+        // Create order request body for Cashfree
         const orderRequest = {
-            order_id: orderId,
+            order_id: cfOrderId,
             order_amount: body.amount,
             order_currency: "INR",
             customer_details: {
@@ -76,11 +116,11 @@ export async function POST(request: NextRequest) {
         };
 
         console.log("Creating Cashfree order via REST API:", {
-            order_id: orderId,
+            order_id: cfOrderId,
             amount: body.amount,
         });
 
-        // Direct REST API call
+        // Direct REST API call to Cashfree
         const response = await fetch(`${baseApiUrl}/orders`, {
             method: "POST",
             headers: {
@@ -106,6 +146,26 @@ export async function POST(request: NextRequest) {
         }
 
         console.log("Cashfree order created successfully:", data.order_id);
+
+        // Store pending order data in Firestore (server-side)
+        // This will be converted to actual orders only when payment succeeds
+        const pendingOrderDoc = {
+            cfOrderId,
+            orderItems: body.orderItems,
+            customerId: body.customer_id,
+            customerEmail: body.email,
+            customerName: body.customer_name,
+            phone: body.phone,
+            fullAddress: body.fullAddress,
+            shippingAddress: body.shippingAddress,
+            totalAmount: body.amount,
+            status: "pending_payment",
+            createdAt: FieldValue.serverTimestamp(),
+            expiresAt: new Date(Date.now() + 30 * 60 * 1000), // 30 minutes expiry
+        };
+
+        await adminDb.collection("pending_orders").doc(cfOrderId).set(pendingOrderDoc);
+        console.log("Pending order stored in Firestore:", cfOrderId);
 
         return NextResponse.json({
             order_id: data.order_id,

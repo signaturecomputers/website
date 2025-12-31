@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { db } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp, doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { getProductById } from '@/lib/products';
 import { toast } from 'sonner';
 import { load } from '@cashfreepayments/cashfree-js';
@@ -13,21 +13,8 @@ import { load } from '@cashfreepayments/cashfree-js';
 // Cashfree SDK type
 type CashfreeSDK = Awaited<ReturnType<typeof load>>;
 
-interface PendingOrder {
-    orderId: string;
-    cfOrderId: string;
-    productId: string;
-    productName: string;
-    productImage: string;
-    productCategory: string;
-    partNumber: string;
-    quantity: number;
-    unitPrice: number;
-    totalAmount: number;
-}
-
 export default function CheckoutPage() {
-    const { cart, cartTotal, clearCart } = useCart();
+    const { cart, cartTotal } = useCart();
     const { user } = useAuth();
     const router = useRouter();
     const [loading, setLoading] = useState(false);
@@ -117,92 +104,6 @@ export default function CheckoutPage() {
         return true;
     }, [cart]);
 
-    const createPendingOrders = async (): Promise<{ orders: PendingOrder[], cfOrderId: string } | null> => {
-        if (!user) return null;
-
-        const cfOrderId = `CF-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        const pendingOrders: PendingOrder[] = [];
-
-        for (const item of cart) {
-            const product = await getProductById(item.id);
-            if (!product) continue;
-
-            // Generate uniform order ID: SC-YYYYMMDD-XXXX
-            const now = new Date();
-            const dateStr = now.getFullYear().toString() +
-                (now.getMonth() + 1).toString().padStart(2, '0') +
-                now.getDate().toString().padStart(2, '0');
-            const randomPart = Math.random().toString(36).substring(2, 6).toUpperCase();
-            const orderId = `SC-${dateStr}-${randomPart}`;
-            const fullAddress = `${formData.address}, ${formData.city}, ${formData.state} - ${formData.zip}`;
-
-            const orderData: any = {
-                orderId,
-                cfOrderId, // Link to Cashfree order
-                productId: item.id,
-                productName: item.name,
-                productImage: item.image || '',
-                productCategory: product.category,
-                partNumber: (item as { partNumber?: string }).partNumber || product.productInfo?.partNo || '',
-                quantity: item.quantity,
-                unitPrice: item.price,
-                windowsInstallation: item.windowsInstallation || false,
-                totalAmount: item.price * item.quantity + (item.windowsInstallation && item.windowsInstallationPrice ? item.windowsInstallationPrice * item.quantity : 0),
-                customerId: user.uid,
-                customerEmail: user.email,
-                customerName: formData.name,
-                phone: formData.phone,
-                address: fullAddress,
-                shippingAddress: {
-                    addressLine1: formData.address,
-                    city: formData.city,
-                    state: formData.state,
-                    pincode: formData.zip
-                },
-                paymentMethod: 'online',
-                paymentStatus: 'pending',
-                status: 'pending',
-                createdAt: serverTimestamp(),
-                updatedAt: serverTimestamp()
-            };
-
-            // Only add windowsInstallationPrice if it exists
-            if (item.windowsInstallation && item.windowsInstallationPrice) {
-                orderData.windowsInstallationPrice = item.windowsInstallationPrice;
-            }
-
-            // Create the pending order
-            await addDoc(collection(db, 'orders'), orderData);
-
-            pendingOrders.push({
-                orderId,
-                cfOrderId,
-                productId: item.id,
-                productName: item.name,
-                productImage: item.image || '',
-                productCategory: product.category,
-                partNumber: (item as { partNumber?: string }).partNumber || product.productInfo?.partNo || '',
-                quantity: item.quantity,
-                unitPrice: item.price,
-                totalAmount: item.price * item.quantity + (item.windowsInstallation && item.windowsInstallationPrice ? item.windowsInstallationPrice * item.quantity : 0)
-            });
-        }
-
-        // Save address for future orders
-        const userRef = doc(db, 'users', user.uid);
-        await setDoc(userRef, {
-            phone: formData.phone,
-            shippingAddress: {
-                addressLine1: formData.address,
-                city: formData.city,
-                state: formData.state,
-                pincode: formData.zip
-            }
-        }, { merge: true });
-
-        return { orders: pendingOrders, cfOrderId };
-    };
-
     const initiateCashfreePayment = async () => {
         if (!user || !cashfreeLoaded) {
             toast.error('Payment gateway not ready. Please try again.');
@@ -236,24 +137,43 @@ export default function CheckoutPage() {
                 return;
             }
 
-            // Create pending orders in Firestore
-            const result = await createPendingOrders();
-            if (!result) {
-                toast.error('Failed to create order. Please try again.');
-                setPaymentLoading(false);
-                return;
-            }
+            // Prepare order items for server
+            const orderItems = await Promise.all(cart.map(async (item) => {
+                const product = await getProductById(item.id);
+                return {
+                    productId: item.id,
+                    productName: item.name,
+                    productImage: item.image || '',
+                    productCategory: product?.category || '',
+                    partNumber: (item as { partNumber?: string }).partNumber || product?.productInfo?.partNo || '',
+                    quantity: item.quantity,
+                    unitPrice: item.price,
+                    totalAmount: item.price * item.quantity + (item.windowsInstallation && item.windowsInstallationPrice ? item.windowsInstallationPrice * item.quantity : 0),
+                    windowsInstallation: item.windowsInstallation || false,
+                    windowsInstallationPrice: item.windowsInstallationPrice,
+                };
+            }));
 
-            // Create Cashfree order
+            const fullAddress = `${formData.address}, ${formData.city}, ${formData.state} - ${formData.zip}`;
+
+            // Create Cashfree order AND store pending order (all server-side)
             const response = await fetch('/api/cashfree/create-order', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     amount: cartTotal,
                     customer_id: user.uid,
+                    customer_name: formData.name,
                     email: formData.email || user.email,
                     phone: formData.phone,
-                    order_id: result.cfOrderId
+                    orderItems: orderItems,
+                    shippingAddress: {
+                        addressLine1: formData.address,
+                        city: formData.city,
+                        state: formData.state,
+                        pincode: formData.zip
+                    },
+                    fullAddress: fullAddress
                 })
             });
 
@@ -263,11 +183,17 @@ export default function CheckoutPage() {
                 throw new Error(data.error || 'Failed to create payment order');
             }
 
-            // Store order info in sessionStorage for return page
-            sessionStorage.setItem('pendingCfOrder', JSON.stringify({
-                cfOrderId: result.cfOrderId,
-                orders: result.orders
-            }));
+            // Save user address for future orders
+            const userRef = doc(db, 'users', user.uid);
+            await setDoc(userRef, {
+                phone: formData.phone,
+                shippingAddress: {
+                    addressLine1: formData.address,
+                    city: formData.city,
+                    state: formData.state,
+                    pincode: formData.zip
+                }
+            }, { merge: true });
 
             // Initialize Cashfree checkout using the SDK
             if (!cashfreeRef.current) {

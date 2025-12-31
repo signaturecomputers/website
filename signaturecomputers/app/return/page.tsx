@@ -63,6 +63,13 @@ function PaymentReturnContent() {
                     break;
                 default:
                     setStatus("failed");
+                    if (data.error_details) {
+                        setError(data.error_details.error_description || "Payment failed");
+                    } else if (data.order_status === "PAYMENT_FAILED") {
+                        setError("Payment failed. Please try again.");
+                    } else {
+                        setError(`Payment status: ${data.order_status}`);
+                    }
             }
         } catch (err) {
             console.error("Payment verification error:", err);
