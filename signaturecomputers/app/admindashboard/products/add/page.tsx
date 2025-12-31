@@ -136,6 +136,7 @@ export default function AddProductPage() {
         laptops: ['Processor', 'Operating System', 'Display Size', 'Graphics', 'RAM', 'Storage'],
         desktops: ['Processor', 'Operating System', 'Display Size', 'Graphics', 'RAM', 'Storage'],
         workstations: ['Processor', 'Operating System', 'Graphics', 'RAM', 'Storage', 'Power Supply'],
+        monitors: ['Screen Size', 'Resolution', 'Display Type', 'Response Type', 'Response Time', 'Display Input Type', 'Display Features'],
     };
 
     // Auto-populate specs based on category
@@ -482,7 +483,7 @@ export default function AddProductPage() {
 
                 {/* Extended Product Information */}
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-                    <ProductInfoFormSection productInfo={productInfo} setProductInfo={setProductInfo} />
+                    <ProductInfoFormSection productInfo={productInfo} setProductInfo={setProductInfo} category={formData.category} />
                 </div>
 
                 {/* Submit */}

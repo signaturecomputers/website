@@ -634,7 +634,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
 
                 {/* Extended Product Information */}
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-                    <ProductInfoFormSection productInfo={productInfo} setProductInfo={setProductInfo} />
+                    <ProductInfoFormSection productInfo={productInfo} setProductInfo={setProductInfo} category={formData.category} />
                 </div>
 
                 {/* Submit */}
