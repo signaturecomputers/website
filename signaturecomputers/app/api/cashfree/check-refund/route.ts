@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 // Cashfree API endpoint to check refund status
 const CASHFREE_ENV = process.env.CASHFREE_ENV || 'TEST';
-const CASHFREE_API_BASE = CASHFREE_ENV === 'PROD'
+const CASHFREE_API_BASE = CASHFREE_ENV === 'PRODUCTION'
     ? 'https://api.cashfree.com/pg'
     : 'https://sandbox.cashfree.com/pg';
 
