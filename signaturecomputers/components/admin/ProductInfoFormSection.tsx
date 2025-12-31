@@ -554,8 +554,17 @@ export default function ProductInfoFormSection({ productInfo, setProductInfo, ca
                 </div>
             )}
 
-            {/* Conditionally render monitor fields or default laptop fields */}
-            {category === 'monitors' ? renderMonitorFields() : renderDefaultFields()}
+            {/* Conditionally render category-specific fields */}
+            {category === 'monitors' ? renderMonitorFields() :
+                category === 'keyboard-mouse-combo' ? renderKeyboardMouseComboFields() :
+                    category === 'keyboards' ? renderKeyboardFields() :
+                        category === 'mouse' ? renderMouseFields() :
+                            category === 'power-adapters' ? renderPowerAdaptersFields() :
+                                category === 'headphones' ? renderHeadphonesFields() :
+                                    category === 'bags' ? renderBagsFields() :
+                                        category === 'docks' ? renderDocksFields() :
+                                            category === 'usb-flashdrives' ? renderUSBFlashDrivesFields() :
+                                                renderDefaultFields()}
         </div>
     );
 
@@ -1019,6 +1028,1247 @@ export default function ProductInfoFormSection({ productInfo, setProductInfo, ca
                         />
                     </div>
                     {renderCustomFields(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                </FormSection>
+            </>
+        );
+    }
+
+    // Keyboard & Mouse Combo specific fields rendering function
+    function renderKeyboardMouseComboFields() {
+        return (
+            <>
+                {/* Usage */}
+                <FormSection
+                    title={getSectionTitle("Usage", "usage")}
+                    defaultOpen={true}
+                    onAddSpec={() => addCustomField(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("usage", newTitle)}
+                    onDelete={() => hideSection("usage")}
+                    isDeleted={isSectionHidden("usage")}
+                >
+                    <div className="grid grid-cols-1 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Recommended Usage", "combo_recommendedUsage")}
+                            value={productInfo.recommendedUsage}
+                            onChange={(v) => updateField('recommendedUsage', v)}
+                            onLabelChange={(newLabel) => setFieldLabel("combo_recommendedUsage", newLabel)}
+                            placeholder="e.g. Home, Office"
+                        />
+                    </div>
+                    {renderCustomFields(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                </FormSection>
+
+                {/* Connection and Communication */}
+                <FormSection
+                    title={getSectionTitle("Connection and Communication", "connection")}
+                    defaultOpen={true}
+                    onAddSpec={() => addCustomField(connectivityCustomFields, setConnectivityCustomFields, 'connectivityCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("connection", newTitle)}
+                    onDelete={() => hideSection("connection")}
+                    isDeleted={isSectionHidden("connection")}
+                >
+                    <div className="grid grid-cols-1 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Connectivity", "combo_connectivity")}
+                            value={(productInfo as any).connectivity}
+                            onChange={(v) => setProductInfo({ ...productInfo, connectivity: v } as ProductInfo)}
+                            onLabelChange={(newLabel) => setFieldLabel("combo_connectivity", newLabel)}
+                            placeholder="e.g. Wireless 2.4 GHz"
+                        />
+                    </div>
+                    {renderCustomFields(connectivityCustomFields, setConnectivityCustomFields, 'connectivityCustomFields')}
+                </FormSection>
+
+                {/* Category */}
+                <FormSection
+                    title={getSectionTitle("Category", "categoryInfo")}
+                    onAddSpec={() => addCustomField(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("categoryInfo", newTitle)}
+                    onDelete={() => hideSection("categoryInfo")}
+                    isDeleted={isSectionHidden("categoryInfo")}
+                >
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Part Number", "basic_partNo")}
+                            value={productInfo.partNo}
+                            onChange={(v) => updateField('partNo', v)}
+                            onLabelChange={(newLabel) => setFieldLabel("basic_partNo", newLabel)}
+                            placeholder="e.g. MK270"
+                        />
+                        <EditableFormInput
+                            label={getFieldLabel("Series", "basic_series")}
+                            value={productInfo.series}
+                            onChange={(v) => updateField('series', v)}
+                            onLabelChange={(newLabel) => setFieldLabel("basic_series", newLabel)}
+                            placeholder="e.g. MK Series"
+                        />
+                    </div>
+                    {renderCustomFields(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                </FormSection>
+
+                {/* Multimedia and Input Devices */}
+                <FormSection
+                    title={getSectionTitle("Multimedia and Input Devices", "multimedia")}
+                    onAddSpec={() => addCustomField(portsCustomFields, setPortsCustomFields, 'portsCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("multimedia", newTitle)}
+                    onDelete={() => hideSection("multimedia")}
+                    isDeleted={isSectionHidden("multimedia")}
+                >
+                    <div className="grid grid-cols-1 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Connection Type", "combo_connectionType")}
+                            value={(productInfo as any).connectionType}
+                            onChange={(v) => setProductInfo({ ...productInfo, connectionType: v } as ProductInfo)}
+                            onLabelChange={(newLabel) => setFieldLabel("combo_connectionType", newLabel)}
+                            placeholder="e.g. USB Receiver"
+                        />
+                    </div>
+                    {renderCustomFields(portsCustomFields, setPortsCustomFields, 'portsCustomFields')}
+                </FormSection>
+
+                {/* Appearance */}
+                <FormSection
+                    title={getSectionTitle("Appearance", "appearance")}
+                    onAddSpec={() => addCustomField(appearanceCustomFields, setAppearanceCustomFields, 'appearanceCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("appearance", newTitle)}
+                    onDelete={() => hideSection("appearance")}
+                    isDeleted={isSectionHidden("appearance")}
+                >
+                    <div className="grid grid-cols-1 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Product Color", "appearance_color")}
+                            value={productInfo.appearance?.color}
+                            onChange={(v) => updateNestedField('appearance', 'color', v)}
+                            onLabelChange={(newLabel) => setFieldLabel("appearance_color", newLabel)}
+                            placeholder="e.g. Black"
+                        />
+                    </div>
+                    {renderCustomFields(appearanceCustomFields, setAppearanceCustomFields, 'appearanceCustomFields')}
+                </FormSection>
+
+                {/* Warranty */}
+                <FormSection
+                    title={getSectionTitle("Warranty", "warranty")}
+                    onAddSpec={() => addCustomField(warrantyCustomFields, setWarrantyCustomFields, 'warrantyCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("warranty", newTitle)}
+                    onDelete={() => hideSection("warranty")}
+                    isDeleted={isSectionHidden("warranty")}
+                >
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Warranty Duration", "warranty_duration")}
+                            value={productInfo.warranty?.duration}
+                            onChange={(v) => updateNestedField('warranty', 'duration', v)}
+                            onLabelChange={(newLabel) => setFieldLabel("warranty_duration", newLabel)}
+                            placeholder="e.g. 1 year"
+                        />
+                        <EditableFormInput
+                            label={getFieldLabel("Coverage", "warranty_coverage")}
+                            value={productInfo.warranty?.coverage}
+                            onChange={(v) => updateNestedField('warranty', 'coverage', v)}
+                            onLabelChange={(newLabel) => setFieldLabel("warranty_coverage", newLabel)}
+                            placeholder="e.g. Manufacturer warranty"
+                        />
+                    </div>
+                    {renderCustomFields(warrantyCustomFields, setWarrantyCustomFields, 'warrantyCustomFields')}
+                </FormSection>
+            </>
+        );
+    }
+
+    // Keyboard specific fields rendering function
+    function renderKeyboardFields() {
+        return (
+            <>
+                {/* Usage */}
+                <FormSection
+                    title={getSectionTitle("Usage", "usage")}
+                    defaultOpen={true}
+                    onAddSpec={() => addCustomField(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("usage", newTitle)}
+                    onDelete={() => hideSection("usage")}
+                    isDeleted={isSectionHidden("usage")}
+                >
+                    <div className="grid grid-cols-1 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Recommended Usage", "keyboard_recommendedUsage")}
+                            value={productInfo.recommendedUsage}
+                            onChange={(v) => updateField('recommendedUsage', v)}
+                            onLabelChange={(newLabel) => setFieldLabel("keyboard_recommendedUsage", newLabel)}
+                            placeholder="e.g. Home, Office"
+                        />
+                    </div>
+                    {renderCustomFields(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                </FormSection>
+
+                {/* Connection and Communication */}
+                <FormSection
+                    title={getSectionTitle("Connection and Communication", "connection")}
+                    defaultOpen={true}
+                    onAddSpec={() => addCustomField(connectivityCustomFields, setConnectivityCustomFields, 'connectivityCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("connection", newTitle)}
+                    onDelete={() => hideSection("connection")}
+                    isDeleted={isSectionHidden("connection")}
+                >
+                    <div className="grid grid-cols-1 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Connectivity", "keyboard_connectivity")}
+                            value={(productInfo as any).connectivity}
+                            onChange={(v) => setProductInfo({ ...productInfo, connectivity: v } as ProductInfo)}
+                            onLabelChange={(newLabel) => setFieldLabel("keyboard_connectivity", newLabel)}
+                            placeholder="e.g. Wireless 2.4 GHz"
+                        />
+                    </div>
+                    {renderCustomFields(connectivityCustomFields, setConnectivityCustomFields, 'connectivityCustomFields')}
+                </FormSection>
+
+                {/* Category */}
+                <FormSection
+                    title={getSectionTitle("Category", "categoryInfo")}
+                    onAddSpec={() => addCustomField(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("categoryInfo", newTitle)}
+                    onDelete={() => hideSection("categoryInfo")}
+                    isDeleted={isSectionHidden("categoryInfo")}
+                >
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Part Number", "basic_partNo")}
+                            value={productInfo.partNo}
+                            onChange={(v) => updateField('partNo', v)}
+                            onLabelChange={(newLabel) => setFieldLabel("basic_partNo", newLabel)}
+                            placeholder="e.g. K120"
+                        />
+                        <EditableFormInput
+                            label={getFieldLabel("Series", "basic_series")}
+                            value={productInfo.series}
+                            onChange={(v) => updateField('series', v)}
+                            onLabelChange={(newLabel) => setFieldLabel("basic_series", newLabel)}
+                            placeholder="e.g. K Series"
+                        />
+                    </div>
+                    {renderCustomFields(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                </FormSection>
+
+                {/* Multimedia and Input Devices */}
+                <FormSection
+                    title={getSectionTitle("Multimedia and Input Devices", "multimedia")}
+                    onAddSpec={() => addCustomField(portsCustomFields, setPortsCustomFields, 'portsCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("multimedia", newTitle)}
+                    onDelete={() => hideSection("multimedia")}
+                    isDeleted={isSectionHidden("multimedia")}
+                >
+                    <div className="grid grid-cols-1 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Connection Type", "keyboard_connectionType")}
+                            value={(productInfo as any).connectionType}
+                            onChange={(v) => setProductInfo({ ...productInfo, connectionType: v } as ProductInfo)}
+                            onLabelChange={(newLabel) => setFieldLabel("keyboard_connectionType", newLabel)}
+                            placeholder="e.g. USB Receiver"
+                        />
+                    </div>
+                    {renderCustomFields(portsCustomFields, setPortsCustomFields, 'portsCustomFields')}
+                </FormSection>
+
+                {/* Appearance */}
+                <FormSection
+                    title={getSectionTitle("Appearance", "appearance")}
+                    onAddSpec={() => addCustomField(appearanceCustomFields, setAppearanceCustomFields, 'appearanceCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("appearance", newTitle)}
+                    onDelete={() => hideSection("appearance")}
+                    isDeleted={isSectionHidden("appearance")}
+                >
+                    <div className="grid grid-cols-1 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Product Color", "appearance_color")}
+                            value={productInfo.appearance?.color}
+                            onChange={(v) => updateNestedField('appearance', 'color', v)}
+                            onLabelChange={(newLabel) => setFieldLabel("appearance_color", newLabel)}
+                            placeholder="e.g. Black"
+                        />
+                    </div>
+                    {renderCustomFields(appearanceCustomFields, setAppearanceCustomFields, 'appearanceCustomFields')}
+                </FormSection>
+
+                {/* Warranty */}
+                <FormSection
+                    title={getSectionTitle("Warranty", "warranty")}
+                    onAddSpec={() => addCustomField(warrantyCustomFields, setWarrantyCustomFields, 'warrantyCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("warranty", newTitle)}
+                    onDelete={() => hideSection("warranty")}
+                    isDeleted={isSectionHidden("warranty")}
+                >
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Warranty Duration", "warranty_duration")}
+                            value={productInfo.warranty?.duration}
+                            onChange={(v) => updateNestedField('warranty', 'duration', v)}
+                            onLabelChange={(newLabel) => setFieldLabel("warranty_duration", newLabel)}
+                            placeholder="e.g. 1 year"
+                        />
+                        <EditableFormInput
+                            label={getFieldLabel("Coverage", "warranty_coverage")}
+                            value={productInfo.warranty?.coverage}
+                            onChange={(v) => updateNestedField('warranty', 'coverage', v)}
+                            onLabelChange={(newLabel) => setFieldLabel("warranty_coverage", newLabel)}
+                            placeholder="e.g. Manufacturer warranty"
+                        />
+                    </div>
+                    {renderCustomFields(warrantyCustomFields, setWarrantyCustomFields, 'warrantyCustomFields')}
+                </FormSection>
+            </>
+        );
+    }
+
+    // Mouse specific fields rendering function
+    function renderMouseFields() {
+        return (
+            <>
+                {/* Usage */}
+                <FormSection
+                    title={getSectionTitle("Usage", "usage")}
+                    defaultOpen={true}
+                    onAddSpec={() => addCustomField(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("usage", newTitle)}
+                    onDelete={() => hideSection("usage")}
+                    isDeleted={isSectionHidden("usage")}
+                >
+                    <div className="grid grid-cols-1 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Recommended Usage", "mouse_recommendedUsage")}
+                            value={productInfo.recommendedUsage}
+                            onChange={(v) => updateField('recommendedUsage', v)}
+                            onLabelChange={(newLabel) => setFieldLabel("mouse_recommendedUsage", newLabel)}
+                            placeholder="e.g. Home, Office"
+                        />
+                    </div>
+                    {renderCustomFields(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                </FormSection>
+
+                {/* Connection and Communication */}
+                <FormSection
+                    title={getSectionTitle("Connection and Communication", "connection")}
+                    defaultOpen={true}
+                    onAddSpec={() => addCustomField(connectivityCustomFields, setConnectivityCustomFields, 'connectivityCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("connection", newTitle)}
+                    onDelete={() => hideSection("connection")}
+                    isDeleted={isSectionHidden("connection")}
+                >
+                    <div className="grid grid-cols-1 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Connectivity", "mouse_connectivity")}
+                            value={(productInfo as any).connectivity}
+                            onChange={(v) => setProductInfo({ ...productInfo, connectivity: v } as ProductInfo)}
+                            onLabelChange={(newLabel) => setFieldLabel("mouse_connectivity", newLabel)}
+                            placeholder="e.g. Wireless 2.4 GHz"
+                        />
+                    </div>
+                    {renderCustomFields(connectivityCustomFields, setConnectivityCustomFields, 'connectivityCustomFields')}
+                </FormSection>
+
+                {/* Category */}
+                <FormSection
+                    title={getSectionTitle("Category", "categoryInfo")}
+                    onAddSpec={() => addCustomField(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("categoryInfo", newTitle)}
+                    onDelete={() => hideSection("categoryInfo")}
+                    isDeleted={isSectionHidden("categoryInfo")}
+                >
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Part Number", "basic_partNo")}
+                            value={productInfo.partNo}
+                            onChange={(v) => updateField('partNo', v)}
+                            onLabelChange={(newLabel) => setFieldLabel("basic_partNo", newLabel)}
+                            placeholder="e.g. M185"
+                        />
+                        <EditableFormInput
+                            label={getFieldLabel("Series", "basic_series")}
+                            value={productInfo.series}
+                            onChange={(v) => updateField('series', v)}
+                            onLabelChange={(newLabel) => setFieldLabel("basic_series", newLabel)}
+                            placeholder="e.g. M Series"
+                        />
+                    </div>
+                    {renderCustomFields(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                </FormSection>
+
+                {/* Multimedia and Input Devices */}
+                <FormSection
+                    title={getSectionTitle("Multimedia and Input Devices", "multimedia")}
+                    onAddSpec={() => addCustomField(portsCustomFields, setPortsCustomFields, 'portsCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("multimedia", newTitle)}
+                    onDelete={() => hideSection("multimedia")}
+                    isDeleted={isSectionHidden("multimedia")}
+                >
+                    <div className="grid grid-cols-1 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Connection Type", "mouse_connectionType")}
+                            value={(productInfo as any).connectionType}
+                            onChange={(v) => setProductInfo({ ...productInfo, connectionType: v } as ProductInfo)}
+                            onLabelChange={(newLabel) => setFieldLabel("mouse_connectionType", newLabel)}
+                            placeholder="e.g. USB Receiver"
+                        />
+                    </div>
+                    {renderCustomFields(portsCustomFields, setPortsCustomFields, 'portsCustomFields')}
+                </FormSection>
+
+                {/* Appearance */}
+                <FormSection
+                    title={getSectionTitle("Appearance", "appearance")}
+                    onAddSpec={() => addCustomField(appearanceCustomFields, setAppearanceCustomFields, 'appearanceCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("appearance", newTitle)}
+                    onDelete={() => hideSection("appearance")}
+                    isDeleted={isSectionHidden("appearance")}
+                >
+                    <div className="grid grid-cols-1 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Product Color", "appearance_color")}
+                            value={productInfo.appearance?.color}
+                            onChange={(v) => updateNestedField('appearance', 'color', v)}
+                            onLabelChange={(newLabel) => setFieldLabel("appearance_color", newLabel)}
+                            placeholder="e.g. Black"
+                        />
+                    </div>
+                    {renderCustomFields(appearanceCustomFields, setAppearanceCustomFields, 'appearanceCustomFields')}
+                </FormSection>
+
+                {/* Warranty */}
+                <FormSection
+                    title={getSectionTitle("Warranty", "warranty")}
+                    onAddSpec={() => addCustomField(warrantyCustomFields, setWarrantyCustomFields, 'warrantyCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("warranty", newTitle)}
+                    onDelete={() => hideSection("warranty")}
+                    isDeleted={isSectionHidden("warranty")}
+                >
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Warranty Duration", "warranty_duration")}
+                            value={productInfo.warranty?.duration}
+                            onChange={(v) => updateNestedField('warranty', 'duration', v)}
+                            onLabelChange={(newLabel) => setFieldLabel("warranty_duration", newLabel)}
+                            placeholder="e.g. 1 year"
+                        />
+                        <EditableFormInput
+                            label={getFieldLabel("Coverage", "warranty_coverage")}
+                            value={productInfo.warranty?.coverage}
+                            onChange={(v) => updateNestedField('warranty', 'coverage', v)}
+                            onLabelChange={(newLabel) => setFieldLabel("warranty_coverage", newLabel)}
+                            placeholder="e.g. Manufacturer warranty"
+                        />
+                    </div>
+                    {renderCustomFields(warrantyCustomFields, setWarrantyCustomFields, 'warrantyCustomFields')}
+                </FormSection>
+            </>
+        );
+    }
+
+    // Power Adapters specific fields rendering function
+    function renderPowerAdaptersFields() {
+        return (
+            <>
+                {/* Category */}
+                <FormSection
+                    title={getSectionTitle("Category", "categoryInfo")}
+                    defaultOpen={true}
+                    onAddSpec={() => addCustomField(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("categoryInfo", newTitle)}
+                    onDelete={() => hideSection("categoryInfo")}
+                    isDeleted={isSectionHidden("categoryInfo")}
+                >
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Part Number", "basic_partNo")}
+                            value={productInfo.partNo}
+                            onChange={(v) => updateField('partNo', v)}
+                            onLabelChange={(newLabel) => setFieldLabel("basic_partNo", newLabel)}
+                            placeholder="e.g. PA-1650-78"
+                        />
+                        <EditableFormInput
+                            label={getFieldLabel("Series", "basic_series")}
+                            value={productInfo.series}
+                            onChange={(v) => updateField('series', v)}
+                            onLabelChange={(newLabel) => setFieldLabel("basic_series", newLabel)}
+                            placeholder="e.g. AC Adapter Series"
+                        />
+                    </div>
+                    {renderCustomFields(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                </FormSection>
+
+                {/* Usage */}
+                <FormSection
+                    title={getSectionTitle("Usage", "usage")}
+                    defaultOpen={true}
+                    onAddSpec={() => addCustomField(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("usage", newTitle)}
+                    onDelete={() => hideSection("usage")}
+                    isDeleted={isSectionHidden("usage")}
+                >
+                    <div className="grid grid-cols-1 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Recommended Usage", "adapter_recommendedUsage")}
+                            value={productInfo.recommendedUsage}
+                            onChange={(v) => updateField('recommendedUsage', v)}
+                            onLabelChange={(newLabel) => setFieldLabel("adapter_recommendedUsage", newLabel)}
+                            placeholder="e.g. Laptop, Mobile"
+                        />
+                    </div>
+                    {renderCustomFields(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                </FormSection>
+
+                {/* Storage Specifications */}
+                <FormSection
+                    title={getSectionTitle("Storage Specifications", "storageSpecs")}
+                    onAddSpec={() => addCustomField(storageCustomFields, setStorageCustomFields, 'storageCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("storageSpecs", newTitle)}
+                    onDelete={() => hideSection("storageSpecs")}
+                    isDeleted={isSectionHidden("storageSpecs")}
+                >
+                    <div className="grid grid-cols-1 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Special Features", "adapter_specialFeatures")}
+                            value={(productInfo as any).specialFeatures}
+                            onChange={(v) => setProductInfo({ ...productInfo, specialFeatures: v } as ProductInfo)}
+                            onLabelChange={(newLabel) => setFieldLabel("adapter_specialFeatures", newLabel)}
+                            placeholder="e.g. Overcurrent protection, Short circuit protection"
+                        />
+                    </div>
+                    {renderCustomFields(storageCustomFields, setStorageCustomFields, 'storageCustomFields')}
+                </FormSection>
+
+                {/* Box Contents */}
+                <FormSection
+                    title={getSectionTitle("Box Contents", "boxContents")}
+                    onAddSpec={() => addCustomField(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("boxContents", newTitle)}
+                    onDelete={() => hideSection("boxContents")}
+                    isDeleted={isSectionHidden("boxContents")}
+                >
+                    <div className="grid grid-cols-1 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("What's in the Box", "adapter_whatsInBox")}
+                            value={(productInfo as any).whatsInBox}
+                            onChange={(v) => setProductInfo({ ...productInfo, whatsInBox: v } as ProductInfo)}
+                            onLabelChange={(newLabel) => setFieldLabel("adapter_whatsInBox", newLabel)}
+                            placeholder="e.g. 1 x Power Adapter, 1 x Power Cable"
+                        />
+                    </div>
+                    {renderCustomFields(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                </FormSection>
+
+                {/* Warranty */}
+                <FormSection
+                    title={getSectionTitle("Warranty", "warranty")}
+                    onAddSpec={() => addCustomField(warrantyCustomFields, setWarrantyCustomFields, 'warrantyCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("warranty", newTitle)}
+                    onDelete={() => hideSection("warranty")}
+                    isDeleted={isSectionHidden("warranty")}
+                >
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Warranty", "adapter_warranty")}
+                            value={(productInfo as any).warranty}
+                            onChange={(v) => setProductInfo({ ...productInfo, warranty: v } as ProductInfo)}
+                            onLabelChange={(newLabel) => setFieldLabel("adapter_warranty", newLabel)}
+                            placeholder="e.g. 6 months manufacturer warranty"
+                        />
+                    </div>
+                    {renderCustomFields(warrantyCustomFields, setWarrantyCustomFields, 'warrantyCustomFields')}
+                </FormSection>
+
+                {/* Appearance */}
+                <FormSection
+                    title={getSectionTitle("Appearance", "appearance")}
+                    onAddSpec={() => addCustomField(appearanceCustomFields, setAppearanceCustomFields, 'appearanceCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("appearance", newTitle)}
+                    onDelete={() => hideSection("appearance")}
+                    isDeleted={isSectionHidden("appearance")}
+                >
+                    <div className="grid grid-cols-1 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Product Color", "appearance_color")}
+                            value={productInfo.appearance?.color}
+                            onChange={(v) => updateNestedField('appearance', 'color', v)}
+                            onLabelChange={(newLabel) => setFieldLabel("appearance_color", newLabel)}
+                            placeholder="e.g. Black"
+                        />
+                    </div>
+                    {renderCustomFields(appearanceCustomFields, setAppearanceCustomFields, 'appearanceCustomFields')}
+                </FormSection>
+            </>
+        );
+    }
+
+    // Headphones specific fields rendering function
+    function renderHeadphonesFields() {
+        return (
+            <>
+                {/* Category */}
+                <FormSection
+                    title={getSectionTitle("Category", "categoryInfo")}
+                    defaultOpen={true}
+                    onAddSpec={() => addCustomField(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("categoryInfo", newTitle)}
+                    onDelete={() => hideSection("categoryInfo")}
+                    isDeleted={isSectionHidden("categoryInfo")}
+                >
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Part Number", "basic_partNo")}
+                            value={productInfo.partNo}
+                            onChange={(v) => updateField('partNo', v)}
+                            onLabelChange={(newLabel) => setFieldLabel("basic_partNo", newLabel)}
+                            placeholder="e.g. H340"
+                        />
+                        <EditableFormInput
+                            label={getFieldLabel("Series", "basic_series")}
+                            value={productInfo.series}
+                            onChange={(v) => updateField('series', v)}
+                            onLabelChange={(newLabel) => setFieldLabel("basic_series", newLabel)}
+                            placeholder="e.g. H Series"
+                        />
+                    </div>
+                    {renderCustomFields(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                </FormSection>
+
+                {/* Usage */}
+                <FormSection
+                    title={getSectionTitle("Usage", "usage")}
+                    defaultOpen={true}
+                    onAddSpec={() => addCustomField(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("usage", newTitle)}
+                    onDelete={() => hideSection("usage")}
+                    isDeleted={isSectionHidden("usage")}
+                >
+                    <div className="grid grid-cols-1 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Recommended Usage", "headphone_recommendedUsage")}
+                            value={productInfo.recommendedUsage}
+                            onChange={(v) => updateField('recommendedUsage', v)}
+                            onLabelChange={(newLabel) => setFieldLabel("headphone_recommendedUsage", newLabel)}
+                            placeholder="e.g. Gaming, Music, Office"
+                        />
+                    </div>
+                    {renderCustomFields(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                </FormSection>
+
+                {/* Connection and Communication */}
+                <FormSection
+                    title={getSectionTitle("Connection and Communication", "connection")}
+                    defaultOpen={true}
+                    onAddSpec={() => addCustomField(connectivityCustomFields, setConnectivityCustomFields, 'connectivityCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("connection", newTitle)}
+                    onDelete={() => hideSection("connection")}
+                    isDeleted={isSectionHidden("connection")}
+                >
+                    <div className="grid grid-cols-1 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Connectivity", "headphone_connectivity")}
+                            value={(productInfo as any).connectivity}
+                            onChange={(v) => setProductInfo({ ...productInfo, connectivity: v } as ProductInfo)}
+                            onLabelChange={(newLabel) => setFieldLabel("headphone_connectivity", newLabel)}
+                            placeholder="e.g. Wireless, Wired"
+                        />
+                    </div>
+                    {renderCustomFields(connectivityCustomFields, setConnectivityCustomFields, 'connectivityCustomFields')}
+                </FormSection>
+
+                {/* Multimedia and Input Devices */}
+                <FormSection
+                    title={getSectionTitle("Multimedia and Input Devices", "multimedia")}
+                    onAddSpec={() => addCustomField(audioCustomFields, setAudioCustomFields, 'audioCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("multimedia", newTitle)}
+                    onDelete={() => hideSection("multimedia")}
+                    isDeleted={isSectionHidden("multimedia")}
+                >
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Sensitivity (microphone)", "headphone_micSensitivity")}
+                            value={(productInfo as any).micSensitivity}
+                            onChange={(v) => setProductInfo({ ...productInfo, micSensitivity: v } as ProductInfo)}
+                            onLabelChange={(newLabel) => setFieldLabel("headphone_micSensitivity", newLabel)}
+                            placeholder="e.g. -42 dB"
+                        />
+                        <EditableFormInput
+                            label={getFieldLabel("Microphone Type", "headphone_micType")}
+                            value={(productInfo as any).micType}
+                            onChange={(v) => setProductInfo({ ...productInfo, micType: v } as ProductInfo)}
+                            onLabelChange={(newLabel) => setFieldLabel("headphone_micType", newLabel)}
+                            placeholder="e.g. Boom, Built-in"
+                        />
+                        <EditableFormInput
+                            label={getFieldLabel("Sensitivity (speaker)", "headphone_speakerSensitivity")}
+                            value={(productInfo as any).speakerSensitivity}
+                            onChange={(v) => setProductInfo({ ...productInfo, speakerSensitivity: v } as ProductInfo)}
+                            onLabelChange={(newLabel) => setFieldLabel("headphone_speakerSensitivity", newLabel)}
+                            placeholder="e.g. 100 dB"
+                        />
+                        <EditableFormInput
+                            label={getFieldLabel("Speaker size", "headphone_speakerSize")}
+                            value={(productInfo as any).speakerSize}
+                            onChange={(v) => setProductInfo({ ...productInfo, speakerSize: v } as ProductInfo)}
+                            onLabelChange={(newLabel) => setFieldLabel("headphone_speakerSize", newLabel)}
+                            placeholder="e.g. 40 mm"
+                        />
+                    </div>
+                    {renderCustomFields(audioCustomFields, setAudioCustomFields, 'audioCustomFields')}
+                </FormSection>
+
+                {/* Battery and Power */}
+                <FormSection
+                    title={getSectionTitle("Battery and Power", "batteryPower")}
+                    onAddSpec={() => addCustomField(batteryCustomFields, setBatteryCustomFields, 'batteryCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("batteryPower", newTitle)}
+                    onDelete={() => hideSection("batteryPower")}
+                    isDeleted={isSectionHidden("batteryPower")}
+                >
+                    <div className="grid grid-cols-1 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Impedance", "headphone_impedance")}
+                            value={(productInfo as any).impedance}
+                            onChange={(v) => setProductInfo({ ...productInfo, impedance: v } as ProductInfo)}
+                            onLabelChange={(newLabel) => setFieldLabel("headphone_impedance", newLabel)}
+                            placeholder="e.g. 32 Ohms"
+                        />
+                    </div>
+                    {renderCustomFields(batteryCustomFields, setBatteryCustomFields, 'batteryCustomFields')}
+                </FormSection>
+
+                {/* Connectivity and Communications */}
+                <FormSection
+                    title={getSectionTitle("Connectivity and Communications", "connectivityComms")}
+                    onAddSpec={() => addCustomField(connectivityCustomFields, setConnectivityCustomFields, 'connectivityCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("connectivityComms", newTitle)}
+                    onDelete={() => hideSection("connectivityComms")}
+                    isDeleted={isSectionHidden("connectivityComms")}
+                >
+                    <div className="grid grid-cols-1 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Frequency (MHz)", "headphone_frequency")}
+                            value={(productInfo as any).frequency}
+                            onChange={(v) => setProductInfo({ ...productInfo, frequency: v } as ProductInfo)}
+                            onLabelChange={(newLabel) => setFieldLabel("headphone_frequency", newLabel)}
+                            placeholder="e.g. 2.4 GHz"
+                        />
+                    </div>
+                    {renderCustomFields(connectivityCustomFields, setConnectivityCustomFields, 'connectivityCustomFields')}
+                </FormSection>
+
+                {/* Dimensions */}
+                <FormSection
+                    title={getSectionTitle("Dimensions", "dimensions")}
+                    onAddSpec={() => addCustomField(dimensionsCustomFields, setDimensionsCustomFields, 'dimensionsCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("dimensions", newTitle)}
+                    onDelete={() => hideSection("dimensions")}
+                    isDeleted={isSectionHidden("dimensions")}
+                >
+                    <div className="grid grid-cols-1 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Minimum dimensions (W x D x H)", "headphone_dimensions")}
+                            value={(productInfo as any).minDimensions}
+                            onChange={(v) => setProductInfo({ ...productInfo, minDimensions: v } as ProductInfo)}
+                            onLabelChange={(newLabel) => setFieldLabel("headphone_dimensions", newLabel)}
+                            placeholder="e.g. 175 x 80 x 185 mm"
+                        />
+                    </div>
+                    {renderCustomFields(dimensionsCustomFields, setDimensionsCustomFields, 'dimensionsCustomFields')}
+                </FormSection>
+
+                {/* Warranty */}
+                <FormSection
+                    title={getSectionTitle("Warranty", "warranty")}
+                    onAddSpec={() => addCustomField(warrantyCustomFields, setWarrantyCustomFields, 'warrantyCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("warranty", newTitle)}
+                    onDelete={() => hideSection("warranty")}
+                    isDeleted={isSectionHidden("warranty")}
+                >
+                    <div className="grid grid-cols-1 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Warranty", "headphone_warranty")}
+                            value={(productInfo as any).warranty}
+                            onChange={(v) => setProductInfo({ ...productInfo, warranty: v } as ProductInfo)}
+                            onLabelChange={(newLabel) => setFieldLabel("headphone_warranty", newLabel)}
+                            placeholder="e.g. 1 year manufacturer warranty"
+                        />
+                    </div>
+                    {renderCustomFields(warrantyCustomFields, setWarrantyCustomFields, 'warrantyCustomFields')}
+                </FormSection>
+
+                {/* Appearance */}
+                <FormSection
+                    title={getSectionTitle("Appearance", "appearance")}
+                    onAddSpec={() => addCustomField(appearanceCustomFields, setAppearanceCustomFields, 'appearanceCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("appearance", newTitle)}
+                    onDelete={() => hideSection("appearance")}
+                    isDeleted={isSectionHidden("appearance")}
+                >
+                    <div className="grid grid-cols-1 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Product Color", "appearance_color")}
+                            value={productInfo.appearance?.color}
+                            onChange={(v) => updateNestedField('appearance', 'color', v)}
+                            onLabelChange={(newLabel) => setFieldLabel("appearance_color", newLabel)}
+                            placeholder="e.g. Black"
+                        />
+                    </div>
+                    {renderCustomFields(appearanceCustomFields, setAppearanceCustomFields, 'appearanceCustomFields')}
+                </FormSection>
+            </>
+        );
+    }
+
+
+    // Bags specific fields rendering function
+    function renderBagsFields() {
+        return (
+            <>
+                {/* Category */}
+                <FormSection
+                    title={getSectionTitle("Category", "categoryInfo")}
+                    defaultOpen={true}
+                    onAddSpec={() => addCustomField(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("categoryInfo", newTitle)}
+                    onDelete={() => hideSection("categoryInfo")}
+                    isDeleted={isSectionHidden("categoryInfo")}
+                >
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Part Number", "basic_partNo")}
+                            value={productInfo.partNo}
+                            onChange={(v) => updateField('partNo', v)}
+                            onLabelChange={(newLabel) => setFieldLabel("basic_partNo", newLabel)}
+                            placeholder="e.g. BP100"
+                        />
+                        <EditableFormInput
+                            label={getFieldLabel("Series", "basic_series")}
+                            value={productInfo.series}
+                            onChange={(v) => updateField('series', v)}
+                            onLabelChange={(newLabel) => setFieldLabel("basic_series", newLabel)}
+                            placeholder="e.g. Essential Series"
+                        />
+                    </div>
+                    {renderCustomFields(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                </FormSection>
+
+                {/* Usage */}
+                <FormSection
+                    title={getSectionTitle("Usage", "usage")}
+                    defaultOpen={true}
+                    onAddSpec={() => addCustomField(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("usage", newTitle)}
+                    onDelete={() => hideSection("usage")}
+                    isDeleted={isSectionHidden("usage")}
+                >
+                    <div className="grid grid-cols-1 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Recommended Usage", "bag_recommendedUsage")}
+                            value={productInfo.recommendedUsage}
+                            onChange={(v) => updateField('recommendedUsage', v)}
+                            onLabelChange={(newLabel) => setFieldLabel("bag_recommendedUsage", newLabel)}
+                            placeholder="e.g. Laptop, Travel, Business"
+                        />
+                    </div>
+                    {renderCustomFields(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                </FormSection>
+
+                {/* Appearance */}
+                <FormSection
+                    title={getSectionTitle("Appearance", "appearance")}
+                    onAddSpec={() => addCustomField(appearanceCustomFields, setAppearanceCustomFields, 'appearanceCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("appearance", newTitle)}
+                    onDelete={() => hideSection("appearance")}
+                    isDeleted={isSectionHidden("appearance")}
+                >
+                    <div className="grid grid-cols-1 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Product Color", "appearance_color")}
+                            value={productInfo.appearance?.color}
+                            onChange={(v) => updateNestedField('appearance', 'color', v)}
+                            onLabelChange={(newLabel) => setFieldLabel("appearance_color", newLabel)}
+                            placeholder="e.g. Black"
+                        />
+                    </div>
+                    {renderCustomFields(appearanceCustomFields, setAppearanceCustomFields, 'appearanceCustomFields')}
+                </FormSection>
+
+                {/* Warranty */}
+                <FormSection
+                    title={getSectionTitle("Warranty", "warranty")}
+                    onAddSpec={() => addCustomField(warrantyCustomFields, setWarrantyCustomFields, 'warrantyCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("warranty", newTitle)}
+                    onDelete={() => hideSection("warranty")}
+                    isDeleted={isSectionHidden("warranty")}
+                >
+                    <div className="grid grid-cols-1 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Warranty", "bag_warranty")}
+                            value={(productInfo as any).warranty}
+                            onChange={(v) => setProductInfo({ ...productInfo, warranty: v } as ProductInfo)}
+                            onLabelChange={(newLabel) => setFieldLabel("bag_warranty", newLabel)}
+                            placeholder="e.g. 6 months manufacturer warranty"
+                        />
+                    </div>
+                    {renderCustomFields(warrantyCustomFields, setWarrantyCustomFields, 'warrantyCustomFields')}
+                </FormSection>
+            </>
+        );
+    }
+
+    // Docks specific fields rendering function
+    function renderDocksFields() {
+        return (
+            <>
+                {/* Category */}
+                <FormSection
+                    title={getSectionTitle("Category", "categoryInfo")}
+                    defaultOpen={true}
+                    onAddSpec={() => addCustomField(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("categoryInfo", newTitle)}
+                    onDelete={() => hideSection("categoryInfo")}
+                    isDeleted={isSectionHidden("categoryInfo")}
+                >
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Part Number", "basic_partNo")}
+                            value={productInfo.partNo}
+                            onChange={(v) => updateField('partNo', v)}
+                            onLabelChange={(newLabel) => setFieldLabel("basic_partNo", newLabel)}
+                            placeholder="e.g. USB-C-DOCK-001"
+                        />
+                        <EditableFormInput
+                            label={getFieldLabel("Series", "basic_series")}
+                            value={productInfo.series}
+                            onChange={(v) => updateField('series', v)}
+                            onLabelChange={(newLabel) => setFieldLabel("basic_series", newLabel)}
+                            placeholder="e.g. USB-C Dock Series"
+                        />
+                    </div>
+                    {renderCustomFields(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                </FormSection>
+
+                {/* Usage */}
+                <FormSection
+                    title={getSectionTitle("Usage", "usage")}
+                    defaultOpen={true}
+                    onAddSpec={() => addCustomField(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("usage", newTitle)}
+                    onDelete={() => hideSection("usage")}
+                    isDeleted={isSectionHidden("usage")}
+                >
+                    <div className="grid grid-cols-1 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Recommended Usage", "dock_recommendedUsage")}
+                            value={productInfo.recommendedUsage}
+                            onChange={(v) => updateField('recommendedUsage', v)}
+                            onLabelChange={(newLabel) => setFieldLabel("dock_recommendedUsage", newLabel)}
+                            placeholder="e.g. Laptop, Workstation"
+                        />
+                    </div>
+                    {renderCustomFields(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                </FormSection>
+
+                {/* Connection and Communication */}
+                <FormSection
+                    title={getSectionTitle("Connection and Communication", "connection")}
+                    defaultOpen={true}
+                    onAddSpec={() => addCustomField(connectivityCustomFields, setConnectivityCustomFields, 'connectivityCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("connection", newTitle)}
+                    onDelete={() => hideSection("connection")}
+                    isDeleted={isSectionHidden("connection")}
+                >
+                    <div className="grid grid-cols-1 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Connectivity", "dock_connectivity")}
+                            value={(productInfo as any).connectivity}
+                            onChange={(v) => setProductInfo({ ...productInfo, connectivity: v } as ProductInfo)}
+                            onLabelChange={(newLabel) => setFieldLabel("dock_connectivity", newLabel)}
+                            placeholder="e.g. USB-C, Thunderbolt"
+                        />
+                    </div>
+                    {renderCustomFields(connectivityCustomFields, setConnectivityCustomFields, 'connectivityCustomFields')}
+                </FormSection>
+
+                {/* Security Management */}
+                <FormSection
+                    title={getSectionTitle("Security Management", "security")}
+                    onAddSpec={() => addCustomField(securityCustomFields, setSecurityCustomFields, 'securityCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("security", newTitle)}
+                    onDelete={() => hideSection("security")}
+                    isDeleted={isSectionHidden("security")}
+                >
+                    <div className="grid grid-cols-1 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Security management", "dock_security")}
+                            value={(productInfo as any).securityManagement}
+                            onChange={(v) => setProductInfo({ ...productInfo, securityManagement: v } as ProductInfo)}
+                            onLabelChange={(newLabel) => setFieldLabel("dock_security", newLabel)}
+                            placeholder="e.g. Kensington lock slot"
+                        />
+                    </div>
+                    {renderCustomFields(securityCustomFields, setSecurityCustomFields, 'securityCustomFields')}
+                </FormSection>
+
+                {/* Dimensions */}
+                <FormSection
+                    title={getSectionTitle("Dimensions", "dimensions")}
+                    onAddSpec={() => addCustomField(dimensionsCustomFields, setDimensionsCustomFields, 'dimensionsCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("dimensions", newTitle)}
+                    onDelete={() => hideSection("dimensions")}
+                    isDeleted={isSectionHidden("dimensions")}
+                >
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Minimum dimensions (W x D x H)", "dock_minDimensions")}
+                            value={(productInfo as any).minDimensions}
+                            onChange={(v) => setProductInfo({ ...productInfo, minDimensions: v } as ProductInfo)}
+                            onLabelChange={(newLabel) => setFieldLabel("dock_minDimensions", newLabel)}
+                            placeholder="e.g. 200 x 100 x 30 mm"
+                        />
+                        <EditableFormInput
+                            label={getFieldLabel("Dimensions (W x D x H)", "dock_dimensions")}
+                            value={(productInfo as any).dimensions}
+                            onChange={(v) => setProductInfo({ ...productInfo, dimensions: v } as ProductInfo)}
+                            onLabelChange={(newLabel) => setFieldLabel("dock_dimensions", newLabel)}
+                            placeholder="e.g. 205 x 105 x 35 mm"
+                        />
+                    </div>
+                    {renderCustomFields(dimensionsCustomFields, setDimensionsCustomFields, 'dimensionsCustomFields')}
+                </FormSection>
+
+                {/* Weights */}
+                <FormSection
+                    title={getSectionTitle("Weights", "weights")}
+                    onAddSpec={() => addCustomField(dimensionsCustomFields, setDimensionsCustomFields, 'dimensionsCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("weights", newTitle)}
+                    onDelete={() => hideSection("weights")}
+                    isDeleted={isSectionHidden("weights")}
+                >
+                    <div className="grid grid-cols-1 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Weight", "dock_weight")}
+                            value={(productInfo as any).weight}
+                            onChange={(v) => setProductInfo({ ...productInfo, weight: v } as ProductInfo)}
+                            onLabelChange={(newLabel) => setFieldLabel("dock_weight", newLabel)}
+                            placeholder="e.g. 250g"
+                        />
+                    </div>
+                    {renderCustomFields(dimensionsCustomFields, setDimensionsCustomFields, 'dimensionsCustomFields')}
+                </FormSection>
+
+                {/* Connectivity and Communications */}
+                <FormSection
+                    title={getSectionTitle("Connectivity and Communications", "connectivityComms")}
+                    onAddSpec={() => addCustomField(portsCustomFields, setPortsCustomFields, 'portsCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("connectivityComms", newTitle)}
+                    onDelete={() => hideSection("connectivityComms")}
+                    isDeleted={isSectionHidden("connectivityComms")}
+                >
+                    <div className="grid grid-cols-1 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Ports", "dock_ports")}
+                            value={(productInfo as any).ports}
+                            onChange={(v) => setProductInfo({ ...productInfo, ports: v } as ProductInfo)}
+                            onLabelChange={(newLabel) => setFieldLabel("dock_ports", newLabel)}
+                            placeholder="e.g. 3x USB-A, 2x USB-C, HDMI, Ethernet"
+                        />
+                    </div>
+                    {renderCustomFields(portsCustomFields, setPortsCustomFields, 'portsCustomFields')}
+                </FormSection>
+
+                {/* Warranty */}
+                <FormSection
+                    title={getSectionTitle("Warranty", "warranty")}
+                    onAddSpec={() => addCustomField(warrantyCustomFields, setWarrantyCustomFields, 'warrantyCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("warranty", newTitle)}
+                    onDelete={() => hideSection("warranty")}
+                    isDeleted={isSectionHidden("warranty")}
+                >
+                    <div className="grid grid-cols-1 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Warranty", "dock_warranty")}
+                            value={(productInfo as any).warranty}
+                            onChange={(v) => setProductInfo({ ...productInfo, warranty: v } as ProductInfo)}
+                            onLabelChange={(newLabel) => setFieldLabel("dock_warranty", newLabel)}
+                            placeholder="e.g. 1 year manufacturer warranty"
+                        />
+                    </div>
+                    {renderCustomFields(warrantyCustomFields, setWarrantyCustomFields, 'warrantyCustomFields')}
+                </FormSection>
+
+                {/* Box contents */}
+                <FormSection
+                    title={getSectionTitle("Box contents", "boxContents")}
+                    onAddSpec={() => addCustomField(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("boxContents", newTitle)}
+                    onDelete={() => hideSection("boxContents")}
+                    isDeleted={isSectionHidden("boxContents")}
+                >
+                    <div className="grid grid-cols-1 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("What's in the box", "dock_whatsInBox")}
+                            value={(productInfo as any).whatsInBox}
+                            onChange={(v) => setProductInfo({ ...productInfo, whatsInBox: v } as ProductInfo)}
+                            onLabelChange={(newLabel) => setFieldLabel("dock_whatsInBox", newLabel)}
+                            placeholder="e.g. 1x Dock, 1x Power Adapter, 1x USB-C Cable"
+                        />
+                    </div>
+                    {renderCustomFields(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                </FormSection>
+            </>
+        );
+    }
+
+    // USB Flash Drives specific fields rendering function
+    function renderUSBFlashDrivesFields() {
+        return (
+            <>
+                {/* Category */}
+                <FormSection
+                    title={getSectionTitle("Category", "categoryInfo")}
+                    defaultOpen={true}
+                    onAddSpec={() => addCustomField(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("categoryInfo", newTitle)}
+                    onDelete={() => hideSection("categoryInfo")}
+                    isDeleted={isSectionHidden("categoryInfo")}
+                >
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Part Number", "basic_partNo")}
+                            value={productInfo.partNo}
+                            onChange={(v) => updateField('partNo', v)}
+                            onLabelChange={(newLabel) => setFieldLabel("basic_partNo", newLabel)}
+                            placeholder="e.g. SDCZ430-064G"
+                        />
+                        <EditableFormInput
+                            label={getFieldLabel("Series", "basic_series")}
+                            value={productInfo.series}
+                            onChange={(v) => updateField('series', v)}
+                            onLabelChange={(newLabel) => setFieldLabel("basic_series", newLabel)}
+                            placeholder="e.g. Ultra Series"
+                        />
+                    </div>
+                    {renderCustomFields(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                </FormSection>
+
+                {/* Usage */}
+                <FormSection
+                    title={getSectionTitle("Usage", "usage")}
+                    defaultOpen={true}
+                    onAddSpec={() => addCustomField(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("usage", newTitle)}
+                    onDelete={() => hideSection("usage")}
+                    isDeleted={isSectionHidden("usage")}
+                >
+                    <div className="grid grid-cols-1 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Recommended Usage", "usb_recommendedUsage")}
+                            value={productInfo.recommendedUsage}
+                            onChange={(v) => updateField('recommendedUsage', v)}
+                            onLabelChange={(newLabel) => setFieldLabel("usb_recommendedUsage", newLabel)}
+                            placeholder="e.g. Data Storage, File Transfer"
+                        />
+                    </div>
+                    {renderCustomFields(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                </FormSection>
+
+                {/* Connection and Communication */}
+                <FormSection
+                    title={getSectionTitle("Connection and Communication", "connection")}
+                    defaultOpen={true}
+                    onAddSpec={() => addCustomField(connectivityCustomFields, setConnectivityCustomFields, 'connectivityCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("connection", newTitle)}
+                    onDelete={() => hideSection("connection")}
+                    isDeleted={isSectionHidden("connection")}
+                >
+                    <div className="grid grid-cols-1 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Connectivity", "usb_connectivity")}
+                            value={(productInfo as any).connectivity}
+                            onChange={(v) => setProductInfo({ ...productInfo, connectivity: v } as ProductInfo)}
+                            onLabelChange={(newLabel) => setFieldLabel("usb_connectivity", newLabel)}
+                            placeholder="e.g. USB 3.0, USB-C"
+                        />
+                    </div>
+                    {renderCustomFields(connectivityCustomFields, setConnectivityCustomFields, 'connectivityCustomFields')}
+                </FormSection>
+
+                {/* Storage Specifications */}
+                <FormSection
+                    title={getSectionTitle("Storage Specifications", "storageSpecs")}
+                    onAddSpec={() => addCustomField(storageCustomFields, setStorageCustomFields, 'storageCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("storageSpecs", newTitle)}
+                    onDelete={() => hideSection("storageSpecs")}
+                    isDeleted={isSectionHidden("storageSpecs")}
+                >
+                    <div className="grid grid-cols-1 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Capacity native", "usb_capacity")}
+                            value={(productInfo as any).capacityNative}
+                            onChange={(v) => setProductInfo({ ...productInfo, capacityNative: v } as ProductInfo)}
+                            onLabelChange={(newLabel) => setFieldLabel("usb_capacity", newLabel)}
+                            placeholder="e.g. 32GB, 64GB, 128GB"
+                        />
+                    </div>
+                    {renderCustomFields(storageCustomFields, setStorageCustomFields, 'storageCustomFields')}
+                </FormSection>
+
+                {/* Warranty */}
+                <FormSection
+                    title={getSectionTitle("Warranty", "warranty")}
+                    onAddSpec={() => addCustomField(warrantyCustomFields, setWarrantyCustomFields, 'warrantyCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("warranty", newTitle)}
+                    onDelete={() => hideSection("warranty")}
+                    isDeleted={isSectionHidden("warranty")}
+                >
+                    <div className="grid grid-cols-1 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Warranty", "usb_warranty")}
+                            value={(productInfo as any).warranty}
+                            onChange={(v) => setProductInfo({ ...productInfo, warranty: v } as ProductInfo)}
+                            onLabelChange={(newLabel) => setFieldLabel("usb_warranty", newLabel)}
+                            placeholder="e.g. 5 years manufacturer warranty"
+                        />
+                    </div>
+                    {renderCustomFields(warrantyCustomFields, setWarrantyCustomFields, 'warrantyCustomFields')}
+                </FormSection>
+
+                {/* Weights */}
+                <FormSection
+                    title={getSectionTitle("Weights", "weights")}
+                    onAddSpec={() => addCustomField(dimensionsCustomFields, setDimensionsCustomFields, 'dimensionsCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("weights", newTitle)}
+                    onDelete={() => hideSection("weights")}
+                    isDeleted={isSectionHidden("weights")}
+                >
+                    <div className="grid grid-cols-1 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Weight", "usb_weight")}
+                            value={(productInfo as any).weight}
+                            onChange={(v) => setProductInfo({ ...productInfo, weight: v } as ProductInfo)}
+                            onLabelChange={(newLabel) => setFieldLabel("usb_weight", newLabel)}
+                            placeholder="e.g. 10g"
+                        />
+                    </div>
+                    {renderCustomFields(dimensionsCustomFields, setDimensionsCustomFields, 'dimensionsCustomFields')}
+                </FormSection>
+
+                {/* Appearance */}
+                <FormSection
+                    title={getSectionTitle("Appearance", "appearance")}
+                    onAddSpec={() => addCustomField(appearanceCustomFields, setAppearanceCustomFields, 'appearanceCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("appearance", newTitle)}
+                    onDelete={() => hideSection("appearance")}
+                    isDeleted={isSectionHidden("appearance")}
+                >
+                    <div className="grid grid-cols-1 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Product Color", "appearance_color")}
+                            value={productInfo.appearance?.color}
+                            onChange={(v) => updateNestedField('appearance', 'color', v)}
+                            onLabelChange={(newLabel) => setFieldLabel("appearance_color", newLabel)}
+                            placeholder="e.g. Black"
+                        />
+                    </div>
+                    {renderCustomFields(appearanceCustomFields, setAppearanceCustomFields, 'appearanceCustomFields')}
                 </FormSection>
             </>
         );

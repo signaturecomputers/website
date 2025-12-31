@@ -137,6 +137,13 @@ export default function AddProductPage() {
         desktops: ['Processor', 'Operating System', 'Display Size', 'Graphics', 'RAM', 'Storage'],
         workstations: ['Processor', 'Operating System', 'Graphics', 'RAM', 'Storage', 'Power Supply'],
         monitors: ['Screen Size', 'Resolution', 'Display Type', 'Response Type', 'Response Time', 'Display Input Type', 'Display Features'],
+        'keyboard-mouse-combo': ['Interface', 'Type', 'DPI Levels', 'Surface Compatibility'],
+        keyboards: ['Interface', 'Type', 'DPI Levels', 'Surface Compatibility'],
+        mouse: ['Interface', 'Type', 'DPI Levels', 'Surface Compatibility'],
+        'power-adapters': ['Features', 'Input Voltage (V)', 'Type', 'Size (mm)', 'Bend Protection', 'Organization Fastener', 'Dimensions (cm) - Length/Width/Height', 'Weight (g)', 'Warranty Duration', 'Warranty Type'],
+        headphones: ['Audio Driver Size (mm)', 'Audio Driver Type', 'Noise Cancellation', 'Boom Type', 'Design', 'Connectivity Type', 'Connectivity Interface'],
+        bags: ['Features'],
+        docks: ['Connection Interface', 'Maximum Displays', 'Maximum Resolution', 'Host Connection', 'Charging Support', 'Dimensions (mm)', 'Weight', 'Warranty Duration', 'Warranty Type'],
     };
 
     // Auto-populate specs based on category
