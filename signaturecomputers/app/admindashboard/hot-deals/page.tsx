@@ -142,7 +142,8 @@ export default function HotDealsPage() {
     const availableProducts = allProducts.filter(
         p => !hotDeals.some(hd => hd.productId === p.id) &&
             (p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                p.brand?.toLowerCase().includes(searchQuery.toLowerCase()))
+                p.brand?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (p.productInfo?.partNo?.toLowerCase() || '').includes(searchQuery.toLowerCase()))
     );
 
     const calculateDiscount = (price: number, originalPrice: number) => {
@@ -182,6 +183,7 @@ export default function HotDealsPage() {
                             <tr>
                                 <th className="p-4">#</th>
                                 <th className="p-4">Product</th>
+                                <th className="p-4">Part Number</th>
                                 <th className="p-4">Category</th>
                                 <th className="p-4">Sale Price (₹)</th>
                                 <th className="p-4">Original Price (₹)</th>
@@ -192,7 +194,7 @@ export default function HotDealsPage() {
                         <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                             {loading ? (
                                 <tr>
-                                    <td colSpan={7} className="p-8 text-center text-gray-500">Loading...</td>
+                                    <td colSpan={8} className="p-8 text-center text-gray-500">Loading...</td>
                                 </tr>
                             ) : hotDeals.length === 0 ? (
                                 <tr>
@@ -230,6 +232,9 @@ export default function HotDealsPage() {
                                                         <p className="text-xs text-gray-500">{deal.product?.brand}</p>
                                                     </div>
                                                 </div>
+                                            </td>
+                                            <td className="p-4 text-sm text-gray-500 dark:text-gray-400">
+                                                {deal.product?.productInfo?.partNo || '-'}
                                             </td>
                                             <td className="p-4">
                                                 <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 capitalize">
@@ -362,7 +367,7 @@ export default function HotDealsPage() {
                                 <p className="text-center text-gray-500 py-8">No products available</p>
                             ) : (
                                 <div className="space-y-2">
-                                    {availableProducts.slice(0, 20).map(product => (
+                                    {availableProducts.map(product => (
                                         <div
                                             key={product.id}
                                             className="flex items-center justify-between p-3 rounded-lg border dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
