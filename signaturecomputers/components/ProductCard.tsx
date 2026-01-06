@@ -17,16 +17,21 @@ interface Product {
 
 interface ProductCardProps {
     product: Product;
+    onClick?: () => void;
 }
 
-export default function ProductCard({ product }: ProductCardProps) {
+export default function ProductCard({ product, onClick }: ProductCardProps) {
     const router = useRouter();
     const { addToCart, saveForLater, isInSaved } = useCart();
 
     const isSaved = isInSaved(product.id);
 
     const handleCardClick = () => {
-        router.push(`/product/${product.id}`);
+        if (onClick) {
+            onClick();
+        } else {
+            router.push(`/product/${product.id}`);
+        }
     };
 
     const handleAddToCart = (e: React.MouseEvent) => {
