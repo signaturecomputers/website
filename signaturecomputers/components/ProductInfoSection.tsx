@@ -168,43 +168,125 @@ function renderCategorySpecificFields(productInfo: any) {
         );
     }
 
-
-    // Input Devices (Keyboard, Mouse, Combo)
-    if (has('connectionType') || has('scrolling') || has('sensorResolution') || has('numberOfButtons')) {
+    // Accessory: Category Info (used by keyboards, mouse, headphones, adapters, bags, docks, usb drives)
+    // Excludes Part Number for customer view - partNo is shown only to admin
+    if (has('series') && !has('screenSizeCm')) { // Exclude monitors which have their own section
         sections.push(
-            <InfoSection key="input-specs" title={getSectionTitle(productInfo, "Device Specifications", "inputSpecs")} icon={FiSettings}>
+            <InfoSection key="accessory-category" title={getSectionTitle(productInfo, "Category", "categoryInfo")} icon={FiPackage}>
                 <dl>
-                    <InfoRow label={getFieldLabel(productInfo, "Connection Type", "input_connectionType")} value={productInfo.connectionType} />
-                    <InfoRow label={getFieldLabel(productInfo, "Connectivity", "input_connectivity")} value={productInfo.connectivity} />
-                    <InfoRow label={getFieldLabel(productInfo, "Sensor Resolution", "mouse_sensorResolution")} value={productInfo.sensorResolution} />
-                    <InfoRow label={getFieldLabel(productInfo, "Number of Buttons", "mouse_numberOfButtons")} value={productInfo.numberOfButtons} />
-                    <InfoRow label={getFieldLabel(productInfo, "Myscrolling", "mouse_scrolling")} value={productInfo.scrolling} />
+                    <InfoRow label={getFieldLabel(productInfo, "Series", "basic_series")} value={productInfo.series} />
+                    {renderCustomFields(productInfo.basicCustomFields)}
                 </dl>
             </InfoSection>
         );
     }
 
-    // Audio (Headphones)
-    if (has('micSensitivity') || has('speakerSize') || has('impedance') || has('frequency')) {
+    // Accessory: Usage section
+    if (has('recommendedUsage') && !has('screenSizeCm') && !has('processor')) { // Exclude monitors and laptops
         sections.push(
-            <InfoSection key="audio-specs" title={getSectionTitle(productInfo, "Audio Specifications", "audioSpecs")} icon={FiSpeaker}>
+            <InfoSection key="accessory-usage" title={getSectionTitle(productInfo, "Usage", "usage")} icon={FiSettings}>
+                <dl>
+                    <InfoRow label={getFieldLabel(productInfo, "Recommended Usage", "basic_recommendedUsage")} value={productInfo.recommendedUsage} />
+                </dl>
+            </InfoSection>
+        );
+    }
+
+    // Accessory: Connection and Communication section (for keyboards, mouse, headphones, docks, usb drives)
+    if (has('connectivity') && !has('processor') && !has('screenSizeCm')) { // Exclude laptops and monitors
+        sections.push(
+            <InfoSection key="accessory-connection" title={getSectionTitle(productInfo, "Connection and Communication", "connection")} icon={FiWifi}>
+                <dl>
+                    <InfoRow label={getFieldLabel(productInfo, "Connectivity", "keyboard_connectivity")} value={productInfo.connectivity} />
+                    {renderCustomFields(productInfo.connectivityCustomFields)}
+                </dl>
+            </InfoSection>
+        );
+    }
+
+
+    // Input Devices (Keyboard, Mouse, Combo)
+    if (has('connectionType') || has('scrolling') || has('sensorResolution') || has('numberOfButtons')) {
+        sections.push(
+            <InfoSection key="input-specs" title={getSectionTitle(productInfo, "Multimedia and Input Devices", "multimedia")} icon={FiSettings}>
+                <dl>
+                    <InfoRow label={getFieldLabel(productInfo, "Connection Type", "keyboard_connectionType")} value={productInfo.connectionType} />
+                    <InfoRow label={getFieldLabel(productInfo, "Connectivity", "keyboard_connectivity")} value={productInfo.connectivity} />
+                    <InfoRow label={getFieldLabel(productInfo, "Sensor Resolution", "mouse_sensorResolution")} value={productInfo.sensorResolution} />
+                    <InfoRow label={getFieldLabel(productInfo, "Number of Buttons", "mouse_numberOfButtons")} value={productInfo.numberOfButtons} />
+                    <InfoRow label={getFieldLabel(productInfo, "Scrolling", "mouse_scrolling")} value={productInfo.scrolling} />
+                </dl>
+            </InfoSection>
+        );
+    }
+
+    // Audio (Headphones) - Multimedia and Input Devices section
+    if (has('micSensitivity') || has('speakerSize') || has('micType') || has('speakerSensitivity')) {
+        sections.push(
+            <InfoSection key="audio-specs" title={getSectionTitle(productInfo, "Multimedia and Input Devices", "multimedia")} icon={FiSpeaker}>
                 <dl>
                     <InfoRow label={getFieldLabel(productInfo, "Microphone Sensitivity", "headphone_micSensitivity")} value={productInfo.micSensitivity} />
                     <InfoRow label={getFieldLabel(productInfo, "Microphone Type", "headphone_micType")} value={productInfo.micType} />
                     <InfoRow label={getFieldLabel(productInfo, "Speaker Sensitivity", "headphone_speakerSensitivity")} value={productInfo.speakerSensitivity} />
                     <InfoRow label={getFieldLabel(productInfo, "Speaker Size", "headphone_speakerSize")} value={productInfo.speakerSize} />
-                    <InfoRow label={getFieldLabel(productInfo, "Impedance", "headphone_impedance")} value={productInfo.impedance} />
-                    <InfoRow label={getFieldLabel(productInfo, "Frequency Response", "headphone_frequency")} value={productInfo.frequency} />
-                    <InfoRow label={getFieldLabel(productInfo, "Connectivity", "headphone_connectivity")} value={productInfo.connectivity} />
+                    {renderCustomFields(productInfo.audioCustomFields)}
                 </dl>
             </InfoSection>
         );
     }
 
+    // Audio (Headphones) - Battery and Power section (impedance)
+    if (has('impedance')) {
+        sections.push(
+            <InfoSection key="battery-power" title={getSectionTitle(productInfo, "Battery and Power", "batteryPower")} icon={FiBattery}>
+                <dl>
+                    <InfoRow label={getFieldLabel(productInfo, "Impedance", "headphone_impedance")} value={productInfo.impedance} />
+                    {renderCustomFields(productInfo.batteryCustomFields)}
+                </dl>
+            </InfoSection>
+        );
+    }
+
+    // Audio (Headphones) - Connectivity and Communications section (frequency)
+    if (has('frequency')) {
+        sections.push(
+            <InfoSection key="connectivity-comms" title={getSectionTitle(productInfo, "Connectivity and Communications", "connectivityComms")} icon={FiWifi}>
+                <dl>
+                    <InfoRow label={getFieldLabel(productInfo, "Frequency (MHz)", "headphone_frequency")} value={productInfo.frequency} />
+                </dl>
+            </InfoSection>
+        );
+    }
+
+    // Accessory Dimensions (for headphones, etc.)
+    if (has('minDimensions')) {
+        sections.push(
+            <InfoSection key="accessory-dimensions" title={getSectionTitle(productInfo, "Dimensions", "dimensions")} icon={FiBox}>
+                <dl>
+                    <InfoRow label={getFieldLabel(productInfo, "Minimum Dimensions (W x D x H)", "headphone_dimensions")} value={productInfo.minDimensions} />
+                    {renderCustomFields(productInfo.dimensionsCustomFields)}
+                </dl>
+            </InfoSection>
+        );
+    }
+
+    // Accessory Warranty (stored as string for accessories like headphones, bags)
+    if (has('warranty') && typeof productInfo.warranty === 'string') {
+        sections.push(
+            <InfoSection key="accessory-warranty" title={getSectionTitle(productInfo, "Warranty", "warranty")} icon={FiAward}>
+                <dl>
+                    <InfoRow label={getFieldLabel(productInfo, "Warranty", "headphone_warranty")} value={productInfo.warranty} />
+                    {renderCustomFields(productInfo.warrantyCustomFields)}
+                </dl>
+            </InfoSection>
+        );
+    }
+
+
     // Power Adapters
     if (has('inputVoltage') || has('output') || has('connectorType')) {
         sections.push(
-            <InfoSection key="adapter-specs" title={getSectionTitle(productInfo, "Adapter Specifications", "adapterSpecs")} icon={FiBattery}>
+            <InfoSection key="adapter-specs" title={getSectionTitle(productInfo, "Storage Specifications", "storageSpecs")} icon={FiBattery}>
                 <dl>
                     <InfoRow label={getFieldLabel(productInfo, "Input Voltage", "adapter_inputVoltage")} value={productInfo.inputVoltage} />
                     <InfoRow label={getFieldLabel(productInfo, "Output", "adapter_output")} value={productInfo.output} />
@@ -218,7 +300,7 @@ function renderCategorySpecificFields(productInfo: any) {
     // Docks
     if (has('ports') && !productInfo.ports?.usbTypeC) { // Check if it's the ad-hoc 'ports' string, not the object
         sections.push(
-            <InfoSection key="dock-specs" title={getSectionTitle(productInfo, "Dock Specifications", "dockSpecs")} icon={FiSettings}>
+            <InfoSection key="dock-specs" title={getSectionTitle(productInfo, "Connection and Communication", "connection")} icon={FiSettings}>
                 <dl>
                     <InfoRow label={getFieldLabel(productInfo, "Ports", "dock_ports")} value={productInfo.ports} />
                     <InfoRow label={getFieldLabel(productInfo, "Connectivity", "dock_connectivity")} value={productInfo.connectivity} />
@@ -245,7 +327,7 @@ function renderCategorySpecificFields(productInfo: any) {
     // Bags
     if (has('material') || has('compartments')) {
         sections.push(
-            <InfoSection key="bag-specs" title={getSectionTitle(productInfo, "Bag Specifications", "bagSpecs")} icon={FiPackage}>
+            <InfoSection key="bag-specs" title={getSectionTitle(productInfo, "Appearance", "appearance")} icon={FiPackage}>
                 <dl>
                     <InfoRow label={getFieldLabel(productInfo, "Material", "bag_material")} value={productInfo.material} />
                     <InfoRow label={getFieldLabel(productInfo, "Compartments", "bag_compartments")} value={productInfo.compartments} />
@@ -294,10 +376,16 @@ export default function ProductInfoSection({ productInfo, isAdmin = false }: Pro
     // Cast to any to access custom fields
     const customProductInfo = productInfo as any;
 
+    // Check if this is an accessory product (has accessory-specific fields that have their own Category/Usage sections)
+    const isAccessoryProduct = customProductInfo.micSensitivity || customProductInfo.connectionType ||
+        customProductInfo.sensorResolution || customProductInfo.impedance || customProductInfo.capacityNative ||
+        customProductInfo.material || customProductInfo.securityManagement || customProductInfo.minDimensions;
+
     return (
         <div className="space-y-4">
-            {/* Basic Info */}
-            {(productInfo.title || productInfo.series || productInfo.recommendedUsage || productInfo.idealFor?.length || (isAdmin && productInfo.partNo) || customProductInfo.basicCustomFields?.length > 0) && (
+            {/* Basic Info - Only show for non-accessories (laptops, desktops, monitors, etc.) */}
+            {/* Accessories have their own Category and Usage sections via renderCategorySpecificFields */}
+            {!isAccessoryProduct && (productInfo.title || productInfo.series || productInfo.recommendedUsage || productInfo.idealFor?.length || (isAdmin && productInfo.partNo) || customProductInfo.basicCustomFields?.length > 0) && (
                 <InfoSection title={getSectionTitle(customProductInfo, "Product Overview", "basic")} icon={FiPackage}>
                     <dl>
                         <InfoRow label={getFieldLabel(customProductInfo, "Title", "basic_title")} value={productInfo.title} />
@@ -313,6 +401,7 @@ export default function ProductInfoSection({ productInfo, isAdmin = false }: Pro
                     </dl>
                 </InfoSection>
             )}
+
 
 
             {/* Category Specific Fields */}
@@ -442,8 +531,8 @@ export default function ProductInfoSection({ productInfo, isAdmin = false }: Pro
                 </InfoSection>
             )}
 
-            {/* Connectivity */}
-            {(hasContent(productInfo.connectivity) || customProductInfo.connectivityCustomFields?.length > 0) && (
+            {/* Connectivity - Only for laptops (object), accessories use string via category-specific rendering */}
+            {(typeof productInfo.connectivity === 'object' && hasContent(productInfo.connectivity) || customProductInfo.connectivityCustomFields?.length > 0) && (
                 <InfoSection title={getSectionTitle(customProductInfo, "Connectivity", "connectivity")} icon={FiWifi}>
                     <dl>
                         <InfoRow label={getFieldLabel(customProductInfo, "WiFi", "connectivity_wifi")} value={productInfo.connectivity?.wifi} />
@@ -542,8 +631,8 @@ export default function ProductInfoSection({ productInfo, isAdmin = false }: Pro
                 </InfoSection>
             )}
 
-            {/* Warranty */}
-            {(hasContent(productInfo.warranty) || customProductInfo.warrantyCustomFields?.length > 0) && (
+            {/* Warranty - Only for laptops (object), accessories use string rendered via category-specific sections */}
+            {(typeof productInfo.warranty === 'object' && hasContent(productInfo.warranty) || customProductInfo.warrantyCustomFields?.length > 0) && (
                 <InfoSection title={getSectionTitle(customProductInfo, "Warranty", "warranty")} icon={FiAward}>
                     <dl>
                         <InfoRow label={getFieldLabel(customProductInfo, "Duration", "warranty_duration")} value={productInfo.warranty?.duration} />
