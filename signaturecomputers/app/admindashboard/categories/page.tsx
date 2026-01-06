@@ -3,8 +3,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { collection, getDocs, doc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, storage } from '@/lib/firebase';
+
+import { db } from '@/lib/firebase';
 import { toast } from 'sonner';
 import {
     FiPlus,
@@ -235,11 +235,20 @@ export default function CategoriesPage() {
 
             // Upload new image if selected
             if (imageFile) {
-                const categoryId = modalMode === 'add' ? generateSlug(formData.name) : editingCategory?.id;
-                const fileName = `categories/${categoryId}_${Date.now()}.${imageFile.name.split('.').pop()}`;
-                const storageRef = ref(storage, fileName);
-                await uploadBytes(storageRef, imageFile);
-                imageUrl = await getDownloadURL(storageRef);
+                const uploadFormData = new FormData();
+                uploadFormData.append('file', imageFile);
+
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: uploadFormData,
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to upload image');
+                }
+
+                const data = await response.json();
+                imageUrl = data.url;
             }
 
             if (modalMode === 'add') {
@@ -498,51 +507,7 @@ export default function CategoriesPage() {
                 )}
             </div>
 
-            {/* Deleted Categories Section - only show if there are deleted items */}
-            {(() => {
-                const deletedCategories = [
-                    ...MAIN_CATEGORIES.filter(cat => isDeleted(cat.id)),
-                    ...PRINTER_SUBCATEGORIES.filter(cat => isDeleted(cat.id)),
-                    ...ACCESSORY_SUBCATEGORIES.filter(cat => isDeleted(cat.id)),
-                    ...customCategories.filter(c => c.deleted),
-                ];
-
-                if (deletedCategories.length === 0) return null;
-
-                return (
-                    <div className="border-t border-dashed border-gray-300 dark:border-gray-600 pt-6 mt-6">
-                        <div className="flex items-center gap-2 mb-4">
-                            <FiTrash2 className="w-5 h-5 text-red-500" />
-                            <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-300">
-                                Deleted Categories ({deletedCategories.length})
-                            </h2>
-                        </div>
-                        <p className="text-sm text-gray-500 mb-4">
-                            These categories are hidden from the website. Click Restore to bring them back.
-                        </p>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                            {deletedCategories.map(cat => {
-                                const displayName = categoryMetadata[cat.id]?.name || cat.name;
-                                return (
-                                    <div
-                                        key={cat.id}
-                                        className="bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl p-4 opacity-60"
-                                    >
-                                        <h3 className="font-medium text-gray-700 dark:text-gray-300 truncate">{displayName}</h3>
-                                        <p className="text-xs text-gray-500 mt-1">ID: {cat.id}</p>
-                                        <button
-                                            onClick={() => handleRestore(cat.id)}
-                                            className="mt-3 w-full px-3 py-1.5 text-xs font-medium text-green-600 bg-green-50 hover:bg-green-100 dark:bg-green-900/20 dark:hover:bg-green-900/40 rounded-lg transition-colors flex items-center justify-center gap-1"
-                                        >
-                                            <FiPlus className="w-3 h-3" /> Restore
-                                        </button>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                );
-            })()}
+            {/* Deleted Categories Section - REMOVED AS REQUESTED */}
 
             {/* Add/Edit Modal */}
             {showModal && (
