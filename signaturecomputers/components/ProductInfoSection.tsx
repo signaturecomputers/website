@@ -205,16 +205,16 @@ function renderCategorySpecificFields(productInfo: any) {
     }
 
 
-    // Input Devices (Keyboard, Mouse, Combo)
+    // Input Devices (Keyboard, Mouse, Combo) - Multimedia and Input Devices
     if (has('connectionType') || has('scrolling') || has('sensorResolution') || has('numberOfButtons')) {
         sections.push(
             <InfoSection key="input-specs" title={getSectionTitle(productInfo, "Multimedia and Input Devices", "multimedia")} icon={FiSettings}>
                 <dl>
                     <InfoRow label={getFieldLabel(productInfo, "Connection Type", "keyboard_connectionType")} value={productInfo.connectionType} />
-                    <InfoRow label={getFieldLabel(productInfo, "Connectivity", "keyboard_connectivity")} value={productInfo.connectivity} />
                     <InfoRow label={getFieldLabel(productInfo, "Sensor Resolution", "mouse_sensorResolution")} value={productInfo.sensorResolution} />
                     <InfoRow label={getFieldLabel(productInfo, "Number of Buttons", "mouse_numberOfButtons")} value={productInfo.numberOfButtons} />
                     <InfoRow label={getFieldLabel(productInfo, "Scrolling", "mouse_scrolling")} value={productInfo.scrolling} />
+                    {renderCustomFields(productInfo.portsCustomFields)}
                 </dl>
             </InfoSection>
         );
@@ -270,7 +270,7 @@ function renderCategorySpecificFields(productInfo: any) {
         );
     }
 
-    // Accessory Warranty (stored as string for accessories like headphones, bags)
+    // Accessory Warranty (stored as string for accessories like headphones, bags, usb drives)
     if (has('warranty') && typeof productInfo.warranty === 'string') {
         sections.push(
             <InfoSection key="accessory-warranty" title={getSectionTitle(productInfo, "Warranty", "warranty")} icon={FiAward}>
@@ -283,8 +283,8 @@ function renderCategorySpecificFields(productInfo: any) {
     }
 
 
-    // Power Adapters
-    if (has('inputVoltage') || has('output') || has('connectorType')) {
+    // Power Adapters - Storage Specifications (special features, etc.)
+    if (has('specialFeatures') || has('inputVoltage') || has('output') || has('connectorType')) {
         sections.push(
             <InfoSection key="adapter-specs" title={getSectionTitle(productInfo, "Storage Specifications", "storageSpecs")} icon={FiBattery}>
                 <dl>
@@ -292,24 +292,37 @@ function renderCategorySpecificFields(productInfo: any) {
                     <InfoRow label={getFieldLabel(productInfo, "Output", "adapter_output")} value={productInfo.output} />
                     <InfoRow label={getFieldLabel(productInfo, "Connector Type", "adapter_connectorType")} value={productInfo.connectorType} />
                     <InfoRow label={getFieldLabel(productInfo, "Special Features", "adapter_specialFeatures")} value={productInfo.specialFeatures} />
+                    {renderCustomFields(productInfo.storageCustomFields)}
                 </dl>
             </InfoSection>
         );
     }
 
-    // Docks
-    if (has('ports') && !productInfo.ports?.usbTypeC) { // Check if it's the ad-hoc 'ports' string, not the object
+    // Docks - Ports and Connectivity
+    if (has('ports') && typeof productInfo.ports === 'string') {
         sections.push(
-            <InfoSection key="dock-specs" title={getSectionTitle(productInfo, "Connection and Communication", "connection")} icon={FiSettings}>
+            <InfoSection key="dock-ports" title={getSectionTitle(productInfo, "Ports and Slots", "ports")} icon={FiSettings}>
                 <dl>
                     <InfoRow label={getFieldLabel(productInfo, "Ports", "dock_ports")} value={productInfo.ports} />
-                    <InfoRow label={getFieldLabel(productInfo, "Connectivity", "dock_connectivity")} value={productInfo.connectivity} />
-                    <InfoRow label={getFieldLabel(productInfo, "Security Management", "dock_security")} value={productInfo.securityManagement} />
                     <InfoRow label={getFieldLabel(productInfo, "Max Displays", "dock_maxDisplays")} value={productInfo.maxDisplays} />
+                    {renderCustomFields(productInfo.portsCustomFields)}
                 </dl>
             </InfoSection>
         );
     }
+
+    // Docks - Security Management section
+    if (has('securityManagement')) {
+        sections.push(
+            <InfoSection key="dock-security" title={getSectionTitle(productInfo, "Security Management", "security")} icon={FiShield}>
+                <dl>
+                    <InfoRow label={getFieldLabel(productInfo, "Security Management", "dock_security")} value={productInfo.securityManagement} />
+                    {renderCustomFields(productInfo.securityCustomFields)}
+                </dl>
+            </InfoSection>
+        );
+    }
+
 
     // USB Flash Drives & Storage
     if (has('capacityNative') || has('interface')) {
@@ -318,20 +331,33 @@ function renderCategorySpecificFields(productInfo: any) {
                 <dl>
                     <InfoRow label={getFieldLabel(productInfo, "Capacity", "usb_capacity")} value={productInfo.capacityNative} />
                     <InfoRow label={getFieldLabel(productInfo, "Interface", "usb_interface")} value={productInfo.interface} />
-                    <InfoRow label={getFieldLabel(productInfo, "Connectivity", "usb_connectivity")} value={productInfo.connectivity} />
+                    {renderCustomFields(productInfo.storageCustomFields)}
                 </dl>
             </InfoSection>
         );
     }
 
-    // Bags
-    if (has('material') || has('compartments')) {
+    // Weights section (for USB Flash Drives and other accessories with weight as string)
+    if (has('weight') && typeof productInfo.weight === 'string') {
         sections.push(
-            <InfoSection key="bag-specs" title={getSectionTitle(productInfo, "Appearance", "appearance")} icon={FiPackage}>
+            <InfoSection key="accessory-weights" title={getSectionTitle(productInfo, "Weights", "weights")} icon={FiBox}>
+                <dl>
+                    <InfoRow label={getFieldLabel(productInfo, "Weight", "usb_weight")} value={productInfo.weight} />
+                    {renderCustomFields(productInfo.dimensionsCustomFields)}
+                </dl>
+            </InfoSection>
+        );
+    }
+
+    // Bags - Material, Compartments (if these fields exist in the product)
+    if (has('material') || has('compartments') || has('laptopSize')) {
+        sections.push(
+            <InfoSection key="bag-specs" title={getSectionTitle(productInfo, "Bag Specifications", "bagSpecs")} icon={FiPackage}>
                 <dl>
                     <InfoRow label={getFieldLabel(productInfo, "Material", "bag_material")} value={productInfo.material} />
                     <InfoRow label={getFieldLabel(productInfo, "Compartments", "bag_compartments")} value={productInfo.compartments} />
                     <InfoRow label={getFieldLabel(productInfo, "Laptop Size Support", "bag_laptopSize")} value={productInfo.laptopSize} />
+                    {renderCustomFields(productInfo.basicCustomFields)}
                 </dl>
             </InfoSection>
         );
@@ -350,12 +376,76 @@ function renderCategorySpecificFields(productInfo: any) {
         );
     }
 
-    // Generic 'whatsInBox' string if used
+    // Box Contents - Power Adapters and other accessories
     if (has('whatsInBox')) {
         sections.push(
-            <InfoSection key="generic-box" title={getSectionTitle(productInfo, "In The Box", "boxContents")} icon={FiPackage}>
+            <InfoSection key="box-contents" title={getSectionTitle(productInfo, "Box Contents", "boxContents")} icon={FiPackage}>
                 <dl>
-                    <InfoRow label={getFieldLabel(productInfo, "What's in the box", "generic_whatsInBox")} value={productInfo.whatsInBox} />
+                    <InfoRow label={getFieldLabel(productInfo, "What's in the box", "adapter_whatsInBox")} value={productInfo.whatsInBox} />
+                </dl>
+            </InfoSection>
+        );
+    }
+
+    // Dynamic renderer for any remaining accessory fields not covered above
+    // This ensures ALL filled fields in productInfo display on customer side (except partNo)
+    const renderedFields = new Set([
+        // Standard ProductInfo object fields (handled by main component)
+        'title', 'series', 'partNo', 'recommendedUsage', 'idealFor',
+        'processor', 'memory', 'storage', 'display', 'graphics', 'audioAndInput',
+        'connectivity', 'ports', 'camera', 'batteryAndPower', 'security', 'software',
+        'dimensionsAndWeight', 'warranty', 'certifications', 'environmental', 'appearance', 'operatingSystem',
+        // Accessory-specific fields (handled by sections above)
+        'connectionType', 'sensorResolution', 'numberOfButtons', 'scrolling',
+        'micSensitivity', 'micType', 'speakerSensitivity', 'speakerSize', 'impedance', 'frequency',
+        'inputVoltage', 'output', 'connectorType', 'specialFeatures', 'whatsInBox',
+        'securityManagement', 'maxDisplays', 'capacityNative', 'interface', 'weight', 'minDimensions',
+        'material', 'compartments', 'laptopSize',
+        // Monitor fields
+        'screenSizeCm', 'resolutionNative', 'panelType', 'brightnessNits', 'responseTime', 'refreshRate',
+        'aspectRatio', 'contrastRatio', 'colorSupport', 'displayInputs', 'operatingTemp', 'powerMaximum',
+        'powerTypical', 'powerStandby', 'dimNoStandWidth', 'dimNoStandDepth', 'dimNoStandHeight',
+        'dimWithStandWidth', 'dimWithStandDepth', 'dimWithStandHeight', 'inTheBox', 'includedCables',
+        // Metadata fields (not for display)
+        'sectionTitles', 'fieldLabels', 'hiddenSections',
+        // Custom fields arrays (rendered separately)
+        'basicCustomFields', 'connectivityCustomFields', 'portsCustomFields', 'audioCustomFields',
+        'storageCustomFields', 'securityCustomFields', 'dimensionsCustomFields', 'warrantyCustomFields',
+        'appearanceCustomFields', 'batteryCustomFields', 'osCustomFields', 'displayCustomFields',
+        'graphicsCustomFields', 'cameraCustomFields', 'certificationsCustomFields', 'environmentalCustomFields'
+    ]);
+
+    // Find any additional accessory fields that aren't in the rendered set
+    const additionalFields: { key: string; value: any }[] = [];
+    for (const [key, value] of Object.entries(productInfo)) {
+        if (!renderedFields.has(key) && value !== undefined && value !== null && value !== '') {
+            // Only include simple string/number values, not objects or arrays (those are complex structures)
+            if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+                additionalFields.push({ key, value });
+            }
+        }
+    }
+
+    // Render any additional fields in an "Additional Information" section
+    if (additionalFields.length > 0) {
+        // Create readable labels from camelCase keys
+        const formatLabel = (key: string) => {
+            return key
+                .replace(/([A-Z])/g, ' $1')
+                .replace(/^./, str => str.toUpperCase())
+                .trim();
+        };
+
+        sections.push(
+            <InfoSection key="additional-info" title={getSectionTitle(productInfo, "Additional Information", "additionalInfo")} icon={FiSettings}>
+                <dl>
+                    {additionalFields.map(({ key, value }) => (
+                        <InfoRow
+                            key={key}
+                            label={getFieldLabel(productInfo, formatLabel(key), `additional_${key}`)}
+                            value={value}
+                        />
+                    ))}
                 </dl>
             </InfoSection>
         );
@@ -363,6 +453,7 @@ function renderCategorySpecificFields(productInfo: any) {
 
     return sections;
 }
+
 
 export default function ProductInfoSection({ productInfo, isAdmin = false }: ProductInfoSectionProps) {
     if (!productInfo || !hasContent(productInfo)) {
