@@ -136,8 +136,8 @@ export default function Hero() {
                 {/* SLIDE 0: Static Hero Section */}
                 <div
                     className={`absolute inset-0 w-full h-full bg-white transition-all duration-600 ease-in-out ${currentSlide === 0
-                            ? 'opacity-100 z-10 pointer-events-auto'
-                            : 'opacity-0 z-0 pointer-events-none'
+                        ? 'opacity-100 z-10 pointer-events-auto'
+                        : 'opacity-0 z-0 pointer-events-none'
                         }`}
                 >
                     <div className="relative z-10 bg-white pb-12 pt-12 lg:pt-16 h-full">
@@ -198,8 +198,8 @@ export default function Hero() {
                         <div
                             key={deal.id}
                             className={`absolute inset-0 w-full h-full bg-white transition-all duration-600 ease-in-out cursor-pointer ${currentSlide === slideIndex
-                                    ? 'opacity-100 z-10 pointer-events-auto'
-                                    : 'opacity-0 z-0 pointer-events-none'
+                                ? 'opacity-100 z-10 pointer-events-auto'
+                                : 'opacity-0 z-0 pointer-events-none'
                                 }`}
                             onClick={() => handleProductClick(deal.id)}
                         >
@@ -258,11 +258,11 @@ export default function Hero() {
                                     {/* Price */}
                                     <div className="flex items-center justify-center lg:justify-start gap-4 mb-8">
                                         <span className="text-4xl lg:text-5xl font-black text-gray-900">
-                                            ₹{deal.price.toLocaleString()}
+                                            ₹{deal.price.toLocaleString('en-IN')}
                                         </span>
                                         {deal.originalPrice && deal.originalPrice > deal.price && (
                                             <span className="text-xl text-gray-400 line-through">
-                                                ₹{deal.originalPrice.toLocaleString()}
+                                                ₹{deal.originalPrice.toLocaleString('en-IN')}
                                             </span>
                                         )}
                                     </div>
@@ -333,8 +333,8 @@ export default function Hero() {
                             key={index}
                             onClick={(e) => { e.stopPropagation(); goToSlide(index); }}
                             className={`h-2 rounded-full transition-all duration-300 ${index === currentSlide
-                                    ? 'bg-blue-600 w-6'
-                                    : 'bg-gray-300 w-2 hover:bg-gray-400'
+                                ? 'bg-blue-600 w-6'
+                                : 'bg-gray-300 w-2 hover:bg-gray-400'
                                 }`}
                             aria-label={index === 0 ? 'Go to Home' : `Go to deal ${index}`}
                         />

@@ -482,7 +482,7 @@ export default function AdminSettings() {
                     <div className="space-y-4">
                         <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
                             <p className="text-sm font-medium text-blue-900 dark:text-blue-300 mb-1">Current Price</p>
-                            <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">₹{windowsPrice.toLocaleString()}</p>
+                            <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">₹{windowsPrice.toLocaleString('en-IN')}</p>
                             <p className="text-xs text-blue-700 dark:text-blue-400 mt-1">For Windows 11 Pro OEM Key & Installation</p>
                         </div>
 

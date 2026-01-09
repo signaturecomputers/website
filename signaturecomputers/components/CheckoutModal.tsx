@@ -611,17 +611,17 @@ export default function CheckoutModal({ isOpen, onClose, product, quantity, wind
                                     <div className="border-t dark:border-gray-700 pt-2 mt-2">
                                         <div className="flex justify-between text-sm">
                                             <span className="text-gray-600 dark:text-gray-400">Product Price</span>
-                                            <span className="dark:text-white">₹{productTotal.toLocaleString()}</span>
+                                            <span className="dark:text-white">₹{productTotal.toLocaleString('en-IN')}</span>
                                         </div>
                                         {windowsInstallation && windowsInstallationPrice && (
                                             <div className="flex justify-between text-sm">
                                                 <span className="text-gray-600 dark:text-gray-400">Windows 11 Pro OEM Key</span>
-                                                <span className="dark:text-white">₹{windowsTotal.toLocaleString()}</span>
+                                                <span className="dark:text-white">₹{windowsTotal.toLocaleString('en-IN')}</span>
                                             </div>
                                         )}
                                         <div className="flex justify-between font-bold text-lg mt-2 pt-2 border-t dark:border-gray-700">
                                             <span className="dark:text-white">Grand Total</span>
-                                            <span className="text-blue-600">₹{totalAmount.toLocaleString()}</span>
+                                            <span className="text-blue-600">₹{totalAmount.toLocaleString('en-IN')}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -673,7 +673,7 @@ export default function CheckoutModal({ isOpen, onClose, product, quantity, wind
                                         ) : (
                                             <>
                                                 <FiCreditCard className="mr-2" />
-                                                Pay ₹{totalAmount.toLocaleString()}
+                                                Pay ₹{totalAmount.toLocaleString('en-IN')}
                                             </>
                                         )}
                                     </button>

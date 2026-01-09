@@ -95,9 +95,9 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
                 </h3>
                 <div className="flex items-center justify-between mt-4">
                     <div className="flex flex-col">
-                        <span className="text-lg font-bold text-gray-900 dark:text-white">₹{product.price.toLocaleString()}</span>
+                        <span className="text-lg font-bold text-gray-900 dark:text-white">₹{product.price.toLocaleString('en-IN')}</span>
                         {product.originalPrice && (
-                            <span className="text-xs text-gray-500 line-through">₹{product.originalPrice.toLocaleString()}</span>
+                            <span className="text-xs text-gray-500 line-through">₹{product.originalPrice.toLocaleString('en-IN')}</span>
                         )}
                     </div>
                     <button

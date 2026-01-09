@@ -299,9 +299,9 @@ export default function ProductDetailsPage() {
                             </div>
 
                             <div className="flex items-end gap-4 mb-4">
-                                <span className="text-4xl font-bold text-gray-900 dark:text-white">₹{product.price.toLocaleString()}</span>
+                                <span className="text-4xl font-bold text-gray-900 dark:text-white">₹{product.price.toLocaleString('en-IN')}</span>
                                 {product.originalPrice && (
-                                    <span className="text-xl text-gray-500 line-through mb-1">₹{product.originalPrice.toLocaleString()}</span>
+                                    <span className="text-xl text-gray-500 line-through mb-1">₹{product.originalPrice.toLocaleString('en-IN')}</span>
                                 )}
                             </div>
 
@@ -354,7 +354,7 @@ export default function ProductDetailsPage() {
                                                         </svg>
                                                         Windows 11 Pro OEM Installation Available
                                                     </h4>
-                                                    <span className="text-xl font-bold text-blue-600">+₹{windowsPrice.toLocaleString()}</span>
+                                                    <span className="text-xl font-bold text-blue-600">+₹{windowsPrice.toLocaleString('en-IN')}</span>
                                                 </div>
                                                 <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
                                                     This product comes with Free DOS. Check this option to have <strong>Windows 11 Pro</strong> pre-installed by our expert team with a genuine OEM key included.
@@ -364,7 +364,7 @@ export default function ProductDetailsPage() {
                                                         <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                                                             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                                                         </svg>
-                                                        Windows 11 Pro OEM added - ₹{windowsPrice.toLocaleString()} will be added to your total
+                                                        Windows 11 Pro OEM added - ₹{windowsPrice.toLocaleString('en-IN')} will be added to your total
                                                     </div>
                                                 )}
                                             </div>
@@ -523,7 +523,7 @@ export default function ProductDetailsPage() {
                                                         {accessory.name}
                                                     </h4>
                                                     <p className="text-sm font-bold text-blue-600">
-                                                        ₹{accessory.price.toLocaleString()}
+                                                        ₹{accessory.price.toLocaleString('en-IN')}
                                                     </p>
                                                 </div>
                                             </div>
@@ -558,11 +558,11 @@ export default function ProductDetailsPage() {
                                             {relatedProduct.name}
                                         </h3>
                                         <p className="text-lg font-bold text-gray-900 dark:text-white">
-                                            ₹{relatedProduct.price.toLocaleString()}
+                                            ₹{relatedProduct.price.toLocaleString('en-IN')}
                                         </p>
                                         {relatedProduct.originalPrice && (
                                             <p className="text-sm text-gray-500 line-through">
-                                                ₹{relatedProduct.originalPrice.toLocaleString()}
+                                                ₹{relatedProduct.originalPrice.toLocaleString('en-IN')}
                                             </p>
                                         )}
                                     </div>
@@ -605,7 +605,7 @@ export default function ProductDetailsPage() {
                         {/* Description */}
                         <p className="text-gray-600 dark:text-gray-400 text-center mb-6">
                             This product comes with <strong className="text-gray-900 dark:text-white">Free DOS</strong>.
-                            Would you like to add <strong className="text-blue-600">Windows 11 Pro OEM</strong> installation for <strong className="text-blue-600">₹{windowsPrice.toLocaleString()}</strong>?
+                            Would you like to add <strong className="text-blue-600">Windows 11 Pro OEM</strong> installation for <strong className="text-blue-600">₹{windowsPrice.toLocaleString('en-IN')}</strong>?
                         </p>
 
                         {/* Windows Option Box */}
@@ -620,7 +620,7 @@ export default function ProductDetailsPage() {
                                         Pre-installed by our expert team with genuine OEM key included
                                     </p>
                                 </div>
-                                <span className="text-xl font-bold text-blue-600">+₹{windowsPrice.toLocaleString()}</span>
+                                <span className="text-xl font-bold text-blue-600">+₹{windowsPrice.toLocaleString('en-IN')}</span>
                             </div>
                         </div>
 
@@ -633,13 +633,13 @@ export default function ProductDetailsPage() {
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                                 </svg>
-                                Add with Windows 11 Pro (₹{(product.price * quantity + windowsPrice * quantity).toLocaleString()})
+                                Add with Windows 11 Pro (₹{(product.price * quantity + windowsPrice * quantity).toLocaleString('en-IN')})
                             </button>
                             <button
                                 onClick={() => handleAddFromModal(false)}
                                 className="w-full bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white font-medium py-3 px-6 rounded-xl transition-colors"
                             >
-                                Continue without Windows (₹{(product.price * quantity).toLocaleString()})
+                                Continue without Windows (₹{(product.price * quantity).toLocaleString('en-IN')})
                             </button>
                         </div>
 

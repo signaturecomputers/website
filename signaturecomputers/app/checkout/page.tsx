@@ -332,7 +332,7 @@ export default function CheckoutPage() {
                                                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                                                 </svg>
-                                                Pay ₹{cartTotal.toLocaleString()}
+                                                Pay ₹{cartTotal.toLocaleString('en-IN')}
                                             </>
                                         )}
                                     </button>
@@ -363,12 +363,12 @@ export default function CheckoutPage() {
                                                 <p className="text-sm font-medium text-gray-900 dark:text-white">{item.name}</p>
                                                 <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
                                             </div>
-                                            <p className="text-sm font-medium text-gray-900 dark:text-white">₹{(item.price * item.quantity).toLocaleString()}</p>
+                                            <p className="text-sm font-medium text-gray-900 dark:text-white">₹{(item.price * item.quantity).toLocaleString('en-IN')}</p>
                                         </div>
                                         {item.windowsInstallation && item.windowsInstallationPrice && (
                                             <div className="flex justify-between mt-1 pl-4 border-l-2 border-blue-500">
                                                 <p className="text-xs text-gray-600 dark:text-gray-400">+ Windows 11 Pro OEM</p>
-                                                <p className="text-xs font-medium text-blue-600">₹{(item.windowsInstallationPrice * item.quantity).toLocaleString()}</p>
+                                                <p className="text-xs font-medium text-blue-600">₹{(item.windowsInstallationPrice * item.quantity).toLocaleString('en-IN')}</p>
                                             </div>
                                         )}
                                     </li>
@@ -377,7 +377,7 @@ export default function CheckoutPage() {
                             <div className="border-t border-gray-200 dark:border-gray-800 pt-4 mt-4">
                                 <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400 mb-2">
                                     <span>Subtotal</span>
-                                    <span>₹{cartTotal.toLocaleString()}</span>
+                                    <span>₹{cartTotal.toLocaleString('en-IN')}</span>
                                 </div>
                                 <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400 mb-2">
                                     <span>Shipping</span>
@@ -385,7 +385,7 @@ export default function CheckoutPage() {
                                 </div>
                                 <div className="flex justify-between font-bold text-lg pt-2 border-t border-gray-200 dark:border-gray-700">
                                     <span className="dark:text-white">Total</span>
-                                    <span className="text-blue-600">₹{cartTotal.toLocaleString()}</span>
+                                    <span className="text-blue-600">₹{cartTotal.toLocaleString('en-IN')}</span>
                                 </div>
                             </div>
                         </div>

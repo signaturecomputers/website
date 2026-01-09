@@ -146,7 +146,7 @@ export default function SearchDropdown({
                                     <div className="flex-1 min-w-0">
                                         <p className="font-medium text-gray-900 truncate">{product.name}</p>
                                         <div className="flex items-center gap-2 text-sm">
-                                            <span className="text-blue-600 font-semibold">₹{product.price.toLocaleString()}</span>
+                                            <span className="text-blue-600 font-semibold">₹{product.price.toLocaleString('en-IN')}</span>
                                             <span className="text-gray-400">•</span>
                                             <span className="text-gray-500 truncate">{CATEGORY_NAMES[product.category] || product.category}</span>
                                         </div>

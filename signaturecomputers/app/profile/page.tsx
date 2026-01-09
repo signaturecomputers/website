@@ -517,7 +517,7 @@ export default function ProfilePage() {
                                                 </div>
                                             )}
                                             <div className="text-right font-bold text-gray-900 dark:text-white">
-                                                Total: ₹{order.totalAmount.toLocaleString()}
+                                                Total: ₹{order.totalAmount.toLocaleString('en-IN')}
                                             </div>
                                         </div>
                                     ))}

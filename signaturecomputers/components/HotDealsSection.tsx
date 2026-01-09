@@ -230,9 +230,9 @@ export default function HotDealsSection({ mode = 'home', subtitle }: HotDealsPro
 
                                     {/* Price Block */}
                                     <div className="flex items-center gap-4 mb-4">
-                                        <span className="text-3xl font-bold text-gray-900">₹{activeDeal.price.toLocaleString()}</span>
+                                        <span className="text-3xl font-bold text-gray-900">₹{activeDeal.price.toLocaleString('en-IN')}</span>
                                         {activeDeal.originalPrice && (
-                                            <span className="text-xl text-gray-400 line-through decoration-gray-300">₹{activeDeal.originalPrice.toLocaleString()}</span>
+                                            <span className="text-xl text-gray-400 line-through decoration-gray-300">₹{activeDeal.originalPrice.toLocaleString('en-IN')}</span>
                                         )}
                                     </div>
                                     <p className="text-xs text-gray-500 mb-6 font-medium">

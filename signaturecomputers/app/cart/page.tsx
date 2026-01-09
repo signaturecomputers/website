@@ -82,7 +82,7 @@ export default function CartPage() {
                                     <div className="flex-1 flex flex-col justify-between">
                                         <div>
                                             <h3 className="text-lg font-medium text-gray-900 dark:text-white">{item.name}</h3>
-                                            <p className="text-blue-600 font-bold">₹{item.price.toLocaleString()}</p>
+                                            <p className="text-blue-600 font-bold">₹{item.price.toLocaleString('en-IN')}</p>
 
                                             {/* Windows Installation Add-on */}
                                             {item.windowsInstallation && item.windowsInstallationPrice && (
@@ -95,7 +95,7 @@ export default function CartPage() {
                                                             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Windows 11 Pro OEM</span>
                                                         </div>
                                                         <div className="flex items-center gap-3">
-                                                            <span className="text-sm font-semibold text-blue-600">+₹{item.windowsInstallationPrice.toLocaleString()}</span>
+                                                            <span className="text-sm font-semibold text-blue-600">+₹{item.windowsInstallationPrice.toLocaleString('en-IN')}</span>
                                                             <button
                                                                 onClick={() => {
                                                                     toggleWindowsInstallation(item.id);
@@ -162,7 +162,7 @@ export default function CartPage() {
                                             <div className="flex-1 flex flex-col justify-between">
                                                 <div>
                                                     <h3 className="text-base font-medium text-gray-900 dark:text-white">{item.name}</h3>
-                                                    <p className="text-blue-600 font-bold">₹{item.price.toLocaleString()}</p>
+                                                    <p className="text-blue-600 font-bold">₹{item.price.toLocaleString('en-IN')}</p>
                                                 </div>
                                                 <div className="flex items-center gap-3 mt-2">
                                                     <button
@@ -194,7 +194,7 @@ export default function CartPage() {
                             <div className="space-y-4 text-sm">
                                 <div className="flex justify-between">
                                     <span className="text-gray-600 dark:text-gray-400">Subtotal</span>
-                                    <span className="font-medium text-gray-900 dark:text-white">₹{cartTotal.toLocaleString()}</span>
+                                    <span className="font-medium text-gray-900 dark:text-white">₹{cartTotal.toLocaleString('en-IN')}</span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span className="text-gray-600 dark:text-gray-400">Shipping</span>
@@ -206,7 +206,7 @@ export default function CartPage() {
                                 </div>
                                 <div className="border-t border-gray-200 dark:border-gray-800 pt-4 flex justify-between text-lg font-bold">
                                     <span className="text-gray-900 dark:text-white">Total</span>
-                                    <span className="text-blue-600">₹{cartTotal.toLocaleString()}</span>
+                                    <span className="text-blue-600">₹{cartTotal.toLocaleString('en-IN')}</span>
                                 </div>
                             </div>
 
