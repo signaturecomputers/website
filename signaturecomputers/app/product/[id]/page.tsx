@@ -11,6 +11,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
 import { isFreeDOSProduct, getWindowsInstallationPrice } from '@/lib/windowsInstallationConfig';
 import CheckoutModal from '@/components/CheckoutModal';
+import ProductSchema from '@/components/seo/ProductSchema';
 
 export default function ProductDetailsPage() {
     const params = useParams();
@@ -240,6 +241,8 @@ export default function ProductDetailsPage() {
 
     return (
         <div className="bg-white dark:bg-black min-h-screen py-12">
+            {/* SEO: Product JSON-LD Schema */}
+            <ProductSchema product={product} />
             <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
                 {/* Main Layout with thumbnails at left */}
                 <div className="flex gap-4 lg:gap-6">
@@ -288,7 +291,18 @@ export default function ProductDetailsPage() {
                                 </div>
                             )}
 
-                            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">{product.productInfo?.title || product.name}</h1>
+                            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+                                {product.productInfo?.partNo && (
+                                    <span className="sr-only">{product.productInfo.partNo} - </span>
+                                )}
+                                {product.productInfo?.title || product.name}
+                            </h1>
+                            {/* SEO: Hidden semantic content for search engines */}
+                            <span className="sr-only">
+                                Buy {product.brand} {product.productInfo?.partNo || ''} {product.productInfo?.title || product.name} in Chennai, Tamil Nadu, India.
+                                Authorized dealer. Genuine {product.productInfo?.warranty?.duration || '1 Year'} warranty.
+                                GST invoice available. Best price at Signature Computers.
+                            </span>
 
                             <div className="flex items-center mb-4">
                                 <div className="flex text-yellow-400">

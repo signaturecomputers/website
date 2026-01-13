@@ -1,5 +1,10 @@
 import { Metadata } from 'next';
 import { getProductById } from '@/lib/products';
+import {
+    generateProductTitle,
+    generateProductDescription,
+    BUSINESS_INFO
+} from '@/lib/seo-schema';
 
 type Props = {
     params: Promise<{ id: string }>;
@@ -16,20 +21,46 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         };
     }
 
-    const description = product.description
-        ? (product.description.length > 160 ? product.description.substring(0, 157) + '...' : product.description)
-        : 'View this product at Signature Computers';
+    // Generate SEO-optimized title and description
+    const seoTitle = generateProductTitle(product);
+    const seoDescription = generateProductDescription(product);
 
+    // Canonical URL
+    const canonicalUrl = `${BUSINESS_INFO.url}/product/${id}`;
+
+    // Product images
     const images = product.images && product.images.length > 0
         ? product.images
-        : ['/og-image.jpg'];
+        : [`${BUSINESS_INFO.url}/og-image.png`];
+
+    // Part number and brand for keywords
+    const partNumber = product.productInfo?.partNo || '';
+    const brand = product.brand || '';
 
     return {
-        title: product.productInfo?.title || product.name,
-        description: description,
+        title: seoTitle,
+        description: seoDescription,
+        keywords: [
+            partNumber,
+            brand,
+            product.category,
+            'buy online',
+            'price in India',
+            'Chennai',
+            'Tamil Nadu',
+            'authorized dealer',
+            'Signature Computers',
+        ].filter(Boolean),
+        alternates: {
+            canonical: canonicalUrl,
+        },
         openGraph: {
-            title: `${product.productInfo?.title || product.name} | Signature Computers`,
-            description: description,
+            title: seoTitle,
+            description: seoDescription,
+            url: canonicalUrl,
+            type: 'website',
+            siteName: BUSINESS_INFO.name,
+            locale: 'en_IN',
             images: images.map(url => ({
                 url,
                 width: 1200,
@@ -39,9 +70,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         },
         twitter: {
             card: 'summary_large_image',
-            title: `${product.productInfo?.title || product.name} | Signature Computers`,
-            description: description,
+            title: seoTitle,
+            description: seoDescription,
             images: images,
+        },
+        // Geo meta tags for local SEO
+        other: {
+            'geo.region': 'IN-TN',
+            'geo.placename': 'Chennai',
+            'geo.position': '13.0827;80.2707',
+            'ICBM': '13.0827, 80.2707',
         },
     };
 }

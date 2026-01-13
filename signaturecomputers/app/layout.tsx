@@ -5,6 +5,7 @@ import { AdminAuthProvider } from '@/context/AdminAuthContext';
 import LayoutWrapper from '@/components/LayoutWrapper';
 import { Toaster } from 'sonner';
 import ThemeEffectWrapper from '@/components/ThemeEffectWrapper';
+import OrganizationSchema from '@/components/seo/OrganizationSchema';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -89,6 +90,7 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <AdminAuthProvider>
+          <OrganizationSchema />
           <ThemeEffectWrapper />
           <LayoutWrapper>
             {children}
