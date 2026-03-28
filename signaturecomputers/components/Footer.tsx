@@ -313,7 +313,17 @@ export default function Footer() {
                         Genuine Products
                     </p>
                 </div>
-
+                {/* SEO Hidden Navigation */}
+                <nav className="sr-only" aria-label="Secondary Navigation">
+                    <ul>
+                        <li><Link href="/services">IT Services</Link></li>
+                        <li><Link href="/about">About Signature Computers</Link></li>
+                        <li><Link href="/contact">Contact Us</Link></li>
+                        <li><Link href="/laptop-repair-chennai">Laptop Repair in Chennai</Link></li>
+                        <li><Link href="/it-support-chennai">IT Support Services Chennai</Link></li>
+                        <li><Link href="/network-security-services">Network Security Services</Link></li>
+                    </ul>
+                </nav>
             </div>
         </footer>
     );

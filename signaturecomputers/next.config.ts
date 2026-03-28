@@ -14,6 +14,16 @@ const nextConfig: NextConfig = {
       }
     ],
   },
+  async redirects() {
+    return [
+      { source: '/services/index', destination: '/services', permanent: true },
+      { source: '/about/index', destination: '/about', permanent: true },
+      { source: '/contact/index', destination: '/contact', permanent: true },
+      { source: '/laptop-repair-chennai/index', destination: '/laptop-repair-chennai', permanent: true },
+      { source: '/it-support-chennai/index', destination: '/it-support-chennai', permanent: true },
+      { source: '/network-security-services/index', destination: '/network-security-services', permanent: true }
+    ];
+  },
 };
 
 export default nextConfig;
