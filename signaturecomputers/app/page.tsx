@@ -10,6 +10,10 @@ import { Metadata } from 'next';
 import { BUSINESS_INFO } from '@/lib/seo-schema';
 
 export const metadata: Metadata = {
+  robots: {
+    index: true,
+    follow: true,
+  },
   alternates: {
     canonical: BUSINESS_INFO.url,
   },

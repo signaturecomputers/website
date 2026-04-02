@@ -12,6 +12,7 @@ import AuthModal from '@/components/AuthModal';
 export const metadata: Metadata = {
     title: 'About Us | Signature Computers - HP Authorized Partner Chennai',
     description: 'Learn about Signature Computers, the leading provider of premium IT hardware, laptops, desktops, and enterprise IT services in Chennai since 2005.',
+    robots: { index: true, follow: true },
     alternates: {
         canonical: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://signaturecomputers.in'}/about`
     }

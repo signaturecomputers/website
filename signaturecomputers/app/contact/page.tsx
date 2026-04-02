@@ -12,6 +12,7 @@ import AuthModal from '@/components/AuthModal';
 export const metadata: Metadata = {
     title: 'Contact Signature Computers | IT Hardware & Support in Chennai',
     description: 'Get in touch with Signature Computers in Egmore, Chennai for premium HP laptops, desktops, and expert IT services. Visit our store or contact us today.',
+    robots: { index: true, follow: true },
     alternates: {
         canonical: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://signaturecomputers.in'}/contact`
     }

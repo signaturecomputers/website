@@ -12,6 +12,7 @@ import AuthModal from '@/components/AuthModal';
 export const metadata: Metadata = {
     title: 'Network Security Services | Firewall & Data Protection Chennai',
     description: 'Protect your business with Signature Computers\' network security services in Chennai. We offer firewall setup, endpoint protection, and VPN configurations.',
+    robots: { index: true, follow: true },
     alternates: {
         canonical: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://signaturecomputers.in'}/network-security-services`
     }
