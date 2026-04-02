@@ -21,6 +21,11 @@ export default function robots(): MetadataRoute.Robots {
                     '/profile/',          // Exclude user profiles
                     '/orders/',           // Exclude order pages
                     '/invoice/',          // Exclude invoice pages
+                    '/cart/',
+                    '/add-to-cart',
+                    '/add-to-compare',
+                    '/*?search_term=',
+                    '/*?*filter=',
                 ],
             },
             {
@@ -34,6 +39,11 @@ export default function robots(): MetadataRoute.Robots {
                     '/profile/',
                     '/orders/',
                     '/invoice/',
+                    '/cart/',
+                    '/add-to-cart',
+                    '/add-to-compare',
+                    '/*?search_term=',
+                    '/*?*filter=',
                 ],
             },
         ],

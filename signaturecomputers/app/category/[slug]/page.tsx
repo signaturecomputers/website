@@ -8,6 +8,8 @@ import { collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Product, CATEGORY_NAMES } from '@/lib/products';
 import { FiLoader, FiGrid, FiList } from 'react-icons/fi';
+import { getSEOContent } from '@/lib/category-seo';
+import Link from 'next/link';
 
 // Map URL slugs to Firestore collection names
 const SLUG_TO_COLLECTION: Record<string, string> = {
@@ -125,6 +127,8 @@ export default function CategoryPage() {
     // Format slug for title
     const title = CATEGORY_NAMES[slug] || (slug ? slug.charAt(0).toUpperCase() + slug.slice(1) : 'Category');
 
+    const seoData = getSEOContent(slug, title);
+
     if (loading) {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-black">
@@ -139,7 +143,7 @@ export default function CategoryPage() {
             <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 {/* Page Header */}
                 <div className="mb-6">
-                    <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">{title}</h1>
+                    <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">{title}</h2>
                     <p className="text-sm text-gray-500 mt-1">
                         Showing <span className="text-blue-600 font-medium">{sortedProducts.length}</span> of <span className="text-blue-600 font-medium">{products.length}</span> products
                     </p>
@@ -273,6 +277,25 @@ export default function CategoryPage() {
                     setPriceRange={setPriceRange}
                     mode="mobile"
                 />
+            </div>
+
+            {/* SEO Content: Visually hidden but semantically correct for crawlers */}
+            <div className="sr-only" aria-hidden="false">
+                <h1>{seoData.h1}</h1>
+                <h2>{seoData.h2_1}</h2>
+                <p>{seoData.p1}</p>
+                <h2>{seoData.h2_2}</h2>
+                <p>{seoData.p2}</p>
+                <nav aria-label="Related Categories">
+                    <h3>Explore More Related Categories in Chennai</h3>
+                    <ul>
+                        <li><Link href="/category/laptops">Premium Laptops</Link></li>
+                        <li><Link href="/category/desktop">Desktops</Link></li>
+                        <li><Link href="/category/accessories">Computer Accessories</Link></li>
+                        <li><Link href="/category/monitors">Display Monitors</Link></li>
+                        <li><Link href="/category/printers">Printers & Scanners</Link></li>
+                    </ul>
+                </nav>
             </div>
         </div>
     );

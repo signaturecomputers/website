@@ -6,6 +6,14 @@ import HotDealsSection from '@/components/HotDealsSection';
 import CustomerReviewsSection from '@/components/CustomerReviewsSection';
 import ScrollHandler from '@/components/ScrollHandler';
 import AuthModal from '@/components/AuthModal';
+import { Metadata } from 'next';
+import { BUSINESS_INFO } from '@/lib/seo-schema';
+
+export const metadata: Metadata = {
+  alternates: {
+    canonical: BUSINESS_INFO.url,
+  },
+};
 
 export default function Home() {
   return (
