@@ -1,11 +1,7 @@
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-    title: 'Cart',
-    robots: {
-        index: false,
-        follow: false,
-    },
+    title: 'Cart | Signature Computers',
 };
 
 export default function CartLayout({ children }: { children: React.ReactNode }) {

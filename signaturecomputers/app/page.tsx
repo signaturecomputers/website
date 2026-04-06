@@ -6,6 +6,7 @@ import HotDealsSection from '@/components/HotDealsSection';
 import CustomerReviewsSection from '@/components/CustomerReviewsSection';
 import ScrollHandler from '@/components/ScrollHandler';
 import AuthModal from '@/components/AuthModal';
+import SEOContentSection from '@/components/SEOContentSection';
 import { Metadata } from 'next';
 import { BUSINESS_INFO } from '@/lib/seo-schema';
 
@@ -30,6 +31,7 @@ export default function Home() {
       <AboutSection />
       <HotDealsSection />
       <CustomerReviewsSection />
+      <SEOContentSection />
       {/* Footer ID is handled in the Footer component itself */}
     </div>
   );

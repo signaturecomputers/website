@@ -12,6 +12,7 @@ import { useCart } from '@/context/CartContext';
 import { isFreeDOSProduct, getWindowsInstallationPrice } from '@/lib/windowsInstallationConfig';
 import CheckoutModal from '@/components/CheckoutModal';
 import ProductSchema from '@/components/seo/ProductSchema';
+import SEOProductTemplate from '@/components/seo/SEOProductTemplate';
 
 export default function ProductDetailsPage() {
     const params = useParams();
@@ -470,6 +471,7 @@ export default function ProductDetailsPage() {
                                     <div className="prose dark:prose-invert max-w-none whitespace-pre-wrap">
                                         <p>{product.description}</p>
                                     </div>
+                                    <SEOProductTemplate product={product} />
                                 </div>
 
                                 {/* Specifications Section */}
