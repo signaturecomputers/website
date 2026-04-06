@@ -75,11 +75,11 @@ export function generateProductSchema(product: Product, baseUrl: string) {
         category: categoryLabel,
         offers: {
             '@type': 'Offer',
-            url: productUrl,
             priceCurrency: 'INR',
             price: product.price,
-            priceValidUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days
             availability: product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+            url: productUrl,
+            priceValidUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
             seller: {
                 '@type': 'Organization',
                 name: BUSINESS_INFO.name,
@@ -232,30 +232,18 @@ export function generateWebSiteSchema() {
  * Generate SEO-optimized title for product page
  */
 export function generateProductTitle(product: Product): string {
-    const brand = product.brand || '';
-    const partNumber = product.productInfo?.partNo || '';
-    const categoryLabel = getCategoryLabel(product.category);
-
-    // Format: Brand Part-Number Category - Price in India | Signature Computers
-    const parts = [brand, partNumber, categoryLabel].filter(Boolean);
-    return `${parts.join(' ')} - Price in India | Signature Computers`;
+    const name = product.productInfo?.title || product.name;
+    return `${name} Price in India | Signature Computers`;
 }
 
 /**
  * Generate SEO-optimized description for product page
  */
 export function generateProductDescription(product: Product): string {
-    const brand = product.brand || '';
-    const partNumber = product.productInfo?.partNo || '';
-    const categoryLabel = getCategoryLabel(product.category);
-    const price = product.price.toLocaleString('en-IN');
+    const name = product.productInfo?.title || product.name;
+    const processor = product.specs?.['Processor'] || product.productInfo?.processor?.name || 'high-performance processor';
+    const ram = product.specs?.['RAM'] || product.productInfo?.memory?.capacity || 'optimal RAM';
+    const storage = product.specs?.['Storage'] || product.productInfo?.storage?.primaryStorage?.capacity || 'fast storage';
 
-    // Include key SEO signals: part number, authorized dealer, location
-    let description = `Buy ${brand} ${partNumber} ${categoryLabel} at ₹${price}. `;
-    description += 'Authorized dealer in Chennai, Tamil Nadu. ';
-    description += 'Genuine warranty, GST invoice, free shipping available. ';
-    description += 'Best price in India at Signature Computers.';
-
-    // Truncate to ~155 characters for optimal meta description
-    return description.length > 155 ? description.substring(0, 152) + '...' : description;
+    return `Buy ${name} with ${processor}, ${ram}, and ${storage}. Best price with warranty. Shop now at Signature Computers.`;
 }

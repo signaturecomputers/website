@@ -12,7 +12,7 @@ import { useCart } from '@/context/CartContext';
 import { isFreeDOSProduct, getWindowsInstallationPrice } from '@/lib/windowsInstallationConfig';
 import CheckoutModal from '@/components/CheckoutModal';
 import ProductSchema from '@/components/seo/ProductSchema';
-import SEOProductTemplate from '@/components/seo/SEOProductTemplate';
+import ProductSEOContent from '@/components/ProductSEOContent';
 
 export default function ProductDetailsPage() {
     const params = useParams();
@@ -256,7 +256,7 @@ export default function ProductDetailsPage() {
                                     onClick={() => setActiveImage(img)}
                                     className={`w-16 h-16 xl:w-20 xl:h-20 bg-gray-100 dark:bg-gray-900 rounded-lg cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all flex items-center justify-center overflow-hidden ${activeImage === img ? 'ring-2 ring-blue-500' : 'border border-gray-200 dark:border-gray-700'}`}
                                 >
-                                    <img src={img} alt="" className="w-full h-full object-cover" />
+                                    <img src={img} alt={`${product.productInfo?.title || product.name} product image`} className="w-full h-full object-cover" />
                                 </div>
                             ))}
                         </div>
@@ -267,7 +267,7 @@ export default function ProductDetailsPage() {
                         {/* Main Image - Scales to fit container */}
                         <div className="aspect-[4/3] overflow-hidden flex items-center justify-center bg-gray-50 dark:bg-gray-900 rounded-lg">
                             {activeImage ? (
-                                <img src={activeImage} alt={product.productInfo?.title || product.name} className="max-w-full max-h-full object-contain" />
+                                <img src={activeImage} alt={`${product.productInfo?.title || product.name} product image`} className="max-w-full max-h-full object-contain" />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center">
                                     <span className="text-gray-400">No Image</span>
@@ -286,7 +286,7 @@ export default function ProductDetailsPage() {
                                             onClick={() => setActiveImage(img)}
                                             className={`w-14 h-14 bg-gray-100 dark:bg-gray-900 rounded-lg cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all flex items-center justify-center overflow-hidden ${activeImage === img ? 'ring-2 ring-blue-500' : 'border border-gray-200 dark:border-gray-700'}`}
                                         >
-                                            <img src={img} alt="" className="w-full h-full object-cover" />
+                                            <img src={img} alt={`${product.productInfo?.title || product.name} product image`} className="w-full h-full object-cover" />
                                         </div>
                                     ))}
                                 </div>
@@ -468,10 +468,23 @@ export default function ProductDetailsPage() {
                                 {/* Description Section */}
                                 <div>
                                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Description</h3>
-                                    <div className="prose dark:prose-invert max-w-none whitespace-pre-wrap">
+                                    <div className="prose dark:prose-invert max-w-none whitespace-pre-wrap mb-10">
                                         <p>{product.description}</p>
                                     </div>
-                                    <SEOProductTemplate product={product} />
+                                    <ProductSEOContent 
+                                        name={product.productInfo?.title || product.name || ''}
+                                        brand={product.brand || 'Signature Computers'}
+                                        model={product.productInfo?.partNo || 'Premium Model'}
+                                        category={product.category}
+                                        specs={{
+                                            processor: product.specs?.['Processor'] || product.productInfo?.processor?.name,
+                                            ram: product.specs?.['RAM'] || product.productInfo?.memory?.capacity,
+                                            storage: product.specs?.['Storage'] || product.productInfo?.storage?.primaryStorage?.capacity,
+                                            display: product.specs?.['Display Size'] || product.productInfo?.display?.size,
+                                            warranty: product.productInfo?.warranty?.duration,
+                                            condition: 'New'
+                                        }}
+                                    />
                                 </div>
 
                                 {/* Specifications Section */}
