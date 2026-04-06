@@ -57,29 +57,29 @@ export default function SEOContentSection() {
                             <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <li className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex items-center justify-between group hover:border-blue-300 transition-colors">
                                     <div>
-                                        <h4 className="font-semibold text-gray-900"><Link href="/category/laptops" className="hover:text-blue-600">High-Performance Laptops</Link></h4>
+                                        <h4 className="font-semibold text-gray-900"><Link href="/products?category=laptops" className="hover:text-blue-600">High-Performance Laptops</Link></h4>
                                         <p className="text-xs text-gray-500 mt-1">Gaming, business, and daily use laptops.</p>
                                     </div>
                                     <span className="text-blue-500 group-hover:translate-x-1 transition-transform">→</span>
                                 </li>
                                 <li className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex items-center justify-between group hover:border-blue-300 transition-colors">
                                     <div>
-                                        <h4 className="font-semibold text-gray-900"><Link href="/category/desktops" className="hover:text-blue-600">Powerful Desktops</Link></h4>
+                                        <h4 className="font-semibold text-gray-900"><Link href="/products?category=desktops" className="hover:text-blue-600">Powerful Desktops</Link></h4>
                                         <p className="text-xs text-gray-500 mt-1">AIOs, towers, and customized rigs.</p>
                                     </div>
                                     <span className="text-blue-500 group-hover:translate-x-1 transition-transform">→</span>
                                 </li>
                                 <li className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex items-center justify-between group hover:border-blue-300 transition-colors">
                                     <div>
-                                        <h4 className="font-semibold text-gray-900"><Link href="/category/accessories" className="hover:text-blue-600">Essential Accessories</Link></h4>
-                                        <p className="text-xs text-gray-500 mt-1">Monitors, keyboards, mice, and docks.</p>
+                                        <h4 className="font-semibold text-gray-900"><Link href="/products?category=accessories" className="hover:text-blue-600">Essential Accessories</Link></h4>
+                                        <p className="text-xs text-gray-500 mt-1">Keyboards, mice, docks, and more.</p>
                                     </div>
                                     <span className="text-blue-500 group-hover:translate-x-1 transition-transform">→</span>
                                 </li>
                                 <li className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex items-center justify-between group hover:border-blue-300 transition-colors">
                                     <div>
-                                        <h4 className="font-semibold text-gray-900"><Link href="/products" className="hover:text-blue-600">Networking & Security</Link></h4>
-                                        <p className="text-xs text-gray-500 mt-1">Enterprise routers and security hardware.</p>
+                                        <h4 className="font-semibold text-gray-900"><Link href="/products?category=monitors" className="hover:text-blue-600">Professional Monitors</Link></h4>
+                                        <p className="text-xs text-gray-500 mt-1">High-resolution displays for work and design.</p>
                                     </div>
                                     <span className="text-blue-500 group-hover:translate-x-1 transition-transform">→</span>
                                 </li>
