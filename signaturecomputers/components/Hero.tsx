@@ -24,6 +24,9 @@ export default function Hero() {
         alt: 'Signature Computers Hero'
     });
 
+    // EDM images state
+    const [edmImages, setEdmImages] = useState<HeroImageData[]>([]);
+
     // Hot Deals carousel state
     const [hotDeals, setHotDeals] = useState<Product[]>([]);
     const [currentSlide, setCurrentSlide] = useState(0);
@@ -48,6 +51,33 @@ export default function Hero() {
             }
         }
         fetchHeroImage();
+    }, []);
+
+    // Fetch edm images
+    useEffect(() => {
+        async function fetchEdmImages() {
+            try {
+                const edmDoc = await getDoc(doc(db, 'header_settings', 'edm_images'));
+                if (edmDoc.exists()) {
+                    const data = edmDoc.data();
+                    if (data.images) {
+                        setEdmImages(data.images);
+                    }
+                } else {
+                    // Check old edm_image for backward compatibility
+                    const oldEdmDoc = await getDoc(doc(db, 'header_settings', 'edm_image'));
+                    if (oldEdmDoc.exists()) {
+                        const data = oldEdmDoc.data() as HeroImageData;
+                        if (data.imageUrl) {
+                            setEdmImages([data]);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.warn('Failed to fetch edm images:', error);
+            }
+        }
+        fetchEdmImages();
     }, []);
 
     // Fetch Hot Deals products
@@ -76,8 +106,9 @@ export default function Hero() {
         fetchHotDeals();
     }, []);
 
-    // Total slides = 1 (static hero) + number of hot deals
-    const totalSlides = 1 + hotDeals.length;
+    // Total slides = 1 (static hero) + number of edm images + number of hot deals
+    const edmCount = edmImages.length;
+    const totalSlides = 1 + edmCount + hotDeals.length;
 
     // Navigation with fade transition
     const goToSlide = useCallback((index: number) => {
@@ -114,6 +145,7 @@ export default function Hero() {
     };
 
     const hasHotDeals = !loading && hotDeals.length > 0;
+    const showNavigation = totalSlides > 1;
 
     // Decorative shapes colors
     const decorColors = [
@@ -186,13 +218,37 @@ export default function Hero() {
                     </div>
                 </div>
 
-                {/* SLIDES 1+: Hot Deal Products with decorative shapes */}
+                {/* EDM Images Slides (indices 1 to edmCount) */}
+                {edmImages.map((edm, index) => {
+                    const slideIndex = index + 1;
+                    return (
+                        <div
+                            key={`edm-${index}`}
+                            className={`absolute inset-0 w-full h-full bg-white transition-all duration-600 ease-in-out ${currentSlide === slideIndex
+                                ? 'opacity-100 z-10 pointer-events-auto'
+                                : 'opacity-0 z-0 pointer-events-none'
+                                }`}
+                        >
+                            <div className="relative w-full h-full flex items-center justify-center">
+                                <Image
+                                    src={edm.imageUrl}
+                                    alt={edm.alt || `EDM Offer ${index + 1}`}
+                                    fill
+                                    className="object-fill"
+                                    priority={index === 0}
+                                />
+                            </div>
+                        </div>
+                    );
+                })}
+
+                {/* SLIDES (1 + edmCount)+: Hot Deal Products with decorative shapes */}
                 {hotDeals.map((deal, index) => {
                     const discount = deal.originalPrice && deal.originalPrice > deal.price
                         ? Math.round(((deal.originalPrice - deal.price) / deal.originalPrice) * 100)
                         : 0;
                     const colors = decorColors[index % decorColors.length];
-                    const slideIndex = index + 1;
+                    const slideIndex = index + 1 + edmCount;
 
                     return (
                         <div
@@ -306,7 +362,7 @@ export default function Hero() {
             </div>
 
             {/* Navigation Arrows - Subtle, only on hover */}
-            {hasHotDeals && totalSlides > 1 && (
+            {showNavigation && (
                 <>
                     <button
                         onClick={(e) => { e.stopPropagation(); prevSlide(); }}
@@ -326,7 +382,7 @@ export default function Hero() {
             )}
 
             {/* Dot Indicators */}
-            {hasHotDeals && totalSlides > 1 && (
+            {showNavigation && (
                 <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex gap-2">
                     {Array.from({ length: totalSlides }).map((_, index) => (
                         <button

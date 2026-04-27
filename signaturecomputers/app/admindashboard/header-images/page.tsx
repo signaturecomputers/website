@@ -46,6 +46,11 @@ export default function HeaderImagesPage() {
     });
     const [aboutUploading, setAboutUploading] = useState(false);
 
+    // EDM Images State
+    const [edmImages, setEdmImages] = useState<HeroImageData[]>([]);
+    const [edmUploading, setEdmUploading] = useState(false);
+
+
     // Brand Logos State - default to existing static logos
     const [brandLogos, setBrandLogos] = useState<BrandLogo[]>(DEFAULT_BRANDS);
     const [brandsLoading, setBrandsLoading] = useState(true);
@@ -59,6 +64,7 @@ export default function HeaderImagesPage() {
 
     const heroFileRef = useRef<HTMLInputElement>(null);
     const aboutFileRef = useRef<HTMLInputElement>(null);
+    const edmFileRef = useRef<HTMLInputElement>(null);
     const brandFileRef = useRef<HTMLInputElement>(null);
     const editBrandFileRef = useRef<HTMLInputElement>(null);
 
@@ -85,6 +91,19 @@ export default function HeaderImagesPage() {
             } else {
                 // Set default
                 setAboutImage({ imageUrl: '/about-us-workspace.png', alt: 'Professional IT Workspace - Signature Computers' });
+            }
+
+            // Fetch edm images
+            const edmDoc = await getDoc(doc(db, 'header_settings', 'edm_images'));
+            if (edmDoc.exists()) {
+                const data = edmDoc.data();
+                setEdmImages(data.images || []);
+            } else {
+                // Check old edm_image for backward compatibility
+                const oldEdmDoc = await getDoc(doc(db, 'header_settings', 'edm_image'));
+                if (oldEdmDoc.exists() && oldEdmDoc.data().imageUrl) {
+                    setEdmImages([oldEdmDoc.data() as HeroImageData]);
+                }
             }
 
             // Fetch brand logos
@@ -188,6 +207,45 @@ export default function HeaderImagesPage() {
         } catch (error) {
             console.error('Error resetting about image:', error);
             toast.error('Failed to reset About Us image');
+        }
+    };
+
+    // EDM Images Handlers
+    const handleEdmUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setEdmUploading(true);
+        try {
+            const imageUrl = await uploadToCloudinary(file);
+            const newImage = { imageUrl, alt: 'Signature Computers EDM' };
+            const updatedImages = [...edmImages, newImage];
+            await setDoc(doc(db, 'header_settings', 'edm_images'), { images: updatedImages });
+            setEdmImages(updatedImages);
+            toast.success('EDM image added successfully!');
+        } catch (error) {
+            console.error('Error uploading EDM image:', error);
+            toast.error('Failed to upload EDM image');
+        } finally {
+            setEdmUploading(false);
+            // Reset input so the same file can be selected again
+            if (edmFileRef.current) {
+                edmFileRef.current.value = '';
+            }
+        }
+    };
+
+    const handleEdmDelete = async (index: number) => {
+        if (!confirm('Are you sure you want to remove this EDM image?')) return;
+
+        try {
+            const updatedImages = edmImages.filter((_, i) => i !== index);
+            await setDoc(doc(db, 'header_settings', 'edm_images'), { images: updatedImages });
+            setEdmImages(updatedImages);
+            toast.success('EDM image removed');
+        } catch (error) {
+            console.error('Error removing EDM image:', error);
+            toast.error('Failed to remove EDM image');
         }
     };
 
@@ -380,6 +438,64 @@ export default function HeaderImagesPage() {
                         </button>
                     </div>
                 </div>
+            </div>
+
+            {/* EDM Images Section */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                <div className="flex justify-between items-center mb-4">
+                    <div>
+                        <h2 className="text-lg font-semibold dark:text-white">EDM Images (Hero Carousel)</h2>
+                        <p className="text-sm text-gray-500">These images are displayed as slides in the hero carousel, right after the main hero slide.</p>
+                    </div>
+                    <div>
+                        <input
+                            ref={edmFileRef}
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={handleEdmUpload}
+                        />
+                        <button
+                            onClick={() => edmFileRef.current?.click()}
+                            disabled={edmUploading}
+                            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                        >
+                            <FiPlus className="mr-2" />
+                            {edmUploading ? 'Uploading...' : 'Add EDM Image'}
+                        </button>
+                    </div>
+                </div>
+
+                {edmImages.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-dashed border-gray-300 dark:border-gray-600">
+                        No EDM images added yet. Click "Add EDM Image" to upload one.
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {edmImages.map((img, index) => (
+                            <div key={index} className="bg-gray-50 dark:bg-gray-700 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600">
+                                <div className="relative aspect-video bg-gray-100 dark:bg-gray-800">
+                                    <Image
+                                        src={img.imageUrl}
+                                        alt={`EDM Image ${index + 1}`}
+                                        fill
+                                        className="object-contain"
+                                    />
+                                </div>
+                                <div className="p-3 flex justify-between items-center bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+                                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Slide {index + 1}</span>
+                                    <button
+                                        onClick={() => handleEdmDelete(index)}
+                                        className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
+                                        title="Remove image"
+                                    >
+                                        <FiTrash2 size={18} />
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
 
             {/* Brand Logos Section */}
