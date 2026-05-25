@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { FiStar, FiShoppingCart, FiHeart, FiCreditCard, FiChevronDown } from 'react-icons/fi';
+import { FiStar, FiShoppingCart, FiHeart, FiCreditCard, FiChevronDown, FiChevronUp } from 'react-icons/fi';
 import { getProductById, getRelatedProducts, getSuggestedAccessories, Product } from '@/lib/products';
 import { toast } from 'sonner';
 import ProductInfoSection from '@/components/ProductInfoSection';
@@ -39,6 +39,82 @@ export default function ProductDetailsPage() {
     const [windowsPrice, setWindowsPrice] = useState(5000);
     const [showWindowsModal, setShowWindowsModal] = useState(false);
     const [modalDismissed, setModalDismissed] = useState(false);
+
+    // Thumbnail scroll state
+    const [canScrollUp, setCanScrollUp] = useState(false);
+    const [canScrollDown, setCanScrollDown] = useState(false);
+    const [maxThumbnailHeight, setMaxThumbnailHeight] = useState<number | undefined>(undefined);
+    
+    const thumbnailContainerRef = useRef<HTMLDivElement>(null);
+    const mainImageContainerRef = useRef<HTMLDivElement>(null);
+
+    const checkScroll = () => {
+        const container = thumbnailContainerRef.current;
+        if (container) {
+            const { scrollTop, scrollHeight, clientHeight } = container;
+            setCanScrollUp(scrollTop > 1);
+            setCanScrollDown(scrollTop + clientHeight < scrollHeight - 1);
+        }
+    };
+
+    const scrollThumbnails = (direction: 'up' | 'down') => {
+        const container = thumbnailContainerRef.current;
+        if (container) {
+            const scrollAmount = container.clientHeight * 0.6;
+            container.scrollBy({
+                top: direction === 'up' ? -scrollAmount : scrollAmount,
+                behavior: 'smooth'
+            });
+        }
+    };
+
+    const updateMaxHeight = () => {
+        const container = mainImageContainerRef.current;
+        if (container) {
+            setMaxThumbnailHeight(container.clientHeight);
+        }
+    };
+
+    // Keep thumbnail scroll check updated
+    useEffect(() => {
+        const container = thumbnailContainerRef.current;
+        if (!container) return;
+
+        const observer = new ResizeObserver(() => {
+            checkScroll();
+        });
+        observer.observe(container);
+        
+        container.addEventListener('scroll', checkScroll);
+        
+        const timer = setTimeout(checkScroll, 100);
+
+        return () => {
+            observer.disconnect();
+            container.removeEventListener('scroll', checkScroll);
+            clearTimeout(timer);
+        };
+    }, [product, product?.images, maxThumbnailHeight]);
+
+    // Update thumbnail max-height based on main image height
+    useEffect(() => {
+        const container = mainImageContainerRef.current;
+        if (!container) return;
+
+        const observer = new ResizeObserver(() => {
+            updateMaxHeight();
+        });
+        observer.observe(container);
+        
+        updateMaxHeight();
+        
+        const timer = setTimeout(updateMaxHeight, 100);
+
+        return () => {
+            observer.disconnect();
+            clearTimeout(timer);
+        };
+    }, [product, activeImage]);
 
     const handleBuyNow = () => {
         if (!user) {
@@ -247,25 +323,61 @@ export default function ProductDetailsPage() {
             <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
                 {/* Main Layout with thumbnails at left */}
                 <div className="flex gap-4 lg:gap-6">
-                    {/* Thumbnails at left - visible on larger screens, properly contained */}
+                    {/* Thumbnails at left - visible on larger screens, properly contained with vertical scroll */}
                     {hasMultipleImages && (
-                        <div className="hidden lg:flex flex-col gap-3 w-16 xl:w-20 flex-shrink-0">
-                            {product.images!.map((img, i) => (
+                        <div 
+                            className="hidden lg:block w-16 xl:w-20 flex-shrink-0 relative"
+                            style={{ height: maxThumbnailHeight ? `${maxThumbnailHeight}px` : 'auto' }}
+                        >
+                            <div className="absolute inset-y-0 left-0 right-0 flex flex-col">
+                                {/* Scroll Up Button */}
+                                {canScrollUp && (
+                                    <button
+                                        onClick={() => scrollThumbnails('up')}
+                                        className="absolute top-0 left-0 right-0 z-10 flex items-center justify-center py-1 bg-gradient-to-b from-white via-white/90 to-transparent dark:from-black dark:via-black/90 dark:to-transparent text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer"
+                                        style={{ height: '24px' }}
+                                    >
+                                        <FiChevronUp size={18} />
+                                    </button>
+                                )}
+
+                                {/* Scrollable Container */}
                                 <div
-                                    key={i}
-                                    onClick={() => setActiveImage(img)}
-                                    className={`w-16 h-16 xl:w-20 xl:h-20 bg-gray-100 dark:bg-gray-900 rounded-lg cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all flex items-center justify-center overflow-hidden ${activeImage === img ? 'ring-2 ring-blue-500' : 'border border-gray-200 dark:border-gray-700'}`}
+                                    ref={thumbnailContainerRef}
+                                    className="w-full h-full overflow-y-auto no-scrollbar scroll-smooth flex flex-col gap-3 py-6"
+                                    onScroll={checkScroll}
                                 >
-                                    <img src={img} alt={`${product.productInfo?.title || product.name} product image`} className="w-full h-full object-cover" />
+                                    {product.images!.map((img, i) => (
+                                        <div
+                                            key={i}
+                                            onClick={() => setActiveImage(img)}
+                                            className={`w-16 h-16 xl:w-20 xl:h-20 bg-gray-100 dark:bg-gray-900 rounded-lg cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all flex items-center justify-center overflow-hidden flex-shrink-0 ${
+                                                activeImage === img ? 'ring-2 ring-blue-500' : 'border border-gray-200 dark:border-gray-700'
+                                            }`}
+                                        >
+                                            <img src={img} alt={`${product.productInfo?.title || product.name} product image`} className="w-full h-full object-cover" />
+                                        </div>
+                                    ))}
                                 </div>
-                            ))}
+
+                                {/* Scroll Down Button */}
+                                {canScrollDown && (
+                                    <button
+                                        onClick={() => scrollThumbnails('down')}
+                                        className="absolute bottom-0 left-0 right-0 z-10 flex items-center justify-center py-1 bg-gradient-to-t from-white via-white/90 to-transparent dark:from-black dark:via-black/90 dark:to-transparent text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer"
+                                        style={{ height: '24px' }}
+                                    >
+                                        <FiChevronDown size={18} />
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     )}
 
                     {/* Main content grid - Image and Info */}
                     <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-[1.2fr_1fr] gap-6 lg:gap-8">
                         {/* Main Image - Scales to fit container */}
-                        <div className="aspect-[4/3] overflow-hidden flex items-center justify-center bg-gray-50 dark:bg-gray-900 rounded-lg">
+                        <div ref={mainImageContainerRef} className="aspect-[4/3] overflow-hidden flex items-center justify-center bg-gray-50 dark:bg-gray-900 rounded-lg">
                             {activeImage ? (
                                 <img src={activeImage} alt={`${product.productInfo?.title || product.name} product image`} className="max-w-full max-h-full object-contain" />
                             ) : (
