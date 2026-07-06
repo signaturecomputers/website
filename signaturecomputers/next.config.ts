@@ -21,7 +21,10 @@ const nextConfig: NextConfig = {
       { source: '/contact/index', destination: '/contact', permanent: true },
       { source: '/laptop-repair-chennai/index', destination: '/laptop-repair-chennai', permanent: true },
       { source: '/it-support-chennai/index', destination: '/it-support-chennai', permanent: true },
-      { source: '/network-security-services/index', destination: '/network-security-services', permanent: true }
+      { source: '/network-security-services/index', destination: '/network-security-services', permanent: true },
+      { source: '/product/old-laptop-hdx16', destination: '/category/laptops', permanent: true },
+      { source: '/product/hp-pavilion-15-old', destination: '/product/hp-pavilion-15-new', permanent: true },
+      { source: '/product/dell-inspiron-14-old', destination: '/product/dell-inspiron-14-new', permanent: true }
     ];
   },
 };

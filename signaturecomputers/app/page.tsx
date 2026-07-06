@@ -12,8 +12,8 @@ import { BUSINESS_INFO } from '@/lib/seo-schema';
 import LocalBusinessSchema from '@/components/seo/LocalBusinessSchema';
 
 export const metadata: Metadata = {
-  title: 'Signature Computers Chennai | Premium Laptop & Desktop Store in Egmore',
-  description: 'Signature Computers is your ultimate tech store in Egmore, Chennai. Authorized dealer for HP, Dell, Lenovo. Genuine laptops, custom desktops, and IT AMC services.',
+  title: 'Signature Computers | Laptop, Desktop & PC Store in Egmore, Chennai',
+  description: 'Buy new and refurbished laptops, desktops, and computer accessories at Signature Computers, Egmore, Chennai. Genuine parts, warranty, and doorstep service across Chennai.',
   robots: {
     index: true,
     follow: true,
