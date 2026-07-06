@@ -1,5 +1,6 @@
 import { Metadata } from 'next';
 import { CATEGORY_NAMES } from '@/lib/products';
+import { categoryIntros } from '@/lib/categoryContent';
 import CategoryProducts from './CategoryProducts';
 
 interface PageProps {
@@ -9,10 +10,12 @@ interface PageProps {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
     const { slug } = await params;
     const categoryName = CATEGORY_NAMES[slug] || (slug ? slug.charAt(0).toUpperCase() + slug.slice(1) : 'Category');
+    const introText = categoryIntros[slug] || `Shop for premium ${categoryName} at Signature Computers in Egmore, Chennai.`;
+    const description = introText.length > 150 ? introText.substring(0, 150) + '...' : introText;
 
     return {
-        title: `${categoryName} Store Chennai | Best Prices in Egmore | Signature Computers`,
-        description: `Shop for premium ${categoryName} at Signature Computers in Egmore, Chennai. Best deals on HP, Dell, and Lenovo ${categoryName.toLowerCase()} with authorized warranty.`,
+        title: `${categoryName} in Egmore, Chennai | Signature Computers`,
+        description,
         robots: { index: true, follow: true },
         alternates: {
             canonical: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://signaturecomputers.in'}/category/${slug}`

@@ -14,7 +14,7 @@ export default function HotDealsPage() {
             {/* The header text is now handled internally by the component when mode="page" */}
             <HotDealsSection
                 mode="page"
-                subtitle="Don't miss out on these limited-time offers! Exclusive discounts on top-tier tech."
+                subtitle="Daily deals on laptops, desktops, and accessories at Signature Computers, Egmore, Chennai. Prices updated regularly — check back often for limited-time offers on refurbished and new tech."
             />
         </div>
     );

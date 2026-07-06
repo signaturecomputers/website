@@ -3,7 +3,8 @@
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { FiStar, FiShoppingCart, FiHeart, FiCreditCard, FiChevronDown, FiChevronUp } from 'react-icons/fi';
-import { getProductById, getRelatedProducts, getSuggestedAccessories, Product } from '@/lib/products';
+import { getProductById, getRelatedProducts, getSuggestedAccessories, Product, CATEGORY_NAMES } from '@/lib/products';
+import Link from 'next/link';
 import { toast } from 'sonner';
 import ProductInfoSection from '@/components/ProductInfoSection';
 import { useAdminAuth } from '@/context/AdminAuthContext';
@@ -321,6 +322,16 @@ export default function ProductDetails({ id }: ProductDetailsProps) {
             {/* SEO: Product JSON-LD Schema */}
             <ProductSchema product={product} />
             <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+                {/* Breadcrumb / Back to Category Link */}
+                <div className="mb-6">
+                    <Link
+                        href={`/category/${product.category}`}
+                        className="inline-flex items-center text-sm font-medium text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors"
+                    >
+                        &larr; Back to {CATEGORY_NAMES[product.category] || (product.category ? product.category.charAt(0).toUpperCase() + product.category.slice(1) : 'Category')}
+                    </Link>
+                </div>
+
                 {/* Main Layout with thumbnails at left */}
                 <div className="flex gap-4 lg:gap-6">
                     {/* Thumbnails at left - visible on larger screens, properly contained with vertical scroll */}

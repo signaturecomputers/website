@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Product, CATEGORY_NAMES } from '@/lib/products';
+import { categoryIntros } from '@/lib/categoryContent';
 import { FiLoader, FiGrid, FiList } from 'react-icons/fi';
 import { getSEOContent } from '@/lib/category-seo';
 import Link from 'next/link';
@@ -126,6 +127,10 @@ export default function CategoryProducts({ slug }: CategoryProductsProps) {
 
     // Format slug for title
     const title = CATEGORY_NAMES[slug] || (slug ? slug.charAt(0).toUpperCase() + slug.slice(1) : 'Category');
+    const introText = categoryIntros[slug] || `Shop for premium ${title} at Signature Computers in Egmore, Chennai.`;
+    const relatedCategories = Object.entries(CATEGORY_NAMES)
+        .filter(([key]) => key !== slug)
+        .slice(0, 4);
 
     const seoData = getSEOContent(slug, title);
 
@@ -142,9 +147,12 @@ export default function CategoryProducts({ slug }: CategoryProductsProps) {
         <div className="bg-gray-50 dark:bg-black min-h-screen">
             <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 {/* Page Header */}
-                <div className="mb-6">
+                <div className="mb-6 max-w-4xl">
                     <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">{title}</h2>
-                    <p className="text-sm text-gray-500 mt-1">
+                    <p className="text-gray-600 dark:text-gray-400 mt-2 text-sm md:text-base leading-relaxed">
+                        {introText}
+                    </p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
                         Showing <span className="text-blue-600 font-medium">{sortedProducts.length}</span> of <span className="text-blue-600 font-medium">{products.length}</span> products
                     </p>
                 </div>
@@ -264,6 +272,20 @@ export default function CategoryProducts({ slug }: CategoryProductsProps) {
                                 ))}
                             </div>
                         )}
+                    </div>
+                </div>
+            </div>
+
+            {/* Related Categories visible section */}
+            <div className="border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 py-8 mt-12">
+                <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+                    <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-4">Related Categories</h3>
+                    <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+                        {relatedCategories.map(([key, name]) => (
+                            <Link key={key} href={`/category/${key}`} className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                                {name}
+                            </Link>
+                        ))}
                     </div>
                 </div>
             </div>
