@@ -49,7 +49,7 @@ export function getCategoryLabel(category: string): string {
  * Generate Product schema with Offer for product pages
  */
 export function generateProductSchema(product: Product, baseUrl: string) {
-    const partNumber = product.productInfo?.partNo || '';
+    const partNumber = product.partNumber || product.productInfo?.partNo || '';
     const brand = product.brand || BUSINESS_INFO.brands[0];
     const categoryLabel = getCategoryLabel(product.category);
     const productUrl = `${baseUrl}/product/${product.id}`;

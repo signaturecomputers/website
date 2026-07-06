@@ -7,7 +7,6 @@ import { Toaster } from 'sonner';
 import ThemeEffectWrapper from '@/components/ThemeEffectWrapper';
 import OrganizationSchema from '@/components/seo/OrganizationSchema';
 import { Suspense } from 'react';
-import DynamicSEOHandler from '@/components/seo/DynamicSEOHandler';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -93,9 +92,6 @@ export default function RootLayout({
       >
         <AdminAuthProvider>
           <OrganizationSchema />
-          <Suspense fallback={null}>
-            <DynamicSEOHandler />
-          </Suspense>
           <ThemeEffectWrapper />
           <LayoutWrapper>
             {children}

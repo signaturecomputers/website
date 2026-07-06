@@ -32,17 +32,6 @@ export default function ProductSEOContent({
 
   return (
     <div className="mt-12 pt-8 border-t border-gray-100 dark:border-gray-800 space-y-8 prose dark:prose-invert max-w-none">
-      {/* A. INTRO + DESCRIPTION */}
-      <div className="seo-intro-description">
-        <h3>Description</h3>
-        <p>
-          Buy {name} from Signature Computers. This {category} is designed for users who need reliable performance for daily tasks such as office work, online classes, and business use. Powered by {processor}, combined with {ram} RAM and {storage}, this device ensures smooth multitasking and fast performance.
-        </p>
-        <p>
-          Whether you're a student, professional, or business owner, this {brand} {model} offers excellent value with durability and efficiency. It is tested for quality and comes with {warranty} warranty for peace of mind.
-        </p>
-      </div>
-
       {/* B. KEY FEATURES */}
       <div className="seo-key-features">
         <h3>Key Features</h3>
@@ -51,19 +40,6 @@ export default function ProductSEOContent({
           <li>{ram} RAM for smooth multitasking</li>
           <li>Fast {storage} storage</li>
           <li>Suitable for office, students, and business use</li>
-          <li>Warranty: {warranty}</li>
-        </ul>
-      </div>
-
-      {/* C. SPECIFICATIONS */}
-      <div className="seo-specifications">
-        <h3>Specifications</h3>
-        <ul>
-          <li>Processor: {processor}</li>
-          <li>RAM: {ram}</li>
-          <li>Storage: {storage}</li>
-          <li>Display: {display}</li>
-          <li>Condition: {condition}</li>
           <li>Warranty: {warranty}</li>
         </ul>
       </div>
@@ -79,13 +55,6 @@ export default function ProductSEOContent({
 
         <p><strong>Who should buy this product?</strong><br/>
         Students, professionals, and small businesses looking for reliable performance.</p>
-      </div>
-
-      {/* E. INTERNAL LINKS */}
-      <div className="seo-internal-links border-t border-gray-200 mt-8 pt-4">
-        <p>
-          Explore more products in our <a href="/products?category=laptops" className="text-blue-600 hover:underline">Laptop Collection</a> or check out <a href="/products?category=accessories" className="text-blue-600 hover:underline">Accessories</a> for additional options.
-        </p>
       </div>
     </div>
   );

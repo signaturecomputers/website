@@ -7,6 +7,8 @@ import {
     generateWebSiteSchema
 } from '@/lib/seo-schema';
 
+import Script from 'next/script';
+
 /**
  * Component that injects Organization, LocalBusiness, and WebSite JSON-LD 
  * structured data into the page for site-wide SEO.
@@ -27,21 +29,24 @@ export default function OrganizationSchema() {
     return (
         <>
             {/* Organization Schema */}
-            <script
+            <Script
+                id="organization-schema"
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{
                     __html: JSON.stringify(organizationSchema),
                 }}
             />
             {/* LocalBusiness Schema */}
-            <script
+            <Script
+                id="local-business-schema-layout"
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{
                     __html: JSON.stringify(localBusinessSchema),
                 }}
             />
             {/* WebSite Schema with Search Action */}
-            <script
+            <Script
+                id="website-schema"
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{
                     __html: JSON.stringify(webSiteSchema),

@@ -10,8 +10,8 @@ import ScrollHandler from '@/components/ScrollHandler';
 import AuthModal from '@/components/AuthModal';
 
 export const metadata: Metadata = {
-    title: 'Network Security Services | Firewall & Data Protection Chennai',
-    description: 'Protect your business with Signature Computers\' network security services in Chennai. We offer firewall setup, endpoint protection, and VPN configurations.',
+    title: 'Network Security Services Chennai | Firewall & Data Protection Egmore',
+    description: 'Protect your business in Egmore, Chennai with Signature Computers\' network security services. We offer firewall setup, endpoint protection, VPN, and cybersecurity solutions.',
     robots: { index: true, follow: true },
     alternates: {
         canonical: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://signaturecomputers.in'}/network-security-services`

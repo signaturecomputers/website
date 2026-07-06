@@ -1,6 +1,6 @@
-import { db } from "@/lib/firebaseClient";
-import { doc, getDoc } from "firebase/firestore";
+import { adminDb } from "@/lib/firebase-admin";
 import { NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
 
 export async function POST(req) {
     try {
@@ -13,23 +13,49 @@ export async function POST(req) {
             );
         }
 
-        // Firestore path: admin_users/admin
-        const adminRef = doc(db, "admin_users", "admin");
-        const adminSnap = await getDoc(adminRef);
+        // Fetch user document from Firestore using Admin SDK
+        const usersSnapshot = await adminDb.collection("admin_users")
+            .where("username", "==", username)
+            .get();
 
-        if (!adminSnap.exists()) {
+        if (usersSnapshot.empty) {
             return NextResponse.json(
                 { error: "Admin not found" },
                 { status: 401 }
             );
         }
 
-        const adminData = adminSnap.data();
+        let matchedUser = null;
+        for (const docSnap of usersSnapshot.docs) {
+            const adminData = docSnap.data();
+            const storedPassword = adminData.password;
 
-        if (
-            adminData.username !== username ||
-            adminData.password !== password
-        ) {
+            let isMatch = false;
+            if (storedPassword && (storedPassword.startsWith('$2a$') || storedPassword.startsWith('$2b$'))) {
+                isMatch = await bcrypt.compare(password, storedPassword);
+            } else {
+                if (storedPassword === password) {
+                    isMatch = true;
+                    // Auto-hash and save plaintext password
+                    try {
+                        const hashedPassword = await bcrypt.hash(password, 10);
+                        await adminDb.collection("admin_users").doc(docSnap.id).update({
+                            password: hashedPassword
+                        });
+                        console.log(`[API Auth] Plaintext password for ${username} has been auto-hashed.`);
+                    } catch (hashErr) {
+                        console.error("[API Auth] Failed to hash plaintext password:", hashErr);
+                    }
+                }
+            }
+
+            if (isMatch) {
+                matchedUser = { id: docSnap.id, ...adminData };
+                break;
+            }
+        }
+
+        if (!matchedUser) {
             return NextResponse.json(
                 { error: "Invalid username or password" },
                 { status: 401 }
@@ -38,7 +64,7 @@ export async function POST(req) {
 
         return NextResponse.json({
             success: true,
-            role: adminData.role
+            role: matchedUser.role
         });
 
     } catch (err) {

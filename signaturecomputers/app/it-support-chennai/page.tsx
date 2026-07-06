@@ -10,8 +10,8 @@ import ScrollHandler from '@/components/ScrollHandler';
 import AuthModal from '@/components/AuthModal';
 
 export const metadata: Metadata = {
-    title: 'IT Support Chennai | IT Infrastructure & Networking Solutions',
-    description: 'Signature Computers provides professional IT support, AMC services, and enterprise networking solutions for businesses throughout Chennai and Tamil Nadu.',
+    title: 'Enterprise IT Support Chennai | IT Infrastructure Egmore | Signature Computers',
+    description: 'Signature Computers provides professional IT support, corporate AMC services, and enterprise networking solutions in Egmore, Chennai, and Tamil Nadu.',
     robots: { index: true, follow: true },
     alternates: {
         canonical: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://signaturecomputers.in'}/it-support-chennai`

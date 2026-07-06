@@ -10,8 +10,8 @@ import ScrollHandler from '@/components/ScrollHandler';
 import AuthModal from '@/components/AuthModal';
 
 export const metadata: Metadata = {
-    title: 'Expert Laptop Repair Chennai | Best Laptop Service Center | Signature Computers',
-    description: 'Top-rated laptop repair in Chennai. Signature Computers offers motherboard repairs, screen replacements, and AMC for HP, Dell, Lenovo, and Apple laptops.',
+    title: 'Expert Laptop Repair Chennai | Best Laptop Service Center Egmore | Signature Computers',
+    description: 'Top-rated laptop repair in Egmore, Chennai. Signature Computers offers chip-level motherboard repairs, screen replacements, and AMC services for HP, Dell, Lenovo, and Apple laptops.',
     robots: { index: true, follow: true },
     alternates: {
         canonical: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://signaturecomputers.in'}/laptop-repair-chennai`

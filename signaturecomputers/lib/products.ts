@@ -217,6 +217,7 @@ export interface Product {
     rating?: number;
     // Structured product info
     productInfo?: ProductInfo;
+    partNumber?: string;
 }
 
 export async function getAllProducts(): Promise<Product[]> {
@@ -232,6 +233,7 @@ export async function getAllProducts(): Promise<Product[]> {
                         category: collectionName, // Add category for filtering
                         image: data.images?.[0] || '',
                         rating: 4.5,
+                        partNumber: data.partNumber || data.partNo || data.productInfo?.partNo || '',
                     } as Product;
                 });
             } catch (err) {
@@ -276,6 +278,7 @@ export async function getProductById(id: string): Promise<Product | null> {
                 ...data,
                 category,
                 image: data.images?.[0] || '',
+                partNumber: data.partNumber || data.partNo || data.productInfo?.partNo || '',
             } as Product;
         }
 

@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { Product } from '@/lib/products';
 import { generateProductSchema, generateBreadcrumbSchema, getCategoryLabel, BUSINESS_INFO } from '@/lib/seo-schema';
 
+import Script from 'next/script';
+
 interface ProductSchemaProps {
     product: Product;
 }
@@ -35,14 +37,16 @@ export default function ProductSchema({ product }: ProductSchemaProps) {
     return (
         <>
             {/* Product Schema */}
-            <script
+            <Script
+                id={`product-schema-${product.id}`}
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{
                     __html: JSON.stringify(productSchema),
                 }}
             />
             {/* Breadcrumb Schema */}
-            <script
+            <Script
+                id={`breadcrumb-schema-${product.id}`}
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{
                     __html: JSON.stringify(breadcrumbSchema),

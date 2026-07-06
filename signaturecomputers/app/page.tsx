@@ -9,8 +9,11 @@ import AuthModal from '@/components/AuthModal';
 import SEOContentSection from '@/components/SEOContentSection';
 import { Metadata } from 'next';
 import { BUSINESS_INFO } from '@/lib/seo-schema';
+import LocalBusinessSchema from '@/components/seo/LocalBusinessSchema';
 
 export const metadata: Metadata = {
+  title: 'Signature Computers Chennai | Premium Laptop & Desktop Store in Egmore',
+  description: 'Signature Computers is your ultimate tech store in Egmore, Chennai. Authorized dealer for HP, Dell, Lenovo. Genuine laptops, custom desktops, and IT AMC services.',
   robots: {
     index: true,
     follow: true,
@@ -23,6 +26,7 @@ export const metadata: Metadata = {
 export default function Home() {
   return (
     <div className="flex flex-col min-h-screen bg-white">
+      <LocalBusinessSchema />
       <ScrollHandler />
       <AuthModal />
       <Hero />

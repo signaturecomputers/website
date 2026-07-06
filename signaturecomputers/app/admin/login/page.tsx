@@ -3,9 +3,9 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAdminAuth } from "@/context/AdminAuthContext";
-import { adminAuth, adminDb } from "@/lib/firebaseAdmin";
+import { adminAuth } from "@/lib/firebaseAdmin";
 import { signInWithEmailAndPassword, signOut } from "firebase/auth";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { createAdminUserIfNeeded } from "@/lib/admin-actions";
 
 export default function AdminLogin() {
     const { gatewayVerified, login, loading: authLoading } = useAdminAuth();
@@ -36,35 +36,28 @@ export default function AdminLogin() {
             const userCredential = await signInWithEmailAndPassword(adminAuth, email, password);
             const user = userCredential.user;
 
-            // Check if user exists in admin_users collection
-            const adminDocRef = doc(adminDb, "admin_users", user.uid);
-            const adminDocSnap = await getDoc(adminDocRef);
-
             let role: "admin" | "staff" = "staff"; // Default role
             let displayName = user.email?.split("@")[0] || "Admin";
 
-            if (adminDocSnap.exists()) {
-                // User exists, get their role
-                const adminData = adminDocSnap.data();
-                role = adminData.role || "staff";
-                displayName = adminData.username || displayName;
+            // Call server action to check/create user in admin_users (secure, service account)
+            const result = await createAdminUserIfNeeded(user.uid, user.email || "", displayName);
 
-                // Verify role is either admin or staff
-                if (role !== "admin" && role !== "staff") {
-                    await signOut(adminAuth);
-                    setError("Access denied. Invalid role assignment.");
-                    setLoading(false);
-                    return;
-                }
-            } else {
-                // New admin user - save to admin_users collection with default staff role
-                await setDoc(adminDocRef, {
-                    uid: user.uid,
-                    email: user.email,
-                    username: displayName,
-                    role: "staff", // Default role for new users
-                    createdAt: new Date().toISOString(),
-                });
+            if (!result.success) {
+                await signOut(adminAuth);
+                setError(result.error || "Access denied. Failed to check admin record.");
+                setLoading(false);
+                return;
+            }
+
+            role = result.role as "admin" | "staff";
+            displayName = result.username || displayName;
+
+            // Verify role is either admin or staff
+            if (role !== "admin" && role !== "staff") {
+                await signOut(adminAuth);
+                setError("Access denied. Invalid role assignment.");
+                setLoading(false);
+                return;
             }
 
 
