@@ -645,7 +645,7 @@ export default function ProductDetails({ id }: ProductDetailsProps) {
                                     <div className="flex items-center justify-between mb-4">
                                         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{group.categoryName}</h3>
                                         <button
-                                            onClick={() => router.push(`/products/${group.category}`)}
+                                            onClick={() => router.push(`/category/${group.category}`)}
                                             className="text-sm text-blue-600 hover:text-blue-700 font-medium"
                                         >
                                             See more options →
