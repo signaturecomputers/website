@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { toast } from 'sonner';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FiShoppingCart, FiPackage, FiTruck, FiChevronLeft, FiChevronRight, FiMinus, FiPlus } from 'react-icons/fi';
@@ -89,23 +90,32 @@ export default function HotDealsSection({ mode = 'home', subtitle }: HotDealsPro
         setQuantity(prev => Math.max(1, prev + delta));
     };
 
-    const handleAddToCart = (e: React.MouseEvent) => {
+    const handleAddToCart = (e: React.MouseEvent): boolean => {
         e.stopPropagation();
-        if (!activeDeal) return;
+        if (!activeDeal) return false;
 
-        addToCart({
+        const success = addToCart({
             id: activeDeal.id,
             name: activeDeal.name,
             price: activeDeal.price,
             image: activeDeal.images?.[0] || '',
-            quantity: quantity
+            quantity: quantity,
+            stock: activeDeal.stock,
         });
+        if (success) {
+            toast.success('Added to cart!', {
+                description: activeDeal.name,
+            });
+        }
+        return success;
     };
 
     const handleBuyNow = (e: React.MouseEvent) => {
         e.stopPropagation();
-        handleAddToCart(e);
-        router.push('/checkout');
+        const success = handleAddToCart(e);
+        if (success) {
+            router.push('/checkout');
+        }
     };
 
     // Pause auto-play on hover

@@ -37,16 +37,19 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
 
     const handleAddToCart = (e: React.MouseEvent) => {
         e.stopPropagation();
-        addToCart({
+        const success = addToCart({
             id: product.id,
             name: product.name,
             price: product.price,
             image: product.image,
-            quantity: 1
+            quantity: 1,
+            stock: product.stock,
         });
-        toast.success('Added to cart!', {
-            description: product.name,
-        });
+        if (success) {
+            toast.success('Added to cart!', {
+                description: product.name,
+            });
+        }
     };
 
     const handleSaveForLater = (e: React.MouseEvent) => {

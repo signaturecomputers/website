@@ -14,6 +14,7 @@ interface CartItem {
     quantity: number;
     windowsInstallation?: boolean;
     windowsInstallationPrice?: number;
+    stock?: number;
 }
 
 interface SavedItem {
@@ -26,7 +27,7 @@ interface SavedItem {
 interface CartContextType {
     cart: CartItem[];
     savedItems: SavedItem[];
-    addToCart: (item: CartItem) => void;
+    addToCart: (item: CartItem) => boolean;
     removeFromCart: (itemId: string) => void;
     updateQuantity: (itemId: string, quantity: number) => void;
     toggleWindowsInstallation: (itemId: string, windowsPrice?: number) => void;
@@ -44,7 +45,7 @@ interface CartContextType {
 const CartContext = createContext<CartContextType>({
     cart: [],
     savedItems: [],
-    addToCart: () => { },
+    addToCart: () => false,
     removeFromCart: () => { },
     updateQuantity: () => { },
     toggleWindowsInstallation: () => { },
@@ -270,15 +271,29 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }, [cart, savedItems, user, isLoading, saveCart]);
 
     const addToCart = useCallback((item: CartItem) => {
+        const stock = item.stock ?? 9999;
+        let success = true;
         setCart((prev) => {
             const existing = prev.find((i) => i.id === item.id);
+            const currentQuantityInCart = existing ? existing.quantity : 0;
+            const totalRequested = currentQuantityInCart + item.quantity;
+
+            if (totalRequested > stock) {
+                toast.error(stock <= 0 ? 'Unavailable' : 'Out of quantity', {
+                    description: stock <= 0 ? 'This product is out of stock.' : `Only ${stock} items available in stock.`,
+                });
+                success = false;
+                return prev;
+            }
+
             if (existing) {
                 return prev.map((i) =>
-                    i.id === item.id ? { ...i, quantity: i.quantity + item.quantity } : i
+                    i.id === item.id ? { ...i, quantity: totalRequested } : i
                 );
             }
             return [...prev, item];
         });
+        return success;
     }, []);
 
     const removeFromCart = useCallback((itemId: string) => {
@@ -290,7 +305,19 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             removeFromCart(itemId);
             return;
         }
-        setCart((prev) => prev.map((item) => item.id === itemId ? { ...item, quantity } : item));
+        setCart((prev) => prev.map((item) => {
+            if (item.id === itemId) {
+                const stock = item.stock ?? 9999;
+                if (quantity > stock) {
+                    toast.error(stock <= 0 ? 'Unavailable' : 'Out of quantity', {
+                        description: stock <= 0 ? 'This product is out of stock.' : `Only ${stock} items available in stock.`,
+                    });
+                    return item;
+                }
+                return { ...item, quantity };
+            }
+            return item;
+        }));
     }, [removeFromCart]);
 
     // Toggle Windows installation for cart item

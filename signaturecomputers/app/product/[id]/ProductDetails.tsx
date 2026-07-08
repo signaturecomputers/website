@@ -133,7 +133,7 @@ export default function ProductDetails({ id }: ProductDetailsProps) {
 
         // Proceed with adding to cart
         if (product) {
-            addToCart({
+            const success = addToCart({
                 id: product.id,
                 name: product.name,
                 price: product.price,
@@ -141,8 +141,11 @@ export default function ProductDetails({ id }: ProductDetailsProps) {
                 quantity: quantity,
                 windowsInstallation: windowsInstallation,
                 windowsInstallationPrice: windowsInstallation ? windowsPrice : undefined,
+                stock: product.stock,
             });
-            router.push('/checkout');
+            if (success) {
+                router.push('/checkout');
+            }
         }
     };
 
@@ -155,7 +158,7 @@ export default function ProductDetails({ id }: ProductDetailsProps) {
 
         // Proceed with adding to cart
         if (product) {
-            addToCart({
+            const success = addToCart({
                 id: product.id,
                 name: product.name,
                 price: product.price,
@@ -163,11 +166,14 @@ export default function ProductDetails({ id }: ProductDetailsProps) {
                 quantity: quantity,
                 windowsInstallation: windowsInstallation,
                 windowsInstallationPrice: windowsInstallation ? windowsPrice : undefined,
+                stock: product.stock,
             });
-            toast.success('Added to cart!', {
-                description: `${product.productInfo?.title || product.name} (Qty: ${quantity})${windowsInstallation ? ' + Windows 11 Pro' : ''}`,
-                duration: 3000,
-            });
+            if (success) {
+                toast.success('Added to cart!', {
+                    description: `${product.productInfo?.title || product.name} (Qty: ${quantity})${windowsInstallation ? ' + Windows 11 Pro' : ''}`,
+                    duration: 3000,
+                });
+            }
         }
     };
 
@@ -518,21 +524,9 @@ export default function ProductDetails({ id }: ProductDetailsProps) {
                             )}
 
                             <div className="border-t border-gray-100 dark:border-gray-800 pt-4 mb-4">
-                                {product.stock <= 0 ? (
+                                {product.stock <= 0 && (
                                     <p className="text-sm font-medium text-red-600">Currently Unavailable</p>
-                                ) : product.stock <= 5 ? (
-                                    <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
-                                        <span className="text-amber-600 dark:text-amber-400 text-lg">⚠️</span>
-                                        <div>
-                                            <p className="text-sm font-semibold text-amber-700 dark:text-amber-300">
-                                                Only {product.stock} left in stock!
-                                            </p>
-                                            <p className="text-xs text-amber-600 dark:text-amber-400">
-                                                Hurry, products are running out - order soon!
-                                            </p>
-                                        </div>
-                                    </div>
-                                ) : null}
+                                )}
                             </div>
 
                             {/* Action Buttons */}
@@ -555,7 +549,7 @@ export default function ProductDetails({ id }: ProductDetailsProps) {
                                     <div className="flex items-center border border-gray-300 rounded-md dark:border-gray-700">
                                         <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800 text-lg">-</button>
                                         <span className="px-3 py-2.5 font-medium border-l border-r border-gray-300 dark:border-gray-700 min-w-[40px] text-center">{quantity}</span>
-                                        <button onClick={() => setQuantity(quantity + 1)} className="px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800 text-lg">+</button>
+                                        <button onClick={() => setQuantity(Math.min(product.stock, quantity + 1))} className="px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800 text-lg">+</button>
                                     </div>
 
                                     <button
