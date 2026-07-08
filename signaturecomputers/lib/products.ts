@@ -14,6 +14,7 @@ export interface ProductInfo {
     // Basic Info
     title?: string;
     partNo?: string;
+    productType?: string; // Added for desktop
     series?: string;
     recommendedUsage?: string;
     idealFor?: string[];
@@ -41,6 +42,8 @@ export interface ProductInfo {
         threads?: number;
         technology?: string;
         chipset?: string;
+        frequencyTechnology?: string; // Added for desktop
+        footnote?: string; // Added for desktop
     };
 
     // Memory
@@ -49,6 +52,7 @@ export interface ProductInfo {
         type?: string;
         speed?: string;
         layout?: string;
+        slots?: string; // Added for desktop
     };
 
     // Storage
@@ -62,6 +66,8 @@ export interface ProductInfo {
             capacity?: string;
             duration?: string;
         };
+        hardDriveDescription?: string; // Added for desktop
+        internalDriveBays?: string; // Added for desktop
     };
 
     // Display
@@ -83,6 +89,7 @@ export interface ProductInfo {
     graphics?: {
         gpu?: string;
         dedicated?: boolean;
+        footnote?: string; // Added for desktop
     };
 
     // Audio & Input
@@ -94,6 +101,8 @@ export interface ProductInfo {
             backlit?: boolean;
             color?: string;
         };
+        audioFeatures?: string; // Added for desktop
+        pointingDevice?: string; // Added for desktop
     };
 
     // Connectivity
@@ -101,6 +110,18 @@ export interface ProductInfo {
         wifi?: string;
         bluetooth?: string;
         modernStandby?: boolean;
+    };
+
+    // Connectivity and Communications (Added for desktop)
+    connectivityAndComms?: {
+        networkInterface?: string;
+        wireless?: string;
+        ioPortLocationFront?: string;
+        frontPorts?: string;
+        ioPortLocationRear?: string;
+        rearPorts?: string;
+        expansionSlots?: string;
+        videoConnectors?: string;
     };
 
     // Ports
@@ -113,6 +134,7 @@ export interface ProductInfo {
         };
         audioJack?: string;
         powerPort?: string;
+        rj45?: string; // Added for desktop
     };
 
     // Camera
@@ -127,6 +149,7 @@ export interface ProductInfo {
         capacity?: string;
         charger?: string;
         fastCharge?: string;
+        power?: string; // Added for desktop
     };
 
     // Security
@@ -134,6 +157,7 @@ export interface ProductInfo {
         micMuteKey?: boolean;
         cameraPrivacyShutter?: boolean;
         tpm?: string;
+        securityManagement?: string; // Added for desktop
     };
 
     // Software
@@ -142,6 +166,8 @@ export interface ProductInfo {
             name?: string;
             trialPeriod?: string;
         }>;
+        softwareIncluded?: string; // Added for desktop
+        footnote?: string; // Added for desktop
     };
 
     // Dimensions & Weight
@@ -151,6 +177,9 @@ export interface ProductInfo {
             rear?: string;
         };
         weight?: string;
+        dimensionsText?: string; // Added for desktop
+        dimensionNote?: string; // Added for desktop
+        weightNote?: string; // Added for desktop
     };
 
     // Warranty
@@ -158,6 +187,7 @@ export interface ProductInfo {
         duration?: string;
         coverage?: string;
         onSiteService?: boolean;
+        warrantyText?: string; // Added for desktop
     };
 
     // Certifications
@@ -169,6 +199,7 @@ export interface ProductInfo {
     environmental?: {
         oceanBoundPlastic?: boolean;
         recycledKeycaps?: boolean;
+        footnote?: string; // Added for desktop
     };
 
     // Custom fields for each section (dynamic fields added by admin)

@@ -6,6 +6,7 @@ import { ProductInfo } from '@/lib/products';
 interface ProductInfoSectionProps {
     productInfo: ProductInfo | undefined;
     isAdmin?: boolean;
+    category?: string;
 }
 
 // Helper to check if an object has any truthy values
@@ -455,7 +456,7 @@ function renderCategorySpecificFields(productInfo: any) {
 }
 
 
-export default function ProductInfoSection({ productInfo, isAdmin = false }: ProductInfoSectionProps) {
+export default function ProductInfoSection({ productInfo, isAdmin = false, category }: ProductInfoSectionProps) {
     if (!productInfo || !hasContent(productInfo)) {
         return (
             <div className="text-gray-500 dark:text-gray-400 text-center py-8">
@@ -466,6 +467,200 @@ export default function ProductInfoSection({ productInfo, isAdmin = false }: Pro
 
     // Cast to any to access custom fields
     const customProductInfo = productInfo as any;
+
+    if (category === 'desktops') {
+        return renderDesktopSpecs();
+    }
+
+    function renderDesktopSpecs() {
+        const isSectionHidden = (sectionKey: string): boolean => {
+            const hidden = customProductInfo.hiddenSections || [];
+            return hidden.includes(sectionKey);
+        };
+
+        return (
+            <div className="space-y-4">
+                {/* Basic Product Info */}
+                {!isSectionHidden("basic") && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Basic Product Info", "basic")} icon={FiPackage}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "Title", "basic_title")} value={productInfo?.title} />
+                            {isAdmin && productInfo?.partNo && (
+                                <InfoRow label={getFieldLabel(customProductInfo, "Part Number", "basic_partNo")} value={productInfo.partNo} />
+                            )}
+                            <InfoRow label={getFieldLabel(customProductInfo, "Product type", "basic_productType")} value={productInfo?.productType} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Series", "basic_series")} value={productInfo?.series} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Recommended Usage", "basic_recommendedUsage")} value={productInfo?.recommendedUsage} />
+                            {productInfo?.idealFor && productInfo.idealFor.length > 0 && (
+                                <InfoRow label={getFieldLabel(customProductInfo, "Ideal For", "basic_idealFor")} value={productInfo.idealFor.join(', ')} />
+                            )}
+                            {renderCustomFields(customProductInfo.basicCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Appearance */}
+                {!isSectionHidden("appearance") && hasContent(productInfo?.appearance) && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Appearance", "appearance")} icon={FiBox}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "Form factor", "appearance_formFactor")} value={productInfo?.appearance?.formFactor} />
+                            {renderCustomFields(customProductInfo.appearanceCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Supported Operating Systems */}
+                {!isSectionHidden("os") && hasContent(productInfo?.operatingSystem) && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Supported Operating Systems", "os")} icon={FiSettings}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "Operating system", "os_os")} value={productInfo?.operatingSystem?.os} />
+                            {renderCustomFields(customProductInfo.osCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Processors */}
+                {!isSectionHidden("processor") && hasContent(productInfo?.processor) && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Processors", "processor")} icon={FiCpu}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "Processor Generation", "processor_generation")} value={productInfo?.processor?.generation} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Processor Name", "processor_name")} value={productInfo?.processor?.name} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Processor Frequency Technology", "processor_frequencyTechnology")} value={productInfo?.processor?.frequencyTechnology} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Chipset", "processor_chipset")} value={productInfo?.processor?.chipset} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Processor Footnote", "processor_footnote")} value={productInfo?.processor?.footnote} />
+                            {renderCustomFields(customProductInfo.processorCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Memory */}
+                {!isSectionHidden("memory") && hasContent(productInfo?.memory) && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Memory", "memory")} icon={FiHardDrive}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "Memory Slots", "memory_slots")} value={productInfo?.memory?.slots} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Memory Layout", "memory_layout")} value={productInfo?.memory?.layout} />
+                            {renderCustomFields(customProductInfo.memoryCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Storage */}
+                {!isSectionHidden("storage") && hasContent(productInfo?.storage) && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Storage", "storage")} icon={FiHardDrive}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "Hard Drive Description", "storage_hardDriveDescription")} value={productInfo?.storage?.hardDriveDescription} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Internal Drive Bays", "storage_internalDriveBays")} value={productInfo?.storage?.internalDriveBays} />
+                            {renderCustomFields(customProductInfo.storageCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Display and Graphics */}
+                {!isSectionHidden("graphics") && (hasContent(productInfo?.graphics) || productInfo?.display?.size) && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Display and Graphics", "graphics")} icon={FiMonitor}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "Graphics", "graphics_gpu")} value={productInfo?.graphics?.gpu} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Graphic Card Footnote", "graphics_footnote")} value={productInfo?.graphics?.footnote} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Screen Size", "display_size")} value={productInfo?.display?.size} />
+                            {renderCustomFields(customProductInfo.graphicsCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Multimedia and Input Devices */}
+                {!isSectionHidden("audio") && hasContent(productInfo?.audioAndInput) && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Multimedia and Input Devices", "audio")} icon={FiSpeaker}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "Audio Features", "audio_audioFeatures")} value={productInfo?.audioAndInput?.audioFeatures} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Pointing Device", "audio_pointingDevice")} value={productInfo?.audioAndInput?.pointingDevice} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Keyboard", "audio_keyboard_type")} value={productInfo?.audioAndInput?.keyboard?.type} />
+                            {renderCustomFields(customProductInfo.audioCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Connectivity and Communications */}
+                {!isSectionHidden("connectivityComms") && hasContent(productInfo?.connectivityAndComms) && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Connectivity and Communications", "connectivityComms")} icon={FiWifi}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "Network Interface", "connectivity_networkInterface")} value={productInfo?.connectivityAndComms?.networkInterface} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Wireless", "connectivity_wireless")} value={productInfo?.connectivityAndComms?.wireless} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "I/O Port Location (Front)", "connectivity_ioPortLocationFront")} value={productInfo?.connectivityAndComms?.ioPortLocationFront} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Front Ports", "connectivity_frontPorts")} value={productInfo?.connectivityAndComms?.frontPorts} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "I/O Port Location (Rear)", "connectivity_ioPortLocationRear")} value={productInfo?.connectivityAndComms?.ioPortLocationRear} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Rear Ports", "connectivity_rearPorts")} value={productInfo?.connectivityAndComms?.rearPorts} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Expansion Slots", "connectivity_expansionSlots")} value={productInfo?.connectivityAndComms?.expansionSlots} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Video Connectors", "connectivity_videoConnectors")} value={productInfo?.connectivityAndComms?.videoConnectors} />
+                            {renderCustomFields(customProductInfo.connectivityCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Battery and Power */}
+                {!isSectionHidden("battery") && hasContent(productInfo?.batteryAndPower) && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Battery and Power", "battery")} icon={FiBattery}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "Power", "battery_power")} value={productInfo?.batteryAndPower?.power} />
+                            {renderCustomFields(customProductInfo.batteryCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Security Management */}
+                {!isSectionHidden("security") && hasContent(productInfo?.security) && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Security Management", "security")} icon={FiShield}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "Security Management", "security_securityManagement")} value={productInfo?.security?.securityManagement} />
+                            {renderCustomFields(customProductInfo.securityCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Software */}
+                {!isSectionHidden("software") && hasContent(productInfo?.software) && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Software", "software")} icon={FiPackage}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "Software Included", "software_softwareIncluded")} value={productInfo?.software?.softwareIncluded} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Software Footnote", "software_footnote")} value={productInfo?.software?.footnote} />
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Dimensions and Weight */}
+                {!isSectionHidden("dimensions") && hasContent(productInfo?.dimensionsAndWeight) && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Dimensions and Weight", "dimensions")} icon={FiBox}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "Dimensions (W × D × H)", "dimensions_front")} value={productInfo?.dimensionsAndWeight?.dimensions?.front} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Dimension Note (Metric)", "dimensions_rear")} value={productInfo?.dimensionsAndWeight?.dimensions?.rear} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Weight", "dimensions_weight")} value={productInfo?.dimensionsAndWeight?.weight} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Weight Note (Metric)", "dimensions_weight_note")} value={productInfo?.dimensionsAndWeight?.weightNote} />
+                            {renderCustomFields(customProductInfo.dimensionsCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Warranty and Services */}
+                {!isSectionHidden("warranty") && hasContent(productInfo?.warranty) && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Warranty and Services", "warranty")} icon={FiAward}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "Warranty", "warranty_warrantyText")} value={productInfo?.warranty?.warrantyText} />
+                            {renderCustomFields(customProductInfo.warrantyCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Environmental */}
+                {!isSectionHidden("environmental") && hasContent(productInfo?.environmental) && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Environmental", "environmental")} icon={FiBox}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "Environmental Specification Footnote Number", "environmental_footnote")} value={productInfo?.environmental?.footnote} />
+                            {renderCustomFields(customProductInfo.environmentalCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+            </div>
+        );
+    }
 
     // Check if this is an accessory product (has accessory-specific fields that have their own Category/Usage sections)
     const isAccessoryProduct = customProductInfo.micSensitivity || customProductInfo.connectionType ||

@@ -636,7 +636,7 @@ export default function ProductDetails({ id }: ProductDetailsProps) {
                             </div>
                         )}
                         {activeTab === 'product info' && (
-                            <ProductInfoSection productInfo={product.productInfo} isAdmin={isAdmin} />
+                            <ProductInfoSection productInfo={product.productInfo} isAdmin={isAdmin} category={product.category} />
                         )}
                     </div>
                 </div>

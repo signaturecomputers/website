@@ -134,7 +134,7 @@ export default function AddProductPage() {
     // Spec templates with specific order
     const SPEC_TEMPLATES: Record<string, string[]> = {
         laptops: ['Processor', 'Operating System', 'Display Size', 'Graphics', 'RAM', 'Storage'],
-        desktops: ['Processor', 'Operating System', 'Display Size', 'Graphics', 'RAM', 'Storage'],
+        desktops: ['Processor', 'Operating System', 'Graphics', 'RAM', 'Storage'],
         workstations: ['Processor', 'Operating System', 'Graphics', 'RAM', 'Storage', 'Power Supply'],
         monitors: ['Screen Size', 'Resolution', 'Display Type', 'Response Type', 'Response Time', 'Display Input Type', 'Display Features'],
         'keyboard-mouse-combo': ['Interface', 'Type', 'DPI Levels', 'Surface Compatibility'],
