@@ -74,7 +74,7 @@ export default function ProductsPage() {
     // Accessory subcategory IDs
     const accessorySubcategories = [
         'keyboards', 'mouse', 'keyboard-mouse-combo', 'headphones', 'cables',
-        'power-adapters', 'bags', 'docks', 'usb-flashdrives', 'dvd-writers'
+        'power-adapters', 'bags', 'docks', 'hubs', 'usb-flashdrives', 'dvd-writers'
     ];
 
     // Printer subcategory IDs
@@ -104,6 +104,8 @@ export default function ProductsPage() {
                 );
             } else if (selectedCategory === 'printers-all') {
                 result = result.filter(p => printerSubcategories.includes(productCategory(p) || ''));
+            } else if (selectedCategory === 'docks') {
+                result = result.filter(p => productCategory(p) === 'docks' || productCategory(p) === 'hubs');
             } else {
                 result = result.filter(p => productCategory(p) === selectedCategory.toLowerCase());
             }
@@ -146,6 +148,7 @@ export default function ProductsPage() {
         'power-adapters': 'Power Adapters',
         'bags': 'Bags',
         'docks': 'Docks',
+        'hubs': 'Hubs',
         'usb-flashdrives': 'USB Flash Drives',
         'dvd-writers': 'DVD Writers',
     };

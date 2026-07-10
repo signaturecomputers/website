@@ -108,6 +108,12 @@ export const CATEGORY_SEO: Record<string, CategorySEOData> = {
         h1: 'Laptop Docking Stations in Chennai',
         content: null
     },
+    'hubs': {
+        title: 'USB Hubs & Multi-port Adapters in Chennai | Signature Computers',
+        description: 'Expand your computer ports with high-speed USB hubs and multi-port adapters. Find the best computer accessories at Signature Computers, Chennai.',
+        h1: 'USB Hubs & Multi-port Adapters in Chennai',
+        content: null
+    },
     'usb-flashdrives': {
         title: 'USB Flash Drives & Pen Drives | Signature Computers',
         description: 'Securely store and transfer your data with high-speed USB flash drives and pen drives in Chennai. Stop by Signature Computers today.',

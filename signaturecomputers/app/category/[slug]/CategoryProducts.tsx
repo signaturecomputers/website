@@ -30,6 +30,7 @@ const SLUG_TO_COLLECTION: Record<string, string> = {
     'power-adapters': 'power-adapters',
     'bags': 'bags',
     'docks': 'docks',
+    'hubs': 'docks',
     'usb-flashdrives': 'usb-flashdrives',
     'dvd-writers': 'dvd-writers',
 };
@@ -73,7 +74,7 @@ export default function CategoryProducts({ slug }: CategoryProductsProps) {
                         images: data.images || [],
                         description: data.description || '',
                         specs: data.specs || {},
-                        category: collectionName,
+                        category: data.category || collectionName,
                         image: data.images?.[0] || '',
                         rating: data.rating || 4.5,
                         productInfo: data.productInfo,

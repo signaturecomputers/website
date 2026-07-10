@@ -42,6 +42,7 @@ const DEFAULT_CATEGORIES = [
     { id: 'keyboard-mouse-combo', name: 'Keyboard & Mouse Combo', group: 'Accessories' },
     { id: 'bags', name: 'Bags', group: 'Accessories' },
     { id: 'docks', name: 'Docks', group: 'Accessories' },
+    { id: 'hubs', name: 'Hubs', group: 'Accessories' },
     { id: 'usb-flashdrives', name: 'USB Flash Drives', group: 'Accessories' },
     { id: 'dvd-writers', name: 'DVD Writers', group: 'Accessories' },
 ];

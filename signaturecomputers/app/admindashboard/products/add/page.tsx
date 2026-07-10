@@ -42,6 +42,7 @@ const DEFAULT_CATEGORIES = [
     { id: 'keyboard-mouse-combo', name: 'Keyboard & Mouse Combo', group: 'Accessories' },
     { id: 'bags', name: 'Bags', group: 'Accessories' },
     { id: 'docks', name: 'Docks', group: 'Accessories' },
+    { id: 'hubs', name: 'Hubs', group: 'Accessories' },
     { id: 'usb-flashdrives', name: 'USB Flash Drives', group: 'Accessories' },
     { id: 'dvd-writers', name: 'DVD Writers', group: 'Accessories' },
 ];
@@ -140,7 +141,7 @@ export default function AddProductPage() {
         'keyboard-mouse-combo': ['Interface', 'Type', 'DPI Levels', 'Surface Compatibility'],
         keyboards: ['Interface', 'Type', 'DPI Levels', 'Surface Compatibility'],
         mouse: ['Interface', 'Type', 'DPI Levels', 'Surface Compatibility'],
-        'power-adapters': ['Features', 'Input Voltage (V)', 'Type', 'Size (mm)', 'Bend Protection', 'Organization Fastener', 'Dimensions (cm) - Length/Width/Height', 'Weight (g)', 'Warranty Duration', 'Warranty Type'],
+        'power-adapters': ['Features', 'Input Voltage (V)', 'Dimensions (cm) - Length/Width/Height', 'Weight (g)', 'Warranty Duration'],
         headphones: ['Audio Driver Size (mm)', 'Audio Driver Type', 'Noise Cancellation', 'Boom Type', 'Design', 'Connectivity Type', 'Connectivity Interface'],
         bags: ['Features'],
         docks: ['Connection Interface', 'Maximum Displays', 'Maximum Resolution', 'Host Connection', 'Charging Support', 'Dimensions (mm)', 'Weight', 'Warranty Duration', 'Warranty Type'],

@@ -102,7 +102,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         'laptops', 'desktops', 'workstations', 'monitors', 'printers',
         'accessories', 'cartridges', 'toners', 'cctv',
         'keyboards', 'mouse', 'keyboard-mouse-combo', 'headphones',
-        'cables', 'power-adapters', 'bags', 'docks', 'usb-flashdrives', 'dvd-writers'
+        'cables', 'power-adapters', 'bags', 'docks', 'hubs', 'usb-flashdrives', 'dvd-writers'
     ];
 
     const categoryPages: MetadataRoute.Sitemap = categories.map(category => ({

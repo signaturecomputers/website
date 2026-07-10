@@ -118,7 +118,8 @@ export async function createAdminUserIfNeeded(uid: string, email: string, userna
 export async function createProduct(category: string, productData: any) {
     try {
         const sanitized = sanitizeData(productData);
-        const docRef = await adminDb.collection(category).add(sanitized);
+        const collectionName = category === 'hubs' ? 'docks' : category;
+        const docRef = await adminDb.collection(collectionName).add(sanitized);
         revalidatePath('/admindashboard/products');
         revalidatePath('/products');
         return { success: true, id: docRef.id };
@@ -131,7 +132,8 @@ export async function createProduct(category: string, productData: any) {
 export async function updateProduct(category: string, productId: string, productData: any) {
     try {
         const sanitized = sanitizeData(productData);
-        await adminDb.collection(category).doc(productId).update(sanitized);
+        const collectionName = category === 'hubs' ? 'docks' : category;
+        await adminDb.collection(collectionName).doc(productId).update(sanitized);
         revalidatePath('/admindashboard/products');
         revalidatePath('/products');
         revalidatePath(`/product/${productId}`);
@@ -144,7 +146,8 @@ export async function updateProduct(category: string, productId: string, product
 
 export async function deleteProduct(category: string, productId: string) {
     try {
-        await adminDb.collection(category).doc(productId).delete();
+        const collectionName = category === 'hubs' ? 'docks' : category;
+        await adminDb.collection(collectionName).doc(productId).delete();
         revalidatePath('/admindashboard/products');
         revalidatePath('/products');
         return { success: true };

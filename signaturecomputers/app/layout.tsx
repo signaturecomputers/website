@@ -97,6 +97,38 @@ export default function RootLayout({
                     if (name === 'bis_skin_checked') return;
                     orig.apply(this, arguments);
                   };
+
+                  const observer = new MutationObserver((mutations) => {
+                    for (let i = 0; i < mutations.length; i++) {
+                      const mutation = mutations[i];
+                      if (mutation.type === 'attributes' && mutation.attributeName === 'bis_skin_checked') {
+                        mutation.target.removeAttribute('bis_skin_checked');
+                      }
+                      if (mutation.addedNodes) {
+                        for (let j = 0; j < mutation.addedNodes.length; j++) {
+                          const node = mutation.addedNodes[j];
+                          if (node.nodeType === 1) {
+                            if (node.hasAttribute('bis_skin_checked')) {
+                              node.removeAttribute('bis_skin_checked');
+                            }
+                            const elements = node.getElementsByTagName('*');
+                            for (let k = 0; k < elements.length; k++) {
+                              if (elements[k].hasAttribute('bis_skin_checked')) {
+                                elements[k].removeAttribute('bis_skin_checked');
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  });
+
+                  observer.observe(document.documentElement, {
+                    attributes: true,
+                    childList: true,
+                    subtree: true,
+                    attributeFilter: ['bis_skin_checked']
+                  });
                 } catch(e) {}
               })();
             `

@@ -24,6 +24,7 @@ export interface ProductInfo {
         color?: string;
         design?: string;
         formFactor?: string;
+        sizeFit?: string;
     };
 
     // Operating System
@@ -53,6 +54,7 @@ export interface ProductInfo {
         speed?: string;
         layout?: string;
         slots?: string; // Added for desktop
+        standardMemoryNote?: string; // Added for workstation
     };
 
     // Storage
@@ -67,6 +69,7 @@ export interface ProductInfo {
             duration?: string;
         };
         hardDriveDescription?: string; // Added for desktop
+        hardDrive2nd?: string; // Added for workstation
         internalDriveBays?: string; // Added for desktop
     };
 
@@ -83,6 +86,25 @@ export interface ProductInfo {
         touchscreen?: boolean;
         flickerFree?: boolean;
         screenToBodyRatio?: string;
+        displayAreaMetric?: string;
+        resolutionMaximum?: string;
+        resolutionSupported?: string;
+        pixelPitch?: string;
+        scanFrequencyHorizontal?: string;
+        scanFrequencyVertical?: string;
+        displayColors?: string;
+        onscreenControls?: string;
+        features?: string;
+        viewAngle?: string;
+        tiltAndSwivel?: string;
+        vesaMount?: string;
+        tilt?: string;
+        swivel?: string;
+        inputType?: string;
+        lowBlueLight?: boolean;
+        resolutionNative?: string;
+        contrastRatio?: string;
+        responseTime?: string;
     };
 
     // Graphics
@@ -121,6 +143,7 @@ export interface ProductInfo {
         ioPortLocationRear?: string;
         rearPorts?: string;
         expansionSlots?: string;
+        expansionSlotsNote?: string; // Added for workstation
         videoConnectors?: string;
     };
 
@@ -150,6 +173,7 @@ export interface ProductInfo {
         charger?: string;
         fastCharge?: string;
         power?: string; // Added for desktop
+        powerConsumption?: string; // Added for monitor
     };
 
     // Security
@@ -158,6 +182,8 @@ export interface ProductInfo {
         cameraPrivacyShutter?: boolean;
         tpm?: string;
         securityManagement?: string; // Added for desktop
+        securityManagementFootnote?: string; // Added for workstation
+        physicalSecurity?: string; // Added for monitor
     };
 
     // Software
@@ -167,6 +193,8 @@ export interface ProductInfo {
             trialPeriod?: string;
         }>;
         softwareIncluded?: string; // Added for desktop
+        managementFeatures?: string; // Added for workstation
+        manageabilityFeaturesFootnote?: string; // Added for workstation
         footnote?: string; // Added for desktop
     };
 
@@ -180,6 +208,7 @@ export interface ProductInfo {
         dimensionsText?: string; // Added for desktop
         dimensionNote?: string; // Added for desktop
         weightNote?: string; // Added for desktop
+        dimensionsWithStand?: string; // Added for monitor
     };
 
     // Warranty
@@ -188,6 +217,7 @@ export interface ProductInfo {
         coverage?: string;
         onSiteService?: boolean;
         warrantyText?: string; // Added for desktop
+        footnote?: string; // Added for workstation
     };
 
     // Certifications
@@ -200,6 +230,10 @@ export interface ProductInfo {
         oceanBoundPlastic?: boolean;
         recycledKeycaps?: boolean;
         footnote?: string; // Added for desktop
+        operatingTemperature?: string; // Added for monitor
+        energyCompliance?: string; // Added for monitor
+        general?: string; // Added for monitor
+        certifications?: string; // Added for monitor
     };
 
     // Custom fields for each section (dynamic fields added by admin)
@@ -230,6 +264,40 @@ export interface ProductInfo {
 
     // Hidden sections (when admin hides sections)
     hiddenSections?: string[];
+
+    // Monitor additions
+    whatsInTheBox?: string;
+    legalDisclaimer?: string;
+
+    // Docks and Hubs additions
+    powerButton?: string;
+    externalPortsLocation04?: string;
+    externalPorts04?: string;
+    compatibleOS?: string;
+    minimumSystemRequirements?: string;
+    minDimensions?: string;
+    hardwareCompatibility?: string;
+    powerToHost?: string;
+    powerDelivery?: string;
+    cableLength?: string;
+    specialFeatures?: string;
+    micSensitivity?: string;
+    micType?: string;
+    speakerSensitivity?: string;
+    speakerSize?: string;
+    impedance?: string;
+    frequencyMhz?: string;
+    cableType?: string;
+    connector1?: string;
+    connector2?: string;
+    supportedStandard?: string;
+    maxResolution?: string;
+    refreshRateSupport?: string;
+    compatibleDevices?: string;
+    compatiblePorts?: string;
+    inputVoltage?: string;
+    currentRating?: string;
+    connectorType?: string;
 }
 
 export interface Product {
@@ -410,6 +478,7 @@ export const CATEGORY_NAMES: Record<string, string> = {
     'power-adapters': 'Power Adapters',
     'bags': 'Bags',
     'docks': 'Docks',
+    'hubs': 'Hubs',
     'usb-flashdrives': 'USB Flash Drives',
     'dvd-writers': 'DVD Writers',
 };
