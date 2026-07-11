@@ -51,7 +51,7 @@ const DEFAULT_CATEGORIES: CategoryData[] = [
     { id: 'docks', name: 'Docks', group: 'Accessories' },
     { id: 'hubs', name: 'Hubs', group: 'Accessories' },
     { id: 'usb-flashdrives', name: 'USB Flash Drives', group: 'Accessories' },
-    { id: 'dvd-writers', name: 'DVD Writers', group: 'Accessories' },
+    { id: 'dvd-writers', name: 'Others', group: 'Accessories' },
 ];
 
 export default function ProductsPage() {

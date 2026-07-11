@@ -150,7 +150,7 @@ export default function ProductsPage() {
         'docks': 'Docks',
         'hubs': 'Hubs',
         'usb-flashdrives': 'USB Flash Drives',
-        'dvd-writers': 'DVD Writers',
+        'dvd-writers': 'Others',
     };
 
     // Get display title based on selected category or search query

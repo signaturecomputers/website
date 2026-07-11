@@ -64,7 +64,7 @@ const ACCESSORY_SUBCATEGORIES = [
     { id: 'bags', name: 'Bags', parentId: 'accessories', icon: Briefcase, defaultImage: '/images/subcategories/bags.jpg', description: 'Laptop bags and backpacks' },
     { id: 'docks', name: 'Docks', parentId: 'accessories', icon: Monitor, defaultImage: '/images/subcategories/docks-v3.jpg', description: 'USB-C docks and hubs' },
     { id: 'usb-flashdrives', name: 'USB Flash Drives', parentId: 'accessories', icon: Usb, defaultImage: '/images/subcategories/usb-flashdrives-v4.jpg', description: 'Portable storage devices' },
-    { id: 'dvd-writers', name: 'DVD Writers', parentId: 'accessories', icon: Disc, defaultImage: '/images/subcategories/dvd-writers.jpg', description: 'External optical drives' },
+    { id: 'dvd-writers', name: 'Others', parentId: 'accessories', icon: Disc, defaultImage: '/images/subcategories/dvd-writers.jpg', description: 'DVD, Webcam, etc.' },
 ];
 
 interface CategoryData {

@@ -44,7 +44,8 @@ const DEFAULT_CATEGORIES = [
     { id: 'docks', name: 'Docks', group: 'Accessories' },
     { id: 'hubs', name: 'Hubs', group: 'Accessories' },
     { id: 'usb-flashdrives', name: 'USB Flash Drives', group: 'Accessories' },
-    { id: 'dvd-writers', name: 'DVD Writers', group: 'Accessories' },
+    { id: 'dvd-writers', name: 'DVD', group: 'Accessories' },
+    { id: 'webcams', name: 'Webcam', group: 'Accessories' },
 ];
 
 export default function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
@@ -120,13 +121,17 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
             }
 
             // Populate Form
+            const formCategory = productCategory === 'dvd-writers' 
+                ? (productData.productInfo?.othersType === 'webcam' ? 'webcams' : 'dvd-writers')
+                : productCategory;
+
             setFormData({
                 name: productData.name || '',
                 brand: productData.brand || '',
                 price: productData.price?.toString() || '',
                 originalPrice: productData.originalPrice?.toString() || '',
                 quantity: productData.stock?.toString() || '0',
-                category: productCategory,
+                category: formCategory,
                 description: productData.description || '',
             });
 
@@ -314,6 +319,14 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
             const allImages = [...existingImages, ...newImageUrls];
 
             // 2. Prepare Data
+            const targetCategory = formData.category === 'webcams' ? 'dvd-writers' : formData.category;
+            const updatedProductInfo = { ...productInfo };
+            if (formData.category === 'webcams') {
+                updatedProductInfo.othersType = 'webcam';
+            } else if (formData.category === 'dvd-writers') {
+                updatedProductInfo.othersType = 'dvd';
+            }
+
             const productData = {
                 name: formData.name,
                 brand: formData.brand,
@@ -328,19 +341,19 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                 images: allImages,
                 updatedAt: new Date().toISOString(),
                 updatedBy: adminUser?.username || 'admin',
-                productInfo: productInfo,
+                productInfo: updatedProductInfo,
             };
 
             console.log('Update payload:', productData);
 
             // 3. Check if category has changed
-            const categoryChanged = originalCategory !== formData.category;
+            const categoryChanged = originalCategory !== targetCategory;
 
             if (categoryChanged) {
-                console.log(`Category changed from '${originalCategory}' to '${formData.category}'. Moving product...`);
+                console.log(`Category changed from '${originalCategory}' to '${targetCategory}'. Moving product...`);
 
                 // Add to new collection with same ID using setDoc
-                const newDocRef = doc(db, formData.category, productId);
+                const newDocRef = doc(db, targetCategory, productId);
                 await setDoc(newDocRef, {
                     ...productData,
                     createdAt: new Date().toISOString(), // Reset created date for new collection
@@ -355,7 +368,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                 toast.success('Product category changed and saved successfully!');
             } else {
                 // Just update in same collection
-                const docRef = doc(db, formData.category, productId);
+                const docRef = doc(db, targetCategory, productId);
                 await updateDoc(docRef, productData);
                 console.log('Firestore document updated successfully.');
                 toast.success('Product updated successfully!');

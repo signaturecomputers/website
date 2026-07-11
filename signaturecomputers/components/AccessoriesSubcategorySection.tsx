@@ -112,8 +112,8 @@ const defaultSubcategories = [
     },
     {
         id: 'dvd-writers',
-        title: 'DVD Writers',
-        description: 'External optical drives',
+        title: 'Others',
+        description: 'DVD, Webcams & other accessories',
         link: '/products?category=dvd-writers',
         icon: Disc,
         color: 'from-indigo-500 to-purple-600',

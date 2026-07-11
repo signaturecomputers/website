@@ -39,7 +39,7 @@ export default function SidebarFilters({
         { id: 'bags', name: 'Bags' },
         { id: 'docks', name: 'Docks' },
         { id: 'usb-flashdrives', name: 'USB Flash Drives' },
-        { id: 'dvd-writers', name: 'DVD Writers' },
+        { id: 'dvd-writers', name: 'Others' },
     ];
 
     // Check if current selection is an accessory subcategory

@@ -121,9 +121,9 @@ export const CATEGORY_SEO: Record<string, CategorySEOData> = {
         content: null
     },
     'dvd-writers': {
-        title: 'External DVD Writers & Optical Drives | Signature Computers',
-        description: 'Buy external DVD writers and optical drives to read and burn discs on modern laptops and desktops in Chennai.',
-        h1: 'External DVD Writers & Optical Drives in Chennai',
+        title: 'Others - DVD Writers, Webcams & Accessories | Signature Computers',
+        description: 'Buy external DVD writers, webcams, and other accessories in Chennai at Signature Computers.',
+        h1: 'Others - DVD Writers, Webcams & Accessories in Chennai',
         content: null
     }
 };

@@ -176,10 +176,10 @@ export interface ProductInfo {
         powerConsumption?: string; // Added for monitor
     };
 
-    // Security
     security?: {
         micMuteKey?: boolean;
         cameraPrivacyShutter?: boolean;
+        fingerprint?: boolean;
         tpm?: string;
         securityManagement?: string; // Added for desktop
         securityManagementFootnote?: string; // Added for workstation
@@ -237,24 +237,24 @@ export interface ProductInfo {
     };
 
     // Custom fields for each section (dynamic fields added by admin)
-    basicCustomFields?: Array<{ label: string; value: string }>;
-    appearanceCustomFields?: Array<{ label: string; value: string }>;
-    osCustomFields?: Array<{ label: string; value: string }>;
-    processorCustomFields?: Array<{ label: string; value: string }>;
-    memoryCustomFields?: Array<{ label: string; value: string }>;
-    storageCustomFields?: Array<{ label: string; value: string }>;
-    displayCustomFields?: Array<{ label: string; value: string }>;
-    graphicsCustomFields?: Array<{ label: string; value: string }>;
-    audioCustomFields?: Array<{ label: string; value: string }>;
-    connectivityCustomFields?: Array<{ label: string; value: string }>;
-    portsCustomFields?: Array<{ label: string; value: string }>;
-    cameraCustomFields?: Array<{ label: string; value: string }>;
-    batteryCustomFields?: Array<{ label: string; value: string }>;
-    securityCustomFields?: Array<{ label: string; value: string }>;
-    dimensionsCustomFields?: Array<{ label: string; value: string }>;
-    warrantyCustomFields?: Array<{ label: string; value: string }>;
-    certificationsCustomFields?: Array<{ label: string; value: string }>;
-    environmentalCustomFields?: Array<{ label: string; value: string }>;
+    basicCustomFields?: Array<{ label: string; value: string; type?: string }>;
+    appearanceCustomFields?: Array<{ label: string; value: string; type?: string }>;
+    osCustomFields?: Array<{ label: string; value: string; type?: string }>;
+    processorCustomFields?: Array<{ label: string; value: string; type?: string }>;
+    memoryCustomFields?: Array<{ label: string; value: string; type?: string }>;
+    storageCustomFields?: Array<{ label: string; value: string; type?: string }>;
+    displayCustomFields?: Array<{ label: string; value: string; type?: string }>;
+    graphicsCustomFields?: Array<{ label: string; value: string; type?: string }>;
+    audioCustomFields?: Array<{ label: string; value: string; type?: string }>;
+    connectivityCustomFields?: Array<{ label: string; value: string; type?: string }>;
+    portsCustomFields?: Array<{ label: string; value: string; type?: string }>;
+    cameraCustomFields?: Array<{ label: string; value: string; type?: string }>;
+    batteryCustomFields?: Array<{ label: string; value: string; type?: string }>;
+    securityCustomFields?: Array<{ label: string; value: string; type?: string }>;
+    dimensionsCustomFields?: Array<{ label: string; value: string; type?: string }>;
+    warrantyCustomFields?: Array<{ label: string; value: string; type?: string }>;
+    certificationsCustomFields?: Array<{ label: string; value: string; type?: string }>;
+    environmentalCustomFields?: Array<{ label: string; value: string; type?: string }>;
 
     // Custom labels for default fields (when admin edits them)
     fieldLabels?: Record<string, string>;
@@ -298,6 +298,58 @@ export interface ProductInfo {
     inputVoltage?: string;
     currentRating?: string;
     connectorType?: string;
+    isPowerCable?: boolean;
+    hostInterface?: string;
+    numberOfPorts?: string;
+    usbPortConfiguration?: string;
+    hdmiPort?: string;
+    vgaPort?: string;
+    ethernetPort?: string;
+    audioPort?: string;
+    sdCardSlot?: string;
+    microSdCardSlot?: string;
+    usbCPdPort?: string;
+    dataTransferSpeed?: string;
+    hdmiResolution?: string;
+    ethernetSpeed?: string;
+    cardReaderSpeed?: string;
+    plugAndPlay?: string;
+    hotSwappable?: string;
+    aluminumBody?: string;
+    ledIndicator?: string;
+    overcurrentProtection?: string;
+    overvoltageProtection?: string;
+    material?: string;
+    refreshRate?: string;
+    capacity?: string;
+    'interface'?: string;
+    readSpeed?: string;
+    writeSpeed?: string;
+    usbStandard?: string;
+    retractableDesign?: string;
+    waterResistant?: string;
+    shockResistant?: string;
+    passwordProtection?: string;
+    weight?: string;
+    othersType?: 'dvd' | 'webcam';
+    driveType?: string;
+    opticalDriveType?: string;
+    supportedDiscFormats?: string;
+    slimDesign?: string;
+    busPowered?: string;
+    mDiscSupport?: string;
+    resolution?: string;
+    frameRate?: string;
+    imageSensor?: string;
+    fieldOfView?: string;
+    focusType?: string;
+    builtInMicrophone?: string;
+    microphoneType?: string;
+    privacyShutter?: string;
+    autoLightCorrection?: string;
+    noiseReduction?: string;
+    tripodSupport?: string;
+    mountType?: string;
 }
 
 export interface Product {
@@ -480,7 +532,7 @@ export const CATEGORY_NAMES: Record<string, string> = {
     'docks': 'Docks',
     'hubs': 'Hubs',
     'usb-flashdrives': 'USB Flash Drives',
-    'dvd-writers': 'DVD Writers',
+    'dvd-writers': 'Others',
 };
 
 export interface SearchResults {

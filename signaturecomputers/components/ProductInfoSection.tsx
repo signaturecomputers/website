@@ -1,6 +1,6 @@
 'use client';
 
-import { FiCpu, FiMonitor, FiHardDrive, FiWifi, FiBattery, FiShield, FiPackage, FiAward, FiBox, FiCamera, FiSpeaker, FiSettings, FiList, FiMaximize, FiCheckSquare, FiGift, FiZap } from 'react-icons/fi';
+import { FiCpu, FiMonitor, FiHardDrive, FiWifi, FiBattery, FiShield, FiPackage, FiAward, FiBox, FiCamera, FiSpeaker, FiSettings, FiList, FiMaximize, FiCheckSquare, FiGift, FiZap, FiVideo, FiMic } from 'react-icons/fi';
 import { ProductInfo } from '@/lib/products';
 
 interface ProductInfoSectionProps {
@@ -64,14 +64,21 @@ function InfoRow({ label, value }: { label: string; value: string | number | boo
 }
 
 // Helper to render custom fields from arrays like basicCustomFields, portsCustomFields, etc.
-function renderCustomFields(customFields: { label: string; value: string }[] | undefined) {
+function renderCustomFields(customFields: { label: string; value: string; type?: string }[] | undefined) {
     if (!customFields || customFields.length === 0) return null;
 
     return customFields
         .filter(field => field.label && field.value) // Only show fields with both label and value
-        .map((field, idx) => (
-            <InfoRow key={`custom-${idx}`} label={field.label} value={field.value} />
-        ));
+        .map((field, idx) => {
+            if (field.type === 'checkbox') {
+                return (
+                    <InfoRow key={`custom-${idx}`} label={field.label} value={field.value === 'true' ? 'Yes' : 'No'} />
+                );
+            }
+            return (
+                <InfoRow key={`custom-${idx}`} label={field.label} value={field.value} />
+            );
+        });
 }
 
 // Helper to get custom section title if set by admin
@@ -402,6 +409,22 @@ function renderCategorySpecificFields(productInfo: any) {
         'inputVoltage', 'output', 'connectorType', 'specialFeatures', 'whatsInBox',
         'securityManagement', 'maxDisplays', 'capacityNative', 'interface', 'weight', 'minDimensions',
         'material', 'compartments', 'laptopSize',
+        // Cable-specific fields
+        'cableType', 'connector1', 'connector2', 'cableLength', 'supportedStandard', 'maxResolution',
+        'refreshRateSupport', 'compatibleDevices', 'compatiblePorts', 'currentRating', 'isPowerCable',
+        // Hub-specific fields
+        'hostInterface', 'numberOfPorts', 'usbPortConfiguration', 'hdmiPort', 'vgaPort', 'ethernetPort',
+        'audioPort', 'sdCardSlot', 'microSdCardSlot', 'usbCPdPort', 'dataTransferSpeed', 'hdmiResolution',
+        'ethernetSpeed', 'cardReaderSpeed', 'plugAndPlay', 'hotSwappable', 'aluminumBody', 'ledIndicator',
+        'overcurrentProtection', 'overvoltageProtection',
+        // Flash Drive specific fields
+        'capacity', 'readSpeed', 'writeSpeed', 'usbStandard', 'retractableDesign', 'waterResistant',
+        'shockResistant', 'passwordProtection',
+        // DVD and Webcam specific fields
+        'othersType', 'driveType', 'opticalDriveType', 'supportedDiscFormats', 'slimDesign', 'busPowered',
+        'mDiscSupport', 'resolution', 'frameRate', 'imageSensor', 'fieldOfView', 'focusType',
+        'builtInMicrophone', 'microphoneType', 'privacyShutter', 'autoLightCorrection', 'noiseReduction',
+        'tripodSupport', 'mountType',
         // Monitor fields
         'screenSizeCm', 'resolutionNative', 'panelType', 'brightnessNits', 'responseTime', 'refreshRate',
         'aspectRatio', 'contrastRatio', 'colorSupport', 'displayInputs', 'operatingTemp', 'powerMaximum',
@@ -492,7 +515,7 @@ export default function ProductInfoSection({ productInfo, isAdmin = false, categ
         return renderKeyboardSpecs();
     }
 
-    if (category === 'docks' || category === 'hubs') {
+    if (category === 'docks') {
         return renderDocksSpecs();
     }
 
@@ -506,6 +529,25 @@ export default function ProductInfoSection({ productInfo, isAdmin = false, categ
 
     if (category === 'bags') {
         return renderBagsSpecs();
+    }
+
+    if (category === 'cables') {
+        return renderCablesSpecs();
+    }
+
+    if (category === 'hubs') {
+        return renderHubsSpecs();
+    }
+
+    if (category === 'usb-flashdrives') {
+        return renderUSBFlashDrivesSpecs();
+    }
+
+    if (category === 'dvd-writers') {
+        if (productInfo?.othersType === 'webcam') {
+            return renderWebcamSpecs();
+        }
+        return renderDVDSpecs();
     }
 
     function renderDesktopSpecs() {
@@ -1731,10 +1773,652 @@ export default function ProductInfoSection({ productInfo, isAdmin = false, categ
         );
     }
 
-    // Check if this is an accessory product (has accessory-specific fields that have their own Category/Usage sections)
+    function renderCablesSpecs() {
+        const isSectionHidden = (sectionKey: string): boolean => {
+            const hidden = customProductInfo.hiddenSections || [];
+            return hidden.includes(sectionKey);
+        };
+
+        const isPowerCable = customProductInfo.isPowerCable || false;
+
+        return (
+            <div className="space-y-4">
+                {/* Category */}
+                {!isSectionHidden("categoryInfo") && (productInfo?.series || (isAdmin && productInfo?.partNo)) && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Series", "categoryInfo")} icon={FiPackage}>
+                        <dl>
+                            {isAdmin && productInfo?.partNo && (
+                                <InfoRow label={getFieldLabel(customProductInfo, "Part Number", "basic_partNo")} value={productInfo.partNo} />
+                            )}
+                            <InfoRow label={getFieldLabel(customProductInfo, "Series", "basic_series")} value={productInfo?.series} />
+                            {renderCustomFields(customProductInfo.basicCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Connectivity */}
+                {!isSectionHidden("connection") && (productInfo?.cableType || productInfo?.connector1 || productInfo?.connector2) && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Connectivity", "connection")} icon={FiWifi}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "Cable Type", "cable_cableType")} value={productInfo?.cableType} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Connector 1", "cable_connector1")} value={productInfo?.connector1} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Connector 2", "cable_connector2")} value={productInfo?.connector2} />
+                            {renderCustomFields(customProductInfo.connectivityCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Cable Specifications (if not power cable) */}
+                {!isPowerCable && !isSectionHidden("cableSpecs") && (
+                    productInfo?.cableLength ||
+                    productInfo?.supportedStandard ||
+                    productInfo?.maxResolution ||
+                    productInfo?.refreshRateSupport
+                ) && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Cable Specifications", "cableSpecs")} icon={FiSettings}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "Cable Length", "cable_cableLength")} value={productInfo?.cableLength} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Supported Standard (HDMI 2.1 / DP 1.4)", "cable_supportedStandard")} value={productInfo?.supportedStandard} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Maximum Resolution", "cable_maxResolution")} value={productInfo?.maxResolution} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Refresh Rate Support", "cable_refreshRateSupport")} value={productInfo?.refreshRateSupport} />
+                            {renderCustomFields(customProductInfo.storageCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Power Specifications (if power cable) */}
+                {isPowerCable && !isSectionHidden("powerSpecs") && (
+                    productInfo?.cableLength ||
+                    productInfo?.inputVoltage ||
+                    productInfo?.currentRating ||
+                    productInfo?.connectorType
+                ) && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Power Specifications", "powerSpecs")} icon={FiZap}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "Cable Length", "cable_cableLength")} value={productInfo?.cableLength} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Input Voltage", "cable_inputVoltage")} value={productInfo?.inputVoltage} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Current Rating", "cable_currentRating")} value={productInfo?.currentRating} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Connector Type", "cable_connectorType")} value={productInfo?.connectorType} />
+                            {renderCustomFields(customProductInfo.storageCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Compatibility */}
+                {!isSectionHidden("compatibility") && (productInfo?.compatibleDevices || productInfo?.compatiblePorts) && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Compatibility", "compatibility")} icon={FiCheckSquare}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "Compatible Devices", "cable_compatibleDevices")} value={productInfo?.compatibleDevices} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Compatible Ports", "cable_compatiblePorts")} value={productInfo?.compatiblePorts} />
+                            {renderCustomFields(customProductInfo.basicCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Features */}
+                {!isSectionHidden("features") && productInfo?.specialFeatures && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Features", "features")} icon={FiSettings}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "Special Features", "cable_specialFeatures")} value={productInfo?.specialFeatures} />
+                            {renderCustomFields(customProductInfo.basicCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Package Contents */}
+                {!isSectionHidden("boxContents") && productInfo?.whatsInTheBox && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Package Contents", "boxContents")} icon={FiGift}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "What's in the Box", "cable_whatsInBox")} value={productInfo?.whatsInTheBox} />
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Warranty */}
+                {!isSectionHidden("warranty") && customProductInfo.warranty && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Warranty", "warranty")} icon={FiAward}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "Warranty", "cable_warranty")} value={customProductInfo.warranty} />
+                            {renderCustomFields(customProductInfo.warrantyCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Appearance */}
+                {!isSectionHidden("appearance") && hasContent(productInfo?.appearance) && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Appearance", "appearance")} icon={FiBox}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "Product Color", "appearance_color")} value={productInfo?.appearance?.color} />
+                            {renderCustomFields(customProductInfo.appearanceCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+            </div>
+        );
+    }
+
+    function renderHubsSpecs() {
+        const isSectionHidden = (sectionKey: string): boolean => {
+            const hidden = customProductInfo.hiddenSections || [];
+            return hidden.includes(sectionKey);
+        };
+
+        return (
+            <div className="space-y-4">
+                {/* Category / Series */}
+                {!isSectionHidden("categoryInfo") && (productInfo?.series || (isAdmin && productInfo?.partNo)) && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Series", "categoryInfo")} icon={FiPackage}>
+                        <dl>
+                            {isAdmin && productInfo?.partNo && (
+                                <InfoRow label={getFieldLabel(customProductInfo, "Part Number", "basic_partNo")} value={productInfo.partNo} />
+                            )}
+                            <InfoRow label={getFieldLabel(customProductInfo, "Series", "basic_series")} value={productInfo?.series} />
+                            {renderCustomFields(customProductInfo.basicCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Connectivity */}
+                {!isSectionHidden("connection") && (
+                    productInfo?.hostInterface ||
+                    productInfo?.numberOfPorts ||
+                    productInfo?.usbPortConfiguration ||
+                    productInfo?.hdmiPort ||
+                    productInfo?.vgaPort ||
+                    productInfo?.ethernetPort ||
+                    productInfo?.audioPort ||
+                    productInfo?.sdCardSlot ||
+                    productInfo?.microSdCardSlot ||
+                    productInfo?.usbCPdPort
+                ) && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Connectivity", "connection")} icon={FiWifi}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "Host Interface", "hub_hostInterface")} value={productInfo?.hostInterface} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Number of Ports", "hub_numberOfPorts")} value={productInfo?.numberOfPorts} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "USB Port Configuration", "hub_usbPortConfiguration")} value={productInfo?.usbPortConfiguration} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "HDMI Port", "hub_hdmiPort")} value={productInfo?.hdmiPort} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "VGA Port", "hub_vgaPort")} value={productInfo?.vgaPort} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Ethernet Port", "hub_ethernetPort")} value={productInfo?.ethernetPort} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Audio Port", "hub_audioPort")} value={productInfo?.audioPort} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "SD Card Slot", "hub_sdCardSlot")} value={productInfo?.sdCardSlot} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "microSD Card Slot", "hub_microSdCardSlot")} value={productInfo?.microSdCardSlot} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "USB-C PD Port", "hub_usbCPdPort")} value={productInfo?.usbCPdPort} />
+                            {renderCustomFields(customProductInfo.connectivityCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Performance */}
+                {!isSectionHidden("performance") && (
+                    productInfo?.dataTransferSpeed ||
+                    productInfo?.hdmiResolution ||
+                    productInfo?.refreshRate ||
+                    productInfo?.powerDelivery ||
+                    productInfo?.ethernetSpeed ||
+                    productInfo?.cardReaderSpeed
+                ) && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Performance", "performance")} icon={FiZap}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "Data Transfer Speed", "hub_dataTransferSpeed")} value={productInfo?.dataTransferSpeed} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "HDMI Resolution", "hub_hdmiResolution")} value={productInfo?.hdmiResolution} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Refresh Rate", "hub_refreshRate")} value={productInfo?.refreshRate} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Power Delivery", "hub_powerDelivery")} value={productInfo?.powerDelivery} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Ethernet Speed", "hub_ethernetSpeed")} value={productInfo?.ethernetSpeed} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Card Reader Speed", "hub_cardReaderSpeed")} value={productInfo?.cardReaderSpeed} />
+                            {renderCustomFields(customProductInfo.storageCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Compatibility */}
+                {!isSectionHidden("compatibility") && (productInfo?.compatibleDevices || productInfo?.compatibleOS) && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Compatibility", "compatibility")} icon={FiCheckSquare}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "Compatible Devices", "hub_compatibleDevices")} value={productInfo?.compatibleDevices} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Compatible Operating Systems", "hub_compatibleOS")} value={productInfo?.compatibleOS} />
+                            {renderCustomFields(customProductInfo.basicCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Features */}
+                {!isSectionHidden("features") && (
+                    productInfo?.plugAndPlay ||
+                    productInfo?.hotSwappable ||
+                    productInfo?.aluminumBody ||
+                    productInfo?.ledIndicator ||
+                    productInfo?.overcurrentProtection ||
+                    productInfo?.overvoltageProtection
+                ) && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Features", "features")} icon={FiSettings}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "Plug & Play", "hub_plugAndPlay")} value={productInfo?.plugAndPlay} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Hot Swappable", "hub_hotSwappable")} value={productInfo?.hotSwappable} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Aluminum Body", "hub_aluminumBody")} value={productInfo?.aluminumBody} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "LED Indicator", "hub_ledIndicator")} value={productInfo?.ledIndicator} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Overcurrent Protection", "hub_overcurrentProtection")} value={productInfo?.overcurrentProtection} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Overvoltage Protection", "hub_overvoltageProtection")} value={productInfo?.overvoltageProtection} />
+                            {renderCustomFields(customProductInfo.basicCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Package Contents */}
+                {!isSectionHidden("boxContents") && productInfo?.whatsInTheBox && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Package Contents", "boxContents")} icon={FiGift}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "What's in the Box", "hub_whatsInBox")} value={productInfo?.whatsInTheBox} />
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Warranty */}
+                {!isSectionHidden("warranty") && customProductInfo.warranty && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Warranty", "warranty")} icon={FiAward}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "Warranty", "hub_warranty")} value={customProductInfo.warranty} />
+                            {renderCustomFields(customProductInfo.warrantyCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Appearance */}
+                {!isSectionHidden("appearance") && (hasContent(productInfo?.appearance) || productInfo?.material) && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Appearance", "appearance")} icon={FiBox}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "Product Color", "appearance_color")} value={productInfo?.appearance?.color} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Material", "hub_material")} value={productInfo?.material} />
+                            {renderCustomFields(customProductInfo.appearanceCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+            </div>
+        );
+    }
+
+    function renderUSBFlashDrivesSpecs() {
+        const isSectionHidden = (sectionKey: string): boolean => {
+            const hidden = customProductInfo.hiddenSections || [];
+            return hidden.includes(sectionKey);
+        };
+
+        return (
+            <div className="space-y-4">
+                {/* Series */}
+                {!isSectionHidden("categoryInfo") && (productInfo?.series || (isAdmin && productInfo?.partNo)) && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Series", "categoryInfo")} icon={FiPackage}>
+                        <dl>
+                            {isAdmin && productInfo?.partNo && (
+                                <InfoRow label={getFieldLabel(customProductInfo, "Part Number", "basic_partNo")} value={productInfo.partNo} />
+                            )}
+                            <InfoRow label={getFieldLabel(customProductInfo, "Series", "basic_series")} value={productInfo?.series} />
+                            {renderCustomFields(customProductInfo.basicCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Storage Specifications */}
+                {!isSectionHidden("storageSpecs") && (
+                    productInfo?.capacity ||
+                    productInfo?.interface ||
+                    productInfo?.readSpeed ||
+                    productInfo?.writeSpeed
+                ) && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Storage Specifications", "storageSpecs")} icon={FiHardDrive}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "Capacity", "usb_capacity")} value={productInfo?.capacity} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Interface", "usb_interface")} value={productInfo?.interface} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Read Speed", "usb_readSpeed")} value={productInfo?.readSpeed} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Write Speed", "usb_writeSpeed")} value={productInfo?.writeSpeed} />
+                            {renderCustomFields(customProductInfo.storageCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Connectivity */}
+                {!isSectionHidden("connection") && (
+                    productInfo?.connectorType ||
+                    productInfo?.usbStandard
+                ) && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Connectivity", "connection")} icon={FiWifi}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "Connector Type", "usb_connectorType")} value={productInfo?.connectorType} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "USB Standard", "usb_usbStandard")} value={productInfo?.usbStandard} />
+                            {renderCustomFields(customProductInfo.connectivityCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Compatibility */}
+                {!isSectionHidden("compatibility") && (productInfo?.compatibleDevices || productInfo?.compatibleOS) && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Compatibility", "compatibility")} icon={FiCheckSquare}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "Compatible Devices", "usb_compatibleDevices")} value={productInfo?.compatibleDevices} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Compatible Operating Systems", "usb_compatibleOS")} value={productInfo?.compatibleOS} />
+                            {renderCustomFields(customProductInfo.basicCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Features */}
+                {!isSectionHidden("features") && (
+                    productInfo?.plugAndPlay ||
+                    productInfo?.retractableDesign ||
+                    productInfo?.waterResistant ||
+                    productInfo?.shockResistant ||
+                    productInfo?.passwordProtection
+                ) && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Features", "features")} icon={FiSettings}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "Plug & Play", "usb_plugAndPlay")} value={productInfo?.plugAndPlay} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Retractable Design", "usb_retractableDesign")} value={productInfo?.retractableDesign} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Water Resistant", "usb_waterResistant")} value={productInfo?.waterResistant} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Shock Resistant", "usb_shockResistant")} value={productInfo?.shockResistant} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Password Protection", "usb_passwordProtection")} value={productInfo?.passwordProtection} />
+                            {renderCustomFields(customProductInfo.basicCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Physical Specifications */}
+                {!isSectionHidden("dimensions") && (productInfo?.minDimensions || productInfo?.weight) && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Physical Specifications", "dimensions")} icon={FiBox}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "Dimensions", "usb_minDimensions")} value={productInfo?.minDimensions} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Weight", "usb_weight")} value={productInfo?.weight} />
+                            {renderCustomFields(customProductInfo.dimensionsCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Package Contents */}
+                {!isSectionHidden("boxContents") && productInfo?.whatsInTheBox && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Package Contents", "boxContents")} icon={FiGift}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "What's in the Box", "usb_whatsInBox")} value={productInfo?.whatsInTheBox} />
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Warranty */}
+                {!isSectionHidden("warranty") && customProductInfo.warranty && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Warranty", "warranty")} icon={FiAward}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "Warranty", "usb_warranty")} value={customProductInfo.warranty} />
+                            {renderCustomFields(customProductInfo.warrantyCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Appearance */}
+                {!isSectionHidden("appearance") && (hasContent(productInfo?.appearance) || productInfo?.material) && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Appearance", "appearance")} icon={FiBox}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "Product Color", "appearance_color")} value={productInfo?.appearance?.color} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Material", "usb_material")} value={productInfo?.material} />
+                            {renderCustomFields(customProductInfo.appearanceCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+            </div>
+        );
+    }
+
+    function renderDVDSpecs() {
+        const isSectionHidden = (sectionKey: string): boolean => {
+            const hidden = customProductInfo.hiddenSections || [];
+            return hidden.includes(sectionKey);
+        };
+
+        return (
+            <div className="space-y-4">
+                {/* Series */}
+                {!isSectionHidden("categoryInfo") && (productInfo?.series || (isAdmin && productInfo?.partNo)) && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Series", "categoryInfo")} icon={FiPackage}>
+                        <dl>
+                            {isAdmin && productInfo?.partNo && (
+                                <InfoRow label={getFieldLabel(customProductInfo, "Part Number", "basic_partNo")} value={productInfo.partNo} />
+                            )}
+                            <InfoRow label={getFieldLabel(customProductInfo, "Series", "basic_series")} value={productInfo?.series} />
+                            {renderCustomFields(customProductInfo.basicCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Drive Specifications */}
+                {!isSectionHidden("driveSpecs") && (
+                    productInfo?.driveType ||
+                    productInfo?.opticalDriveType ||
+                    productInfo?.readSpeed ||
+                    productInfo?.writeSpeed ||
+                    productInfo?.supportedDiscFormats
+                ) && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Drive Specifications", "driveSpecs")} icon={FiHardDrive}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "Drive Type", "dvd_driveType")} value={productInfo?.driveType} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Optical Drive Type", "dvd_opticalDriveType")} value={productInfo?.opticalDriveType} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Read Speed", "dvd_readSpeed")} value={productInfo?.readSpeed} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Write Speed", "dvd_writeSpeed")} value={productInfo?.writeSpeed} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Supported Disc Formats", "dvd_supportedDiscFormats")} value={productInfo?.supportedDiscFormats} />
+                            {renderCustomFields(customProductInfo.storageCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Connectivity */}
+                {!isSectionHidden("connection") && (
+                    productInfo?.interface ||
+                    productInfo?.cableType
+                ) && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Connectivity", "connection")} icon={FiWifi}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "Interface", "dvd_interface")} value={productInfo?.interface} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Cable Type", "dvd_cableType")} value={productInfo?.cableType} />
+                            {renderCustomFields(customProductInfo.connectivityCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Compatibility */}
+                {!isSectionHidden("compatibility") && (productInfo?.compatibleDevices || productInfo?.compatibleOS) && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Compatibility", "compatibility")} icon={FiCheckSquare}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "Compatible Devices", "dvd_compatibleDevices")} value={productInfo?.compatibleDevices} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Compatible Operating Systems", "dvd_compatibleOS")} value={productInfo?.compatibleOS} />
+                            {renderCustomFields(customProductInfo.basicCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Features */}
+                {!isSectionHidden("features") && (
+                    productInfo?.plugAndPlay ||
+                    productInfo?.slimDesign ||
+                    productInfo?.busPowered ||
+                    productInfo?.mDiscSupport
+                ) && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Features", "features")} icon={FiSettings}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "Plug & Play", "dvd_plugAndPlay")} value={productInfo?.plugAndPlay} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Slim Design", "dvd_slimDesign")} value={productInfo?.slimDesign} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Bus Powered", "dvd_busPowered")} value={productInfo?.busPowered} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "M-DISC Support (if available)", "dvd_mDiscSupport")} value={productInfo?.mDiscSupport} />
+                            {renderCustomFields(customProductInfo.basicCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Package Contents */}
+                {!isSectionHidden("boxContents") && productInfo?.whatsInTheBox && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Package Contents", "boxContents")} icon={FiGift}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "What's in the Box", "dvd_whatsInBox")} value={productInfo?.whatsInTheBox} />
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Warranty */}
+                {!isSectionHidden("warranty") && customProductInfo.warranty && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Warranty", "warranty")} icon={FiAward}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "Warranty", "dvd_warranty")} value={customProductInfo.warranty} />
+                            {renderCustomFields(customProductInfo.warrantyCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Appearance */}
+                {!isSectionHidden("appearance") && (hasContent(productInfo?.appearance) || productInfo?.material) && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Appearance", "appearance")} icon={FiBox}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "Product Color", "appearance_color")} value={productInfo?.appearance?.color} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Material", "dvd_material")} value={productInfo?.material} />
+                            {renderCustomFields(customProductInfo.appearanceCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+            </div>
+        );
+    }
+
+    function renderWebcamSpecs() {
+        const isSectionHidden = (sectionKey: string): boolean => {
+            const hidden = customProductInfo.hiddenSections || [];
+            return hidden.includes(sectionKey);
+        };
+
+        return (
+            <div className="space-y-4">
+                {/* Series */}
+                {!isSectionHidden("categoryInfo") && (productInfo?.series || (isAdmin && productInfo?.partNo)) && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Series", "categoryInfo")} icon={FiPackage}>
+                        <dl>
+                            {isAdmin && productInfo?.partNo && (
+                                <InfoRow label={getFieldLabel(customProductInfo, "Part Number", "basic_partNo")} value={productInfo.partNo} />
+                            )}
+                            <InfoRow label={getFieldLabel(customProductInfo, "Series", "basic_series")} value={productInfo?.series} />
+                            {renderCustomFields(customProductInfo.basicCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Camera Specifications */}
+                {!isSectionHidden("cameraSpecs") && (
+                    productInfo?.resolution ||
+                    productInfo?.frameRate ||
+                    productInfo?.imageSensor ||
+                    productInfo?.fieldOfView ||
+                    productInfo?.focusType
+                ) && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Camera Specifications", "cameraSpecs")} icon={FiVideo}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "Resolution", "webcam_resolution")} value={productInfo?.resolution} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Frame Rate", "webcam_frameRate")} value={productInfo?.frameRate} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Image Sensor", "webcam_imageSensor")} value={productInfo?.imageSensor} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Field of View (FOV)", "webcam_fieldOfView")} value={productInfo?.fieldOfView} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Focus Type", "webcam_focusType")} value={productInfo?.focusType} />
+                            {renderCustomFields(customProductInfo.storageCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Audio */}
+                {!isSectionHidden("audio") && (
+                    productInfo?.builtInMicrophone ||
+                    productInfo?.microphoneType
+                ) && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Audio", "audio")} icon={FiMic}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "Built-in Microphone", "webcam_builtInMicrophone")} value={productInfo?.builtInMicrophone} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Microphone Type", "webcam_microphoneType")} value={productInfo?.microphoneType} />
+                            {renderCustomFields(customProductInfo.connectivityCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Connectivity */}
+                {!isSectionHidden("connection") && (
+                    productInfo?.interface ||
+                    productInfo?.cableLength
+                ) && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Connectivity", "connection")} icon={FiWifi}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "Interface", "webcam_interface")} value={productInfo?.interface} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Cable Length", "webcam_cableLength")} value={productInfo?.cableLength} />
+                            {renderCustomFields(customProductInfo.connectivityCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Compatibility */}
+                {!isSectionHidden("compatibility") && (productInfo?.compatibleDevices || productInfo?.compatibleOS) && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Compatibility", "compatibility")} icon={FiCheckSquare}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "Compatible Devices", "webcam_compatibleDevices")} value={productInfo?.compatibleDevices} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Compatible Operating Systems", "webcam_compatibleOS")} value={productInfo?.compatibleOS} />
+                            {renderCustomFields(customProductInfo.basicCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Features */}
+                {!isSectionHidden("features") && (
+                    productInfo?.plugAndPlay ||
+                    productInfo?.privacyShutter ||
+                    productInfo?.autoLightCorrection ||
+                    productInfo?.noiseReduction ||
+                    productInfo?.tripodSupport
+                ) && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Features", "features")} icon={FiSettings}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "Plug & Play", "webcam_plugAndPlay")} value={productInfo?.plugAndPlay} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Privacy Shutter", "webcam_privacyShutter")} value={productInfo?.privacyShutter} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Auto Light Correction", "webcam_autoLightCorrection")} value={productInfo?.autoLightCorrection} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Noise Reduction", "webcam_noiseReduction")} value={productInfo?.noiseReduction} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Tripod Support", "webcam_tripodSupport")} value={productInfo?.tripodSupport} />
+                            {renderCustomFields(customProductInfo.basicCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Package Contents */}
+                {!isSectionHidden("boxContents") && productInfo?.whatsInTheBox && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Package Contents", "boxContents")} icon={FiGift}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "What's in the Box", "webcam_whatsInBox")} value={productInfo?.whatsInTheBox} />
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Warranty */}
+                {!isSectionHidden("warranty") && customProductInfo.warranty && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Warranty", "warranty")} icon={FiAward}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "Warranty", "webcam_warranty")} value={customProductInfo.warranty} />
+                            {renderCustomFields(customProductInfo.warrantyCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Appearance */}
+                {!isSectionHidden("appearance") && (hasContent(productInfo?.appearance) || productInfo?.mountType) && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Appearance", "appearance")} icon={FiBox}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "Product Color", "appearance_color")} value={productInfo?.appearance?.color} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Mount Type", "webcam_mountType")} value={productInfo?.mountType} />
+                            {renderCustomFields(customProductInfo.appearanceCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+            </div>
+        );
+    }
+
     const isAccessoryProduct = customProductInfo.micSensitivity || customProductInfo.connectionType ||
         customProductInfo.sensorResolution || customProductInfo.impedance || customProductInfo.capacityNative ||
-        customProductInfo.material || customProductInfo.securityManagement || customProductInfo.minDimensions;
+        customProductInfo.material || customProductInfo.securityManagement || customProductInfo.minDimensions ||
+        customProductInfo.hostInterface || customProductInfo.numberOfPorts || customProductInfo.dataTransferSpeed ||
+        customProductInfo.capacity || customProductInfo.readSpeed || customProductInfo.driveType || customProductInfo.resolution;
 
     return (
         <div className="space-y-4">
@@ -1950,6 +2634,7 @@ export default function ProductInfoSection({ productInfo, isAdmin = false, categ
                         <InfoRow label={getFieldLabel(customProductInfo, "TPM", "security_tpm")} value={productInfo.security?.tpm} />
                         <InfoRow label={getFieldLabel(customProductInfo, "Mic Mute Key", "security_micMuteKey")} value={productInfo.security?.micMuteKey} />
                         <InfoRow label={getFieldLabel(customProductInfo, "Camera Privacy Shutter", "security_cameraPrivacyShutter")} value={productInfo.security?.cameraPrivacyShutter} />
+                        <InfoRow label={getFieldLabel(customProductInfo, "Fingerprint Reader", "security_fingerprint")} value={productInfo.security?.fingerprint} />
                         {renderCustomFields(customProductInfo.securityCustomFields)}
                     </dl>
                 </InfoSection>

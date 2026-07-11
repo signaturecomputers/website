@@ -44,7 +44,8 @@ const DEFAULT_CATEGORIES = [
     { id: 'docks', name: 'Docks', group: 'Accessories' },
     { id: 'hubs', name: 'Hubs', group: 'Accessories' },
     { id: 'usb-flashdrives', name: 'USB Flash Drives', group: 'Accessories' },
-    { id: 'dvd-writers', name: 'DVD Writers', group: 'Accessories' },
+    { id: 'dvd-writers', name: 'DVD', group: 'Accessories' },
+    { id: 'webcams', name: 'Webcam', group: 'Accessories' },
 ];
 
 export default function AddProductPage() {
@@ -144,7 +145,12 @@ export default function AddProductPage() {
         'power-adapters': ['Features', 'Input Voltage (V)', 'Dimensions (cm) - Length/Width/Height', 'Weight (g)', 'Warranty Duration'],
         headphones: ['Audio Driver Size (mm)', 'Audio Driver Type', 'Noise Cancellation', 'Boom Type', 'Design', 'Connectivity Type', 'Connectivity Interface'],
         bags: ['Features'],
+        cables: ['Cable Type', 'Connector 1', 'Connector 2', 'Cable Length', 'Compatibility'],
         docks: ['Connection Interface', 'Maximum Displays', 'Maximum Resolution', 'Host Connection', 'Charging Support', 'Dimensions (mm)', 'Weight', 'Warranty Duration', 'Warranty Type'],
+        hubs: ['Hub Type', 'Interface', 'Number of Ports', 'HDMI Output', 'USB Ports', 'Power Delivery', 'Ethernet', 'Card Reader'],
+        'usb-flashdrives': ['Capacity', 'Interface', 'Read Speed', 'Write Speed', 'Connector Type', 'Compatibility'],
+        'dvd-writers': ['Drive Type', 'Interface', 'Optical Drive Type', 'Read Speed', 'Write Speed', 'Compatibility'],
+        'webcams': ['Resolution', 'Frame Rate', 'Microphone', 'Interface', 'Focus Type', 'Compatibility'],
     };
 
     // Auto-populate specs based on category
@@ -246,6 +252,14 @@ export default function AddProductPage() {
             );
 
             // 2. Prepare Data (Server Action expects plain object)
+            const targetCategory = formData.category === 'webcams' ? 'dvd-writers' : formData.category;
+            const updatedProductInfo = { ...productInfo };
+            if (formData.category === 'webcams') {
+                updatedProductInfo.othersType = 'webcam';
+            } else if (formData.category === 'dvd-writers') {
+                updatedProductInfo.othersType = 'dvd';
+            }
+
             const productData = {
                 name: formData.name,
                 brand: formData.brand,
@@ -258,14 +272,14 @@ export default function AddProductPage() {
                     return acc;
                 }, {} as Record<string, string>),
                 images: imageUrls,
-                category: formData.category,
+                category: targetCategory,
                 createdAt: new Date().toISOString(), // Use ISO string for Server Action serialization
                 createdBy: adminUser?.username || 'admin',
-                productInfo: productInfo, // Include extended product info
+                productInfo: updatedProductInfo, // Include extended product info
             };
 
             // 3. Save via Server Action
-            const result = await createProduct(formData.category, productData);
+            const result = await createProduct(targetCategory, productData);
 
             if (result.success) {
                 toast.success('Product added successfully!');
