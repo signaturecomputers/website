@@ -99,8 +99,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     // Category pages
     const categories = [
-        'laptops', 'desktops', 'workstations', 'monitors', 'printers',
-        'accessories', 'cartridges', 'toners', 'cctv',
+        'laptops', 'desktops', 'workstations', 'monitors', 'memory-storage',
+        'accessories', 'memory', 'storage', 'cctv',
         'keyboards', 'mouse', 'keyboard-mouse-combo', 'headphones',
         'cables', 'power-adapters', 'bags', 'docks', 'hubs', 'usb-flashdrives', 'dvd-writers'
     ];

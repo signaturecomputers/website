@@ -132,11 +132,11 @@ export default function Footer() {
         <footer id="contact-footer" className="w-full bg-[#0f172a] text-gray-300 border-t-0 mt-0 mb-0 pb-0">
             <div className="w-full px-4 sm:px-8 lg:px-12 pt-10 pb-4">
 
-                {/* LAYOUT: Grid on Mobile/Tablet, Flex on Desktop for Uniform Visual Spacing */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-row lg:items-start lg:gap-14">
+                {/* LAYOUT: Grid on Mobile/Tablet, evenly distributed grid on Desktop */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-12">
 
                     {/* COLUMN 1: Brand Info & QR Code */}
-                    <div className="space-y-6 lg:w-[22%] lg:shrink-0">
+                    <div className="space-y-6">
                         <div>
                             <h3 className="text-2xl font-bold text-white tracking-tight mb-3">Signature Computers</h3>
                             <p className="text-sm leading-relaxed text-gray-400 mb-2">
@@ -163,7 +163,7 @@ export default function Footer() {
                     </div>
 
                     {/* COLUMN 2: Quick Links */}
-                    <div className="lg:shrink-0">
+                    <div>
                         <h4 className="text-base font-bold text-white mb-4 border-b border-gray-700/50 pb-1 inline-block">Quick Links</h4>
                         <ul className="space-y-2 text-sm">
                             <li><a href="#about-us" onClick={(e) => smoothScrollTo(e, 'about-us')} className="hover:text-white hover:pl-1 transition-all cursor-pointer">About Us</a></li>
@@ -174,7 +174,7 @@ export default function Footer() {
                     </div>
 
                     {/* COLUMN 3: Policies */}
-                    <div className="lg:shrink-0">
+                    <div>
                         <h4 className="text-base font-bold text-white mb-4 border-b border-gray-700/50 pb-1 inline-block">Policies</h4>
                         <ul className="space-y-2 text-sm">
                             <li><Link href="/terms" className="hover:text-white hover:pl-1 transition-all">Terms & Conditions</Link></li>
@@ -185,7 +185,7 @@ export default function Footer() {
                     </div>
 
                     {/* COLUMN 4: Contact & Social */}
-                    <div className="lg:shrink-0 lg:w-[20%]">
+                    <div>
                         <h4 className="text-base font-bold text-white mb-4 border-b border-gray-700/50 pb-1 inline-block">Contact Details</h4>
                         <ul className="space-y-3 text-sm mb-6">
                             <li className="flex items-start gap-2">
@@ -234,7 +234,7 @@ export default function Footer() {
                     </div>
 
                     {/* COLUMN 5: Your Experience (Access Controlled) */}
-                    <div id="feedback" className="lg:flex-1 lg:max-w-xs lg:ml-8">
+                    <div id="feedback" className="w-full">
                         <h4 className="text-base font-bold text-white mb-4 border-b border-gray-700/50 pb-1 inline-block">Your Experience</h4>
 
                         {isSubmitted ? (

@@ -28,7 +28,7 @@ export default function SEOContentSection() {
 
     return (
         <section className="bg-gray-50 py-12 border-t border-gray-200">
-            <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 text-gray-700 space-y-12">
+            <div className="w-full px-4 sm:px-8 lg:px-12 text-gray-700 space-y-12">
                 
                 {/* Intro Section */}
                 <div className="text-center max-w-3xl mx-auto">

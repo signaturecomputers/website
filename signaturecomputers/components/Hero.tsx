@@ -175,7 +175,7 @@ export default function Hero() {
                     <div className="relative z-10 bg-white pb-12 pt-12 lg:pt-16 h-full">
                         <main className="w-full px-4 sm:px-8 lg:px-12 flex flex-col lg:flex-row items-center gap-10 lg:gap-0 h-full">
                             {/* LEFT: Text Content */}
-                            <div className="flex-1 lg:flex-none lg:w-[58%] sm:text-center lg:text-left z-20 pl-0 lg:pl-6 self-center pr-8">
+                            <div className="flex-1 lg:flex-none lg:w-[50%] z-20 pl-0 lg:pl-6 self-center pr-8">
                                 <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold tracking-wide text-blue-700 bg-blue-100 mb-4 uppercase">
                                     HP Authorized Distributor and Reseller
                                 </span>
@@ -184,7 +184,7 @@ export default function Hero() {
                                     <span className="text-blue-600">Computer Solutions</span>
                                 </h1>
                                 <p className="mt-2 text-base text-gray-500 sm:mt-5 sm:text-lg sm:max-w-2xl sm:mx-auto md:mt-5 md:text-xl lg:mx-0 mb-8 font-light leading-relaxed">
-                                    From laptops to workstations, printers to CCTV systems – we provide premium technology solutions for homes and businesses.
+                                    From laptops to workstations, memory & storage to accessories – we provide premium technology solutions for homes and businesses.
                                 </p>
                                 <div className="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start gap-4">
                                     <div className="rounded-md shadow">
@@ -200,8 +200,8 @@ export default function Hero() {
                                 </div>
                             </div>
                             {/* RIGHT: Hero Image */}
-                            <div className="flex-1 lg:flex-none lg:w-[42%] w-full relative flex items-start justify-start mt-6 lg:mt-0">
-                                <div className="relative w-full max-w-lg lg:max-w-none h-auto">
+                            <div className="flex-1 lg:flex-none lg:w-[50%] w-full relative flex items-center justify-end mt-6 lg:mt-0">
+                                <div className="relative w-full max-w-md lg:max-w-xl xl:max-w-none h-auto max-h-[350px] lg:max-h-[420px] xl:max-h-[460px] 2xl:max-h-[480px] ml-auto mr-0">
                                     <Image
                                         src={heroImage.imageUrl}
                                         alt={heroImage.alt}
@@ -210,7 +210,7 @@ export default function Hero() {
                                         priority
                                         quality={100}
                                         unoptimized
-                                        className="w-full h-auto object-contain object-left"
+                                        className="w-full h-auto max-h-[350px] lg:max-h-[420px] xl:max-h-[460px] 2xl:max-h-[480px] object-contain object-right"
                                     />
                                 </div>
                             </div>

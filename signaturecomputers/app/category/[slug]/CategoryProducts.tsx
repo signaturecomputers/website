@@ -17,10 +17,10 @@ const SLUG_TO_COLLECTION: Record<string, string> = {
     'desktops': 'desktops',
     'workstations': 'workstations',
     'monitors': 'monitors',
-    'printers': 'printers',
+    'memory': 'memory',
+    'storage': 'storage',
+    'graphics-cards': 'graphics-cards',
     'accessories': 'accessories',
-    'cartridges': 'cartridges',
-    'toners': 'toners',
     'cctv': 'cctv',
     'keyboards': 'keyboards',
     'mouse': 'mouse',
@@ -30,9 +30,11 @@ const SLUG_TO_COLLECTION: Record<string, string> = {
     'power-adapters': 'power-adapters',
     'bags': 'bags',
     'docks': 'docks',
-    'hubs': 'docks',
+    'hubs': 'hubs',
     'usb-flashdrives': 'usb-flashdrives',
     'dvd-writers': 'dvd-writers',
+    'webcams': 'dvd-writers',
+    'others': 'dvd-writers',
 };
 
 interface CategoryProductsProps {
@@ -52,34 +54,161 @@ export default function CategoryProducts({ slug }: CategoryProductsProps) {
         async function fetchProducts() {
             setLoading(true);
             try {
-                const collectionName = SLUG_TO_COLLECTION[slug];
+                let fetchedProducts: Product[] = [];
 
-                if (!collectionName) {
-                    console.warn(`Unknown category slug: ${slug}`);
-                    setProducts([]);
-                    setLoading(false);
-                    return;
+                 if (slug === 'memory-storage') {
+                    const memSnap = await getDocs(collection(db, 'memory'));
+                    const stSnap = await getDocs(collection(db, 'storage'));
+                    let gfxProducts: Product[] = [];
+                    try {
+                        const gfxSnap = await getDocs(collection(db, 'graphics-cards'));
+                        gfxProducts = gfxSnap.docs.map(doc => {
+                            const data = doc.data();
+                            return {
+                                id: doc.id,
+                                name: data.name || 'Unnamed Product',
+                                brand: data.brand || '',
+                                price: data.price || 0,
+                                originalPrice: data.originalPrice,
+                                stock: data.stock || 0,
+                                images: data.images || [],
+                                description: data.description || '',
+                                specs: data.specs || {},
+                                category: data.category || 'graphics-cards',
+                                image: data.images?.[0] || '',
+                                rating: data.rating || 4.5,
+                                productInfo: data.productInfo,
+                            };
+                        });
+                    } catch (e) {
+                        console.error("Failed to fetch graphics cards: ", e);
+                    }
+
+                    const memProducts: Product[] = memSnap.docs.map(doc => {
+                        const data = doc.data();
+                        return {
+                            id: doc.id,
+                            name: data.name || 'Unnamed Product',
+                            brand: data.brand || '',
+                            price: data.price || 0,
+                            originalPrice: data.originalPrice,
+                            stock: data.stock || 0,
+                            images: data.images || [],
+                            description: data.description || '',
+                            specs: data.specs || {},
+                            category: data.category || 'memory',
+                            image: data.images?.[0] || '',
+                            rating: data.rating || 4.5,
+                            productInfo: data.productInfo,
+                        };
+                    });
+
+                    const stProducts: Product[] = stSnap.docs.map(doc => {
+                        const data = doc.data();
+                        return {
+                            id: doc.id,
+                            name: data.name || 'Unnamed Product',
+                            brand: data.brand || '',
+                            price: data.price || 0,
+                            originalPrice: data.originalPrice,
+                            stock: data.stock || 0,
+                            images: data.images || [],
+                            description: data.description || '',
+                            specs: data.specs || {},
+                            category: data.category || 'storage',
+                            image: data.images?.[0] || '',
+                            rating: data.rating || 4.5,
+                            productInfo: data.productInfo,
+                        };
+                    });
+
+                    fetchedProducts = [...memProducts, ...stProducts, ...gfxProducts];
+                } else if (slug === 'docks' || slug === 'hubs') {
+                    const docksSnap = await getDocs(collection(db, 'docks'));
+                    let hubsSnap;
+                    try {
+                        hubsSnap = await getDocs(collection(db, 'hubs'));
+                    } catch (e) {
+                        console.warn("Failed to fetch hubs collection:", e);
+                    }
+                    
+                    const docksProducts: Product[] = docksSnap.docs.map(doc => {
+                        const data = doc.data();
+                        return {
+                            id: doc.id,
+                            name: data.name || 'Unnamed Product',
+                            brand: data.brand || '',
+                            price: data.price || 0,
+                            originalPrice: data.originalPrice,
+                            stock: data.stock || 0,
+                            images: data.images || [],
+                            description: data.description || '',
+                            specs: data.specs || {},
+                            category: data.category || 'docks',
+                            image: data.images?.[0] || '',
+                            rating: data.rating || 4.5,
+                            productInfo: data.productInfo,
+                        };
+                    });
+                    
+                    const hubsProducts: Product[] = hubsSnap ? hubsSnap.docs.map(doc => {
+                        const data = doc.data();
+                        return {
+                            id: doc.id,
+                            name: data.name || 'Unnamed Product',
+                            brand: data.brand || '',
+                            price: data.price || 0,
+                            originalPrice: data.originalPrice,
+                            stock: data.stock || 0,
+                            images: data.images || [],
+                            description: data.description || '',
+                            specs: data.specs || {},
+                            category: data.category || 'hubs',
+                            image: data.images?.[0] || '',
+                            rating: data.rating || 4.5,
+                            productInfo: data.productInfo,
+                        };
+                    }) : [];
+                    
+                    fetchedProducts = [...docksProducts, ...hubsProducts].filter(p => p.category === slug);
+                } else {
+                    const collectionName = SLUG_TO_COLLECTION[slug];
+
+                    if (!collectionName) {
+                        console.warn(`Unknown category slug: ${slug}`);
+                        setProducts([]);
+                        setLoading(false);
+                        return;
+                    }
+
+                    const querySnapshot = await getDocs(collection(db, collectionName));
+                    fetchedProducts = querySnapshot.docs.map(doc => {
+                        const data = doc.data();
+                        return {
+                            id: doc.id,
+                            name: data.name || 'Unnamed Product',
+                            brand: data.brand || '',
+                            price: data.price || 0,
+                            originalPrice: data.originalPrice,
+                            stock: data.stock || 0,
+                            images: data.images || [],
+                            description: data.description || '',
+                            specs: data.specs || {},
+                            category: data.category || collectionName,
+                            image: data.images?.[0] || '',
+                            rating: data.rating || 4.5,
+                            productInfo: data.productInfo,
+                        };
+                    });
                 }
 
-                const querySnapshot = await getDocs(collection(db, collectionName));
-                const fetchedProducts: Product[] = querySnapshot.docs.map(doc => {
-                    const data = doc.data();
-                    return {
-                        id: doc.id,
-                        name: data.name || 'Unnamed Product',
-                        brand: data.brand || '',
-                        price: data.price || 0,
-                        originalPrice: data.originalPrice,
-                        stock: data.stock || 0,
-                        images: data.images || [],
-                        description: data.description || '',
-                        specs: data.specs || {},
-                        category: data.category || collectionName,
-                        image: data.images?.[0] || '',
-                        rating: data.rating || 4.5,
-                        productInfo: data.productInfo,
-                    };
-                });
+                if (slug === 'webcams') {
+                    fetchedProducts = fetchedProducts.filter(p => p.category === 'webcams' || p.productInfo?.othersType === 'webcam');
+                } else if (slug === 'dvd-writers') {
+                    fetchedProducts = fetchedProducts.filter(p => p.category === 'dvd-writers' || p.productInfo?.othersType === 'dvd');
+                } else if (slug === 'others') {
+                    fetchedProducts = fetchedProducts.filter(p => p.category === 'others' || p.productInfo?.othersType === 'other');
+                }
 
                 setProducts(fetchedProducts);
                 setFilteredProducts(fetchedProducts);
@@ -146,7 +275,7 @@ export default function CategoryProducts({ slug }: CategoryProductsProps) {
 
     return (
         <div className="bg-gray-50 dark:bg-black min-h-screen">
-            <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="w-full px-4 sm:px-8 lg:px-12 py-8">
                 {/* Page Header */}
                 <div className="mb-6 max-w-4xl">
                     <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">{title}</h2>
@@ -228,7 +357,7 @@ export default function CategoryProducts({ slug }: CategoryProductsProps) {
                                 <p className="text-gray-400 text-sm mt-2">Try adjusting your filters or check back later.</p>
                             </div>
                         ) : viewMode === 'grid' ? (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-4 3xl:grid-cols-5 4xl:grid-cols-6 gap-4 lg:gap-6">
                                 {sortedProducts.map((product) => (
                                     <ProductCard key={product.id} product={product} />
                                 ))}
@@ -329,7 +458,7 @@ export default function CategoryProducts({ slug }: CategoryProductsProps) {
                         <li><Link href="/category/desktops">Desktops</Link></li>
                         <li><Link href="/category/accessories">Computer Accessories</Link></li>
                         <li><Link href="/category/monitors">Display Monitors</Link></li>
-                        <li><Link href="/category/printers">Printers & Scanners</Link></li>
+                        <li><Link href="/category/memory-storage">Memory & Storage</Link></li>
                     </ul>
                 </nav>
             </div>

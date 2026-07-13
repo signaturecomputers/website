@@ -2,10 +2,10 @@ import { collection, getDocs, doc, getDoc, query, where } from 'firebase/firesto
 import { db } from '@/lib/firebase';
 
 const COLLECTIONS = [
-    'laptops', 'desktops', 'monitors', 'accessories', 'printers', 'cartridges', 'toners',
+    'laptops', 'desktops', 'monitors', 'accessories', 'memory', 'storage', 'graphics-cards',
     // Accessories subcategories
     'keyboards', 'mouse', 'keyboard-mouse-combo', 'headphones', 'cables',
-    'power-adapters', 'bags', 'docks', 'usb-flashdrives', 'dvd-writers',
+    'power-adapters', 'bags', 'docks', 'hubs', 'usb-flashdrives', 'dvd-writers',
     // Additional categories
     'workstations', 'cctv'
 ];
@@ -331,7 +331,7 @@ export interface ProductInfo {
     shockResistant?: string;
     passwordProtection?: string;
     weight?: string;
-    othersType?: 'dvd' | 'webcam';
+    othersType?: 'dvd' | 'webcam' | 'other';
     driveType?: string;
     opticalDriveType?: string;
     supportedDiscFormats?: string;
@@ -350,6 +350,47 @@ export interface ProductInfo {
     noiseReduction?: string;
     tripodSupport?: string;
     mountType?: string;
+
+    // Memory & Storage addition
+    memoryType?: string;
+    speed?: string;
+    voltage?: string;
+    latency?: string;
+    formFactorMemory?: string;
+    storageType?: string;
+    formFactorStorage?: string;
+    tbw?: string;
+    nandType?: string;
+    trimSupport?: string;
+    compatibility?: string;
+    features?: string;
+
+    // Graphics Cards additions
+    cudaCores?: string;
+    boostClock?: string;
+    baseClock?: string;
+    hdmiPorts?: string;
+    displayPortPorts?: string;
+    dviPorts?: string;
+    usbCPorts?: string;
+    maxDisplays?: string;
+    coolingSolution?: string;
+    powerConnectors?: string;
+    tdp?: string;
+    maxResolutionGraphics?: string;
+    directXSupport?: string;
+    openGLSupport?: string;
+    rayTracingSupport?: string;
+    dlssFsrSupport?: string;
+    pcieCompatibility?: string;
+    cabinetFormFactorCompatibility?: string;
+    rgbLighting?: string;
+    overclockedEdition?: string;
+    vrReady?: string;
+    aiAcceleration?: string;
+    lowNoiseCooling?: string;
+    recommendedPSU?: string;
+    rayTracing?: string;
 }
 
 export interface Product {
@@ -517,10 +558,10 @@ export const CATEGORY_NAMES: Record<string, string> = {
     'desktops': 'Desktops',
     'workstations': 'Workstations',
     'monitors': 'Monitors',
-    'printers': 'Printers',
+    'memory-storage': 'Memory, Storage & Graphics',
+    'memory': 'Memory',
+    'storage': 'Storage',
     'accessories': 'Accessories',
-    'cartridges': 'Cartridges',
-    'toners': 'Toners',
     'cctv': 'CCTV',
     'keyboards': 'Keyboards',
     'mouse': 'Mouse',
@@ -533,6 +574,7 @@ export const CATEGORY_NAMES: Record<string, string> = {
     'hubs': 'Hubs',
     'usb-flashdrives': 'USB Flash Drives',
     'dvd-writers': 'Others',
+    'webcams': 'Webcam',
 };
 
 export interface SearchResults {

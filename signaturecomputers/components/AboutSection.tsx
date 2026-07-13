@@ -65,24 +65,24 @@ export default function AboutSection() {
         <section id="about-us" className="relative bg-white py-8 scroll-mt-24">
             <div className="w-full">
                 <div className="relative z-10 bg-white">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-12">
+                    <div className="w-full px-4 sm:px-8 lg:px-12">
 
                         {/* Main Content Row: 53/40 Split
                             - justify-between
                         */}
-                        <div className="flex flex-col lg:flex-row items-start justify-between font-sans">
+                        <div className="flex flex-col lg:flex-row items-center justify-between font-sans gap-8 lg:gap-12">
 
                             {/* LEFT: Text Content 
-                                - lg:w-[53%]: Slightly reduced to ensure no "hiding" near image
-                                - lg:-ml-12: Shifted "little more left" (Increased from -ml-8)
+                                - lg:w-[48%]: Visual split close to 50/50
+                                - lg:pl-10: Increased left padding slightly
                                 - pr-6: Maintained padding for safety
                             */}
-                            <div className="flex-1 lg:flex-none lg:w-[53%] z-20 px-0 lg:-ml-12 pr-6">
-                                <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl mb-4 text-left">
+                            <div className="flex-1 lg:flex-none lg:w-[48%] z-20 px-0 lg:pl-10 pr-6">
+                                <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl mb-6 text-left">
                                     About Us
                                 </h2>
 
-                                <div className="space-y-3 text-base sm:text-lg text-gray-600 leading-relaxed text-justify">
+                                <div className="space-y-4 text-base sm:text-lg text-gray-600 leading-relaxed text-justify">
                                     <p>
                                         Signature Computers is an Authorized HP Distributor and HP Business Partner, providing genuine, manufacturer-backed IT products to businesses and individual customers through authorized supply channels.
                                     </p>
@@ -90,7 +90,7 @@ export default function AboutSection() {
                                         Our partnerships with HP, HP Amplify, Hewlett Packard Enterprise (HPE), and HP Poly enable us to deliver reliable, enterprise-grade computing and communication solutions aligned with official brand standards.
                                     </p>
                                     <p>
-                                        We specialize in the supply of laptops, desktops, workstations, monitors, printers, accessories, and CCTV solutions, supporting commercial offices and professional environments.
+                                        We specialize in the supply of laptops, desktops, workstations, monitors, memory, storage, and accessories, supporting commercial offices and professional environments.
                                     </p>
                                     <p>
                                         For bulk orders, special configurations, or customized requirements, customers are encouraged to contact us directly for coordinated assistance.
@@ -99,12 +99,11 @@ export default function AboutSection() {
                             </div>
 
                             {/* RIGHT: Image Content 
-                                - lg:w-[40%]
-                                - lg:ml-auto: Pushed to right
-                                - lg:mt-8: Kept vertical alignment
+                                - lg:w-[46%]: Reduced image size slightly to balance visual weight
+                                - max-w-md: Prevents the image from dominating on wide screens
                             */}
-                            <div className="flex-1 lg:flex-none lg:w-[40%] lg:ml-auto w-full relative flex items-start justify-center lg:justify-start mt-6 lg:mt-8">
-                                <div className="relative w-full aspect-[4/3] rounded-2xl overflow-hidden shadow-lg border border-gray-100">
+                            <div className="flex-1 lg:flex-none lg:w-[46%] w-full relative flex items-center justify-center mt-6 lg:mt-0">
+                                <div className="relative w-full max-w-md xl:max-w-lg 2xl:max-w-xl aspect-[4/3] rounded-2xl overflow-hidden shadow-lg border border-gray-100 bg-gray-50">
                                     <Image
                                         src={aboutImage.imageUrl}
                                         alt={aboutImage.alt}

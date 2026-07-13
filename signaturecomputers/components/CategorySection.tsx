@@ -46,11 +46,11 @@ const defaultCategories = [
         image: '/images/categories/monitors.jpg',
     },
     {
-        id: 'printers',
-        title: 'Printers',
-        description: 'Reliable printing solutions',
-        link: '/products?category=printers',
-        image: '/images/categories/printers.jpg',
+        id: 'memory-storage',
+        title: 'Memory, Storage & Graphics',
+        description: 'High-speed RAM, storage and graphics card solutions',
+        link: '/products?category=memory-storage',
+        image: '/images/categories/memory-storage.jpg',
     },
     {
         id: 'accessories',
@@ -133,22 +133,25 @@ export default function CategorySection() {
 
     return (
         <section className="py-16 bg-gray-50/50">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <h2 className="text-2xl font-bold text-gray-900 mb-8 text-center">Products</h2>
+            <div className="w-full px-4 sm:px-8 lg:px-12">
+                <div className="text-center mb-10">
+                    <h2 className="text-2xl font-bold text-gray-900">Products</h2>
+                    <div className="w-16 h-1 bg-blue-600 mx-auto rounded-full mt-2"></div>
+                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 lg:gap-10">
                     {allCategories.map((category) => (
                         <Link key={category.id} href={category.link} className="group block">
                             <div className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 h-full flex flex-col">
                                 {/* Image Area */}
-                                <div className="h-48 bg-gray-100 w-full flex items-center justify-center relative overflow-hidden">
+                                <div className="aspect-[4/3] bg-gray-100 w-full flex items-center justify-center relative overflow-hidden">
                                     {category.image ? (
                                         category.image.startsWith('http') ? (
                                             // Firebase Storage URL
                                             <img
                                                 src={category.image}
                                                 alt={category.title}
-                                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                                                className="w-full h-full object-cover object-center group-hover:scale-110 transition-transform duration-300"
                                             />
                                         ) : (
                                             // Local image
@@ -156,7 +159,7 @@ export default function CategorySection() {
                                                 src={category.image}
                                                 alt={category.title}
                                                 fill
-                                                className="object-cover group-hover:scale-110 transition-transform duration-300"
+                                                className="object-cover object-center group-hover:scale-110 transition-transform duration-300"
                                             />
                                         )
                                     ) : (

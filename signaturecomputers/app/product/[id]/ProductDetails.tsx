@@ -327,7 +327,7 @@ export default function ProductDetails({ id }: ProductDetailsProps) {
         <div className="bg-white dark:bg-black min-h-screen py-12">
             {/* SEO: Product JSON-LD Schema */}
             <ProductSchema product={product} />
-            <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="w-full px-4 sm:px-8 lg:px-12">
                 {/* Breadcrumb / Back to Category Link */}
                 <div className="mb-6">
                     <Link
@@ -372,7 +372,7 @@ export default function ProductDetails({ id }: ProductDetailsProps) {
                                                 activeImage === img ? 'ring-2 ring-blue-500' : 'border border-gray-200 dark:border-gray-700'
                                             }`}
                                         >
-                                            <img src={img} alt={`${product.productInfo?.title || product.name} product image`} className="w-full h-full object-cover" />
+                                            <img src={img} alt={`${product.productInfo?.title || product.name} product image`} className="w-full h-full object-contain p-1" />
                                         </div>
                                     ))}
                                 </div>
@@ -392,9 +392,9 @@ export default function ProductDetails({ id }: ProductDetailsProps) {
                     )}
 
                     {/* Main content grid - Image and Info */}
-                    <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-[1.2fr_1fr] gap-6 lg:gap-8">
+                    <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-[1.2fr_1fr] 2xl:grid-cols-[1.05fr_0.95fr] 3xl:grid-cols-[0.9fr_1.1fr] 4xl:grid-cols-[0.8fr_1.2fr] gap-6 lg:gap-8">
                         {/* Main Image - Scales to fit container */}
-                        <div ref={mainImageContainerRef} className="aspect-[4/3] overflow-hidden flex items-center justify-center bg-gray-50 dark:bg-gray-900 rounded-lg">
+                        <div ref={mainImageContainerRef} className="aspect-[4/3] overflow-hidden flex items-center justify-center bg-gray-50 dark:bg-gray-900 rounded-lg w-full max-w-full 2xl:max-w-2xl 3xl:max-w-xl 4xl:max-w-lg mx-auto">
                             {activeImage ? (
                                 <img src={activeImage} alt={`${product.productInfo?.title || product.name} product image`} className="max-w-full max-h-full object-contain" />
                             ) : (

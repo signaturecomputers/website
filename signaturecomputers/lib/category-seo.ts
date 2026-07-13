@@ -30,10 +30,10 @@ export const CATEGORY_SEO: Record<string, CategorySEOData> = {
         h1: 'Computer Monitors & Displays in Chennai',
         content: null
     },
-    'printers': {
-        title: 'Printers & Scanners in Chennai | Signature Computers',
-        description: 'Buy reliable inkjet and laser printers for home and office use in Chennai. Get the best printing solutions at Signature Computers.',
-        h1: 'Printers & Scanners in Chennai',
+    'memory-storage': {
+        title: 'Buy Computer Memory & Storage Solutions in Chennai | Signature Computers',
+        description: 'Discover high-speed RAM, internal SSDs, external hard drives, and enterprise memory upgrades. Genuine warranty on all memory and storage in Chennai.',
+        h1: 'Computer Memory & Storage Solutions in Chennai',
         content: null
     },
     'accessories': {
@@ -42,16 +42,16 @@ export const CATEGORY_SEO: Record<string, CategorySEOData> = {
         h1: 'Computer & Laptop Accessories in Chennai',
         content: null
     },
-    'cartridges': {
-        title: 'Printer Ink & Cartridges | Signature Computers Chennai',
-        description: 'Buy genuine printer ink and cartridges for all major brands in Chennai. Ensure optimal printing quality with Signature Computers.',
-        h1: 'Printer Ink & Cartridges in Chennai',
+    'memory': {
+        title: 'Buy DDR4 & DDR5 Computer RAM Online | Signature Computers Chennai',
+        description: 'Upgrade your systems with high-speed DDR4 and DDR5 RAM modules. Authentic memory upgrades for laptops and desktops with official warranty in Chennai.',
+        h1: 'High-Speed Computer RAM & Memory in Chennai',
         content: null
     },
-    'toners': {
-        title: 'Laser Printer Toners in Chennai | Signature Computers',
-        description: 'High-yield laser printer toners available at Signature Computers, Chennai. Genuine supplies for reliable, sharp printing.',
-        h1: 'Laser Printer Toners in Chennai',
+    'storage': {
+        title: 'Buy Internal SSDs, HDDs & External Hard Drives | Signature Computers Chennai',
+        description: 'Shop NVMe SSDs, SATA internal storage, and portable backup drives. Genuine enterprise and desktop storage solutions at Signature Computers.',
+        h1: 'Computer Storage Solutions in Chennai',
         content: null
     },
     'cctv': {

@@ -45,7 +45,7 @@ export default function AdminDashboardHome() {
             try {
                 // Product categories to count
                 const categories = [
-                    'laptops', 'desktops', 'monitors', 'printers', 'cartridges', 'toners',
+                    'laptops', 'desktops', 'monitors', 'memory', 'storage',
                     'keyboards', 'mouse', 'keyboard-mouse-combo', 'headphones', 'cables',
                     'power-adapters', 'bags', 'docks', 'usb-flashdrives', 'dvd-writers',
                     'workstations', 'cctv'

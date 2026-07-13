@@ -240,7 +240,7 @@ export default function CheckoutPage() {
         <>
 
             <div className="bg-white dark:bg-black min-h-screen py-12">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="w-full px-4 sm:px-8 lg:px-12">
                     <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">Checkout</h1>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
                         {/* Billing Address Form */}

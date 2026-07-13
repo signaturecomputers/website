@@ -597,6 +597,39 @@ export default function ProductInfoFormSection({ productInfo, setProductInfo, ca
             if (fieldKey === 'appearance_color') return 'Product Color';
             if (fieldKey === 'usb_material') return 'Material';
         }
+        if (category === 'memory') {
+            if (fieldKey === 'basic_series') return 'Series';
+            if (fieldKey === 'basic_partNo') return 'Part Number';
+            if (fieldKey === 'memory_capacity') return 'Capacity';
+            if (fieldKey === 'memory_memoryType') return 'Memory Type';
+            if (fieldKey === 'memory_speed') return 'Speed';
+            if (fieldKey === 'memory_formFactorMemory') return 'Form Factor';
+            if (fieldKey === 'memory_voltage') return 'Voltage';
+            if (fieldKey === 'memory_latency') return 'CAS Latency';
+            if (fieldKey === 'memory_compatibility') return 'Compatibility';
+            if (fieldKey === 'memory_features') return 'Special Features';
+            if (fieldKey === 'memory_whatsInBox') return 'What\'s in the Box';
+            if (fieldKey === 'memory_warranty') return 'Warranty';
+            if (fieldKey === 'appearance_color') return 'Product Color';
+        }
+        if (category === 'storage') {
+            if (fieldKey === 'basic_series') return 'Series';
+            if (fieldKey === 'basic_partNo') return 'Part Number';
+            if (fieldKey === 'storage_storageType') return 'Storage Type';
+            if (fieldKey === 'storage_capacity') return 'Capacity';
+            if (fieldKey === 'storage_interface') return 'Interface';
+            if (fieldKey === 'storage_formFactorStorage') return 'Form Factor';
+            if (fieldKey === 'storage_readSpeed') return 'Read Speed';
+            if (fieldKey === 'storage_writeSpeed') return 'Write Speed';
+            if (fieldKey === 'storage_tbw') return 'TBW (Endurance)';
+            if (fieldKey === 'storage_nandType') return 'NAND Flash Type';
+            if (fieldKey === 'storage_trimSupport') return 'TRIM Support';
+            if (fieldKey === 'storage_compatibility') return 'Compatibility';
+            if (fieldKey === 'storage_features') return 'Special Features';
+            if (fieldKey === 'storage_whatsInBox') return 'What\'s in the Box';
+            if (fieldKey === 'storage_warranty') return 'Warranty';
+            if (fieldKey === 'appearance_color') return 'Product Color';
+        }
         if (category === 'others-dvd') {
             if (fieldKey === 'basic_series') return 'Series';
             if (fieldKey === 'basic_partNo') return 'Part Number';
@@ -935,6 +968,24 @@ export default function ProductInfoFormSection({ productInfo, setProductInfo, ca
             if (sectionKey === 'warranty') return 'Warranty';
             if (sectionKey === 'appearance') return 'Appearance';
         }
+        if (category === 'memory') {
+            if (sectionKey === 'categoryInfo') return 'Series';
+            if (sectionKey === 'memorySpecs') return 'Memory Specifications';
+            if (sectionKey === 'compatibility') return 'Compatibility';
+            if (sectionKey === 'features') return 'Features';
+            if (sectionKey === 'boxContents') return 'Package Contents';
+            if (sectionKey === 'warranty') return 'Warranty';
+            if (sectionKey === 'appearance') return 'Appearance';
+        }
+        if (category === 'storage') {
+            if (sectionKey === 'categoryInfo') return 'Series';
+            if (sectionKey === 'storageSpecs') return 'Storage Specifications';
+            if (sectionKey === 'compatibility') return 'Compatibility';
+            if (sectionKey === 'features') return 'Features';
+            if (sectionKey === 'boxContents') return 'Package Contents';
+            if (sectionKey === 'warranty') return 'Warranty';
+            if (sectionKey === 'appearance') return 'Appearance';
+        }
         if (category === 'others-dvd') {
             if (sectionKey === 'categoryInfo') return 'Series';
             if (sectionKey === 'driveSpecs') return 'Drive Specifications';
@@ -1054,6 +1105,9 @@ export default function ProductInfoFormSection({ productInfo, setProductInfo, ca
             {activeCategory === 'monitors' ? renderMonitorFields() :
                 activeCategory === 'desktops' ? renderDesktopFields() :
                 activeCategory === 'workstations' ? renderWorkstationFields() :
+                activeCategory === 'memory' ? renderMemoryFields() :
+                activeCategory === 'storage' ? renderStorageFields() :
+                activeCategory === 'graphics-cards' ? renderGraphicsCardsFields() :
                 activeCategory === 'keyboard-mouse-combo' ? renderKeyboardMouseComboFields() :
                     activeCategory === 'keyboards' ? renderKeyboardFields() :
                         activeCategory === 'mouse' ? renderMouseFields() :
@@ -6273,6 +6327,175 @@ export default function ProductInfoFormSection({ productInfo, setProductInfo, ca
                             placeholder="e.g. 1 Year Limited Warranty"
                         />
                     </div>
+                </FormSection>
+            </>
+        );
+    }
+
+    // Memory specific fields rendering function
+    function renderMemoryFields() {
+        return (
+            <>
+                {/* Category / Series */}
+                <FormSection
+                    title={getSectionTitle("Series", "categoryInfo")}
+                    defaultOpen={true}
+                    onAddSpec={() => addCustomField(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("categoryInfo", newTitle)}
+                    onDelete={() => hideSection("categoryInfo")}
+                    isDeleted={isSectionHidden("categoryInfo")}
+                >
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Part Number", "basic_partNo")}
+                            value={productInfo.partNo}
+                            onChange={(v) => updateField('partNo', v)}
+                            onLabelChange={(newLabel) => setFieldLabel("basic_partNo", newLabel)}
+                            placeholder="e.g. F4-3200C16D-16GIS"
+                        />
+                        <EditableFormInput
+                            label={getFieldLabel("Series", "basic_series")}
+                            value={productInfo.series}
+                            onChange={(v) => updateField('series', v)}
+                            onLabelChange={(newLabel) => setFieldLabel("basic_series", newLabel)}
+                            placeholder="e.g. Ripjaws V"
+                        />
+                    </div>
+                    {renderCustomFields(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                </FormSection>
+
+                {/* Memory Specifications */}
+                <FormSection
+                    title={getSectionTitle("Memory Specifications", "memorySpecs")}
+                    defaultOpen={true}
+                    onAddSpec={() => addCustomField(storageCustomFields, setStorageCustomFields, 'storageCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("memorySpecs", newTitle)}
+                    onDelete={() => hideSection("memorySpecs")}
+                    isDeleted={isSectionHidden("memorySpecs")}
+                >
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Capacity", "memory_capacity")}
+                            value={productInfo.capacity}
+                            onChange={(v) => setProductInfo({ ...productInfo, capacity: v })}
+                            onLabelChange={(newLabel) => setFieldLabel("memory_capacity", newLabel)}
+                            placeholder="e.g. 16GB (2 x 8GB)"
+                        />
+                        <EditableFormInput
+                            label={getFieldLabel("Memory Type", "memory_memoryType")}
+                            value={productInfo.memoryType}
+                            onChange={(v) => setProductInfo({ ...productInfo, memoryType: v })}
+                            onLabelChange={(newLabel) => setFieldLabel("memory_memoryType", newLabel)}
+                            placeholder="e.g. DDR4"
+                        />
+                        <EditableFormInput
+                            label={getFieldLabel("Speed", "memory_speed")}
+                            value={productInfo.speed}
+                            onChange={(v) => setProductInfo({ ...productInfo, speed: v })}
+                            onLabelChange={(newLabel) => setFieldLabel("memory_speed", newLabel)}
+                            placeholder="e.g. 3200 MHz"
+                        />
+                        <EditableFormInput
+                            label={getFieldLabel("Form Factor", "memory_formFactorMemory")}
+                            value={productInfo.formFactorMemory}
+                            onChange={(v) => setProductInfo({ ...productInfo, formFactorMemory: v })}
+                            onLabelChange={(newLabel) => setFieldLabel("memory_formFactorMemory", newLabel)}
+                            placeholder="e.g. SO-DIMM / UDIMM"
+                        />
+                        <EditableFormInput
+                            label={getFieldLabel("Voltage", "memory_voltage")}
+                            value={productInfo.voltage}
+                            onChange={(v) => setProductInfo({ ...productInfo, voltage: v })}
+                            onLabelChange={(newLabel) => setFieldLabel("memory_voltage", newLabel)}
+                            placeholder="e.g. 1.2V"
+                        />
+                        <EditableFormInput
+                            label={getFieldLabel("CAS Latency", "memory_latency")}
+                            value={productInfo.latency}
+                            onChange={(v) => setProductInfo({ ...productInfo, latency: v })}
+                            onLabelChange={(newLabel) => setFieldLabel("memory_latency", newLabel)}
+                            placeholder="e.g. CL16"
+                        />
+                    </div>
+                    {renderCustomFields(storageCustomFields, setStorageCustomFields, 'storageCustomFields')}
+                </FormSection>
+
+                {/* Compatibility */}
+                <FormSection
+                    title={getSectionTitle("Compatibility", "compatibility")}
+                    onAddSpec={() => addCustomField(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("compatibility", newTitle)}
+                    onDelete={() => hideSection("compatibility")}
+                    isDeleted={isSectionHidden("compatibility")}
+                >
+                    <div className="grid grid-cols-1 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Compatibility", "memory_compatibility")}
+                            value={productInfo.compatibility}
+                            onChange={(v) => setProductInfo({ ...productInfo, compatibility: v })}
+                            onLabelChange={(newLabel) => setFieldLabel("memory_compatibility", newLabel)}
+                            placeholder="e.g. Intel 300 series, AMD X570, etc."
+                        />
+                    </div>
+                    {renderCustomFields(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                </FormSection>
+
+                {/* Features */}
+                <FormSection
+                    title={getSectionTitle("Features", "features")}
+                    onAddSpec={() => addCustomField(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("features", newTitle)}
+                    onDelete={() => hideSection("features")}
+                    isDeleted={isSectionHidden("features")}
+                >
+                    <div className="grid grid-cols-1 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Special Features", "memory_features")}
+                            value={productInfo.features}
+                            onChange={(v) => setProductInfo({ ...productInfo, features: v })}
+                            onLabelChange={(newLabel) => setFieldLabel("memory_features", newLabel)}
+                            placeholder="e.g. XMP 2.0 Support, RGB Lighting"
+                        />
+                    </div>
+                    {renderCustomFields(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                </FormSection>
+
+                {/* Package Contents */}
+                <FormSection
+                    title={getSectionTitle("Package Contents", "boxContents")}
+                    onAddSpec={() => addCustomField(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("boxContents", newTitle)}
+                    onDelete={() => hideSection("boxContents")}
+                    isDeleted={isSectionHidden("boxContents")}
+                >
+                    <div className="grid grid-cols-1">
+                        <EditableFormInput
+                            label={getFieldLabel("What's in the Box", "memory_whatsInBox")}
+                            value={productInfo.whatsInTheBox}
+                            onChange={(v) => setProductInfo({ ...productInfo, whatsInTheBox: v })}
+                            onLabelChange={(newLabel) => setFieldLabel("memory_whatsInBox", newLabel)}
+                            placeholder="e.g. 2 x Memory Modules"
+                        />
+                    </div>
+                </FormSection>
+
+                {/* Warranty */}
+                <FormSection
+                    title={getSectionTitle("Warranty", "warranty")}
+                    onAddSpec={() => addCustomField(warrantyCustomFields, setWarrantyCustomFields, 'warrantyCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("warranty", newTitle)}
+                    onDelete={() => hideSection("warranty")}
+                    isDeleted={isSectionHidden("warranty")}
+                >
+                    <div className="grid grid-cols-1">
+                        <EditableFormInput
+                            label={getFieldLabel("Warranty", "memory_warranty")}
+                            value={productInfo.warranty as any}
+                            onChange={(v) => setProductInfo({ ...productInfo, warranty: v } as any)}
+                            onLabelChange={(newLabel) => setFieldLabel("memory_warranty", newLabel)}
+                            placeholder="e.g. Limited Lifetime Warranty"
+                        />
+                    </div>
                     {renderCustomFields(warrantyCustomFields, setWarrantyCustomFields, 'warrantyCustomFields')}
                 </FormSection>
 
@@ -6284,20 +6507,609 @@ export default function ProductInfoFormSection({ productInfo, setProductInfo, ca
                     onDelete={() => hideSection("appearance")}
                     isDeleted={isSectionHidden("appearance")}
                 >
+                    <div className="grid grid-cols-1 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Product Color", "appearance_color")}
+                            value={productInfo.appearance?.color}
+                            onChange={(v) => updateNestedField('appearance', 'color', v)}
+                            onLabelChange={(newLabel) => setFieldLabel("appearance_color", newLabel)}
+                            placeholder="e.g. Black / Red"
+                        />
+                    </div>
+                    {renderCustomFields(appearanceCustomFields, setAppearanceCustomFields, 'appearanceCustomFields')}
+                </FormSection>
+            </>
+        );
+    }
+
+    // Storage specific fields rendering function
+    function renderStorageFields() {
+        return (
+            <>
+                {/* Category / Series */}
+                <FormSection
+                    title={getSectionTitle("Series", "categoryInfo")}
+                    defaultOpen={true}
+                    onAddSpec={() => addCustomField(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("categoryInfo", newTitle)}
+                    onDelete={() => hideSection("categoryInfo")}
+                    isDeleted={isSectionHidden("categoryInfo")}
+                >
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Part Number", "basic_partNo")}
+                            value={productInfo.partNo}
+                            onChange={(v) => updateField('partNo', v)}
+                            onLabelChange={(newLabel) => setFieldLabel("basic_partNo", newLabel)}
+                            placeholder="e.g. MZ-V8V1T0B/AM"
+                        />
+                        <EditableFormInput
+                            label={getFieldLabel("Series", "basic_series")}
+                            value={productInfo.series}
+                            onChange={(v) => updateField('series', v)}
+                            onLabelChange={(newLabel) => setFieldLabel("basic_series", newLabel)}
+                            placeholder="e.g. 980 NVMe M.2 SSD"
+                        />
+                    </div>
+                    {renderCustomFields(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                </FormSection>
+
+                {/* Storage Specifications */}
+                <FormSection
+                    title={getSectionTitle("Storage Specifications", "storageSpecs")}
+                    defaultOpen={true}
+                    onAddSpec={() => addCustomField(storageCustomFields, setStorageCustomFields, 'storageCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("storageSpecs", newTitle)}
+                    onDelete={() => hideSection("storageSpecs")}
+                    isDeleted={isSectionHidden("storageSpecs")}
+                >
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Storage Type", "storage_storageType")}
+                            value={productInfo.storageType}
+                            onChange={(v) => setProductInfo({ ...productInfo, storageType: v })}
+                            onLabelChange={(newLabel) => setFieldLabel("storage_storageType", newLabel)}
+                            placeholder="e.g. Internal SSD / External SSD / HDD"
+                        />
+                        <EditableFormInput
+                            label={getFieldLabel("Capacity", "storage_capacity")}
+                            value={productInfo.capacity}
+                            onChange={(v) => setProductInfo({ ...productInfo, capacity: v })}
+                            onLabelChange={(newLabel) => setFieldLabel("storage_capacity", newLabel)}
+                            placeholder="e.g. 1TB / 2TB / 500GB"
+                        />
+                        <EditableFormInput
+                            label={getFieldLabel("Interface", "storage_interface")}
+                            value={productInfo.interface}
+                            onChange={(v) => setProductInfo({ ...productInfo, interface: v })}
+                            onLabelChange={(newLabel) => setFieldLabel("storage_interface", newLabel)}
+                            placeholder="e.g. PCIe Gen 4.0 x4, NVMe 1.4 / SATA III / USB 3.2"
+                        />
+                        <EditableFormInput
+                            label={getFieldLabel("Form Factor", "storage_formFactorStorage")}
+                            value={productInfo.formFactorStorage}
+                            onChange={(v) => setProductInfo({ ...productInfo, formFactorStorage: v })}
+                            onLabelChange={(newLabel) => setFieldLabel("storage_formFactorStorage", newLabel)}
+                            placeholder="e.g. M.2 (2280) / 2.5-inch"
+                        />
+                        <EditableFormInput
+                            label={getFieldLabel("Read Speed", "storage_readSpeed")}
+                            value={productInfo.readSpeed}
+                            onChange={(v) => setProductInfo({ ...productInfo, readSpeed: v })}
+                            onLabelChange={(newLabel) => setFieldLabel("storage_readSpeed", newLabel)}
+                            placeholder="e.g. Up to 3500 MB/s"
+                        />
+                        <EditableFormInput
+                            label={getFieldLabel("Write Speed", "storage_writeSpeed")}
+                            value={productInfo.writeSpeed}
+                            onChange={(v) => setProductInfo({ ...productInfo, writeSpeed: v })}
+                            onLabelChange={(newLabel) => setFieldLabel("storage_writeSpeed", newLabel)}
+                            placeholder="e.g. Up to 3000 MB/s"
+                        />
+                        <EditableFormInput
+                            label={getFieldLabel("TBW (Endurance)", "storage_tbw")}
+                            value={productInfo.tbw}
+                            onChange={(v) => setProductInfo({ ...productInfo, tbw: v })}
+                            onLabelChange={(newLabel) => setFieldLabel("storage_tbw", newLabel)}
+                            placeholder="e.g. 600 TBW"
+                        />
+                        <EditableFormInput
+                            label={getFieldLabel("NAND Flash Type", "storage_nandType")}
+                            value={productInfo.nandType}
+                            onChange={(v) => setProductInfo({ ...productInfo, nandType: v })}
+                            onLabelChange={(newLabel) => setFieldLabel("storage_nandType", newLabel)}
+                            placeholder="e.g. Samsung V-NAND 3-bit MLC"
+                        />
+                        <EditableFormInput
+                            label={getFieldLabel("TRIM Support", "storage_trimSupport")}
+                            value={productInfo.trimSupport}
+                            onChange={(v) => setProductInfo({ ...productInfo, trimSupport: v })}
+                            onLabelChange={(newLabel) => setFieldLabel("storage_trimSupport", newLabel)}
+                            placeholder="e.g. Yes / No"
+                        />
+                    </div>
+                    {renderCustomFields(storageCustomFields, setStorageCustomFields, 'storageCustomFields')}
+                </FormSection>
+
+                {/* Compatibility */}
+                <FormSection
+                    title={getSectionTitle("Compatibility", "compatibility")}
+                    onAddSpec={() => addCustomField(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("compatibility", newTitle)}
+                    onDelete={() => hideSection("compatibility")}
+                    isDeleted={isSectionHidden("compatibility")}
+                >
+                    <div className="grid grid-cols-1 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Compatibility", "storage_compatibility")}
+                            value={productInfo.compatibility}
+                            onChange={(v) => setProductInfo({ ...productInfo, compatibility: v })}
+                            onLabelChange={(newLabel) => setFieldLabel("storage_compatibility", newLabel)}
+                            placeholder="e.g. Windows 10/11, macOS, PS5 compatible"
+                        />
+                    </div>
+                    {renderCustomFields(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                </FormSection>
+
+                {/* Features */}
+                <FormSection
+                    title={getSectionTitle("Features", "features")}
+                    onAddSpec={() => addCustomField(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("features", newTitle)}
+                    onDelete={() => hideSection("features")}
+                    isDeleted={isSectionHidden("features")}
+                >
+                    <div className="grid grid-cols-1 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Special Features", "storage_features")}
+                            value={productInfo.features}
+                            onChange={(v) => setProductInfo({ ...productInfo, features: v })}
+                            onLabelChange={(newLabel) => setFieldLabel("storage_features", newLabel)}
+                            placeholder="e.g. Intelligent TurboWrite, AES 256-bit Encryption"
+                        />
+                    </div>
+                    {renderCustomFields(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                </FormSection>
+
+                {/* Package Contents */}
+                <FormSection
+                    title={getSectionTitle("Package Contents", "boxContents")}
+                    onAddSpec={() => addCustomField(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("boxContents", newTitle)}
+                    onDelete={() => hideSection("boxContents")}
+                    isDeleted={isSectionHidden("boxContents")}
+                >
+                    <div className="grid grid-cols-1">
+                        <EditableFormInput
+                            label={getFieldLabel("What's in the Box", "storage_whatsInBox")}
+                            value={productInfo.whatsInTheBox}
+                            onChange={(v) => setProductInfo({ ...productInfo, whatsInTheBox: v })}
+                            onLabelChange={(newLabel) => setFieldLabel("storage_whatsInBox", newLabel)}
+                            placeholder="e.g. 1 x NVMe SSD, Installation Guide"
+                        />
+                    </div>
+                </FormSection>
+
+                {/* Warranty */}
+                <FormSection
+                    title={getSectionTitle("Warranty", "warranty")}
+                    onAddSpec={() => addCustomField(warrantyCustomFields, setWarrantyCustomFields, 'warrantyCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("warranty", newTitle)}
+                    onDelete={() => hideSection("warranty")}
+                    isDeleted={isSectionHidden("warranty")}
+                >
+                    <div className="grid grid-cols-1">
+                        <EditableFormInput
+                            label={getFieldLabel("Warranty", "storage_warranty")}
+                            value={productInfo.warranty as any}
+                            onChange={(v) => setProductInfo({ ...productInfo, warranty: v } as any)}
+                            onLabelChange={(newLabel) => setFieldLabel("storage_warranty", newLabel)}
+                            placeholder="e.g. 5 Years Limited Warranty"
+                        />
+                    </div>
+                    {renderCustomFields(warrantyCustomFields, setWarrantyCustomFields, 'warrantyCustomFields')}
+                </FormSection>
+
+                {/* Appearance */}
+                <FormSection
+                    title={getSectionTitle("Appearance", "appearance")}
+                    onAddSpec={() => addCustomField(appearanceCustomFields, setAppearanceCustomFields, 'appearanceCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("appearance", newTitle)}
+                    onDelete={() => hideSection("appearance")}
+                    isDeleted={isSectionHidden("appearance")}
+                >
+                    <div className="grid grid-cols-1 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Product Color", "appearance_color")}
+                            value={productInfo.appearance?.color}
+                            onChange={(v) => updateNestedField('appearance', 'color', v)}
+                            onLabelChange={(newLabel) => setFieldLabel("appearance_color", newLabel)}
+                            placeholder="e.g. Black / Silver"
+                        />
+                    </div>
+                    {renderCustomFields(appearanceCustomFields, setAppearanceCustomFields, 'appearanceCustomFields')}
+                </FormSection>
+            </>
+        );
+    }
+
+    // Graphics Cards specific fields rendering function
+    function renderGraphicsCardsFields() {
+        return (
+            <>
+                {/* Series */}
+                <FormSection
+                    title={getSectionTitle("Series", "categoryInfo")}
+                    defaultOpen={true}
+                    onAddSpec={() => addCustomField(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("categoryInfo", newTitle)}
+                    onDelete={() => hideSection("categoryInfo")}
+                    isDeleted={isSectionHidden("categoryInfo")}
+                >
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Part Number", "basic_partNo")}
+                            value={productInfo.partNo}
+                            onChange={(v) => updateField('partNo', v)}
+                            onLabelChange={(newLabel) => setFieldLabel("basic_partNo", newLabel)}
+                            placeholder="e.g. GV-N4060WF2OC-8GD"
+                        />
+                        <EditableFormInput
+                            label={getFieldLabel("Series", "basic_series")}
+                            value={productInfo.series}
+                            onChange={(v) => updateField('series', v)}
+                            onLabelChange={(newLabel) => setFieldLabel("basic_series", newLabel)}
+                            placeholder="e.g. GeForce RTX 4060 WIND FORCE OC"
+                        />
+                    </div>
+                    {renderCustomFields(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                </FormSection>
+
+                {/* Graphics Specifications */}
+                <FormSection
+                    title={getSectionTitle("Graphics Specifications", "graphicsSpecs")}
+                    defaultOpen={true}
+                    onAddSpec={() => addCustomField(graphicsCustomFields, setGraphicsCustomFields, 'graphicsCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("graphicsSpecs", newTitle)}
+                    onDelete={() => hideSection("graphicsSpecs")}
+                    isDeleted={isSectionHidden("graphicsSpecs")}
+                >
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Graphics Processor (GPU)", "graphics_gpu")}
+                            value={productInfo.graphics?.gpu}
+                            onChange={(v) => updateNestedField('graphics', 'gpu', v)}
+                            onLabelChange={(newLabel) => setFieldLabel("graphics_gpu", newLabel)}
+                            placeholder="e.g. NVIDIA GeForce RTX 4060"
+                        />
+                        <EditableFormInput
+                            label={getFieldLabel("Memory Capacity", "graphics_capacity")}
+                            value={productInfo.capacity}
+                            onChange={(v) => setProductInfo({ ...productInfo, capacity: v })}
+                            onLabelChange={(newLabel) => setFieldLabel("graphics_capacity", newLabel)}
+                            placeholder="e.g. 8GB"
+                        />
+                        <EditableFormInput
+                            label={getFieldLabel("Memory Type", "graphics_memoryType")}
+                            value={productInfo.memoryType}
+                            onChange={(v) => setProductInfo({ ...productInfo, memoryType: v })}
+                            onLabelChange={(newLabel) => setFieldLabel("graphics_memoryType", newLabel)}
+                            placeholder="e.g. GDDR6"
+                        />
+                        <EditableFormInput
+                            label={getFieldLabel("CUDA Cores / Stream Processors", "graphics_cudaCores")}
+                            value={productInfo.cudaCores}
+                            onChange={(v) => setProductInfo({ ...productInfo, cudaCores: v })}
+                            onLabelChange={(newLabel) => setFieldLabel("graphics_cudaCores", newLabel)}
+                            placeholder="e.g. 3072"
+                        />
+                        <EditableFormInput
+                            label={getFieldLabel("Boost Clock", "graphics_boostClock")}
+                            value={productInfo.boostClock}
+                            onChange={(v) => setProductInfo({ ...productInfo, boostClock: v })}
+                            onLabelChange={(newLabel) => setFieldLabel("graphics_boostClock", newLabel)}
+                            placeholder="e.g. 2475 MHz"
+                        />
+                        <EditableFormInput
+                            label={getFieldLabel("Base Clock", "graphics_baseClock")}
+                            value={productInfo.baseClock}
+                            onChange={(v) => setProductInfo({ ...productInfo, baseClock: v })}
+                            onLabelChange={(newLabel) => setFieldLabel("graphics_baseClock", newLabel)}
+                            placeholder="e.g. 1830 MHz"
+                        />
+                    </div>
+                    {renderCustomFields(graphicsCustomFields, setGraphicsCustomFields, 'graphicsCustomFields')}
+                </FormSection>
+
+                {/* Connectivity */}
+                <FormSection
+                    title={getSectionTitle("Connectivity", "connectivity")}
+                    defaultOpen={true}
+                    onAddSpec={() => addCustomField(connectivityCustomFields, setConnectivityCustomFields, 'connectivityCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("connectivity", newTitle)}
+                    onDelete={() => hideSection("connectivity")}
+                    isDeleted={isSectionHidden("connectivity")}
+                >
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Interface", "graphics_interface")}
+                            value={productInfo.interface}
+                            onChange={(v) => setProductInfo({ ...productInfo, interface: v })}
+                            onLabelChange={(newLabel) => setFieldLabel("graphics_interface", newLabel)}
+                            placeholder="e.g. PCI Express 4.0 x8"
+                        />
+                        <EditableFormInput
+                            label={getFieldLabel("HDMI Ports", "graphics_hdmiPorts")}
+                            value={productInfo.hdmiPorts}
+                            onChange={(v) => setProductInfo({ ...productInfo, hdmiPorts: v })}
+                            onLabelChange={(newLabel) => setFieldLabel("graphics_hdmiPorts", newLabel)}
+                            placeholder="e.g. 2 x HDMI 2.1a"
+                        />
+                        <EditableFormInput
+                            label={getFieldLabel("DisplayPort Ports", "graphics_displayPortPorts")}
+                            value={productInfo.displayPortPorts}
+                            onChange={(v) => setProductInfo({ ...productInfo, displayPortPorts: v })}
+                            onLabelChange={(newLabel) => setFieldLabel("graphics_displayPortPorts", newLabel)}
+                            placeholder="e.g. 2 x DisplayPort 1.4a"
+                        />
+                        <EditableFormInput
+                            label={getFieldLabel("DVI Port", "graphics_dviPorts")}
+                            value={productInfo.dviPorts}
+                            onChange={(v) => setProductInfo({ ...productInfo, dviPorts: v })}
+                            onLabelChange={(newLabel) => setFieldLabel("graphics_dviPorts", newLabel)}
+                            placeholder="e.g. None / 1 x DVI-D"
+                        />
+                        <EditableFormInput
+                            label={getFieldLabel("USB Type-C (if available)", "graphics_usbCPorts")}
+                            value={productInfo.usbCPorts}
+                            onChange={(v) => setProductInfo({ ...productInfo, usbCPorts: v })}
+                            onLabelChange={(newLabel) => setFieldLabel("graphics_usbCPorts", newLabel)}
+                            placeholder="e.g. 1 x USB Type-C"
+                        />
+                        <EditableFormInput
+                            label={getFieldLabel("Maximum Displays Supported", "graphics_maxDisplays")}
+                            value={productInfo.maxDisplays}
+                            onChange={(v) => setProductInfo({ ...productInfo, maxDisplays: v })}
+                            onLabelChange={(newLabel) => setFieldLabel("graphics_maxDisplays", newLabel)}
+                            placeholder="e.g. 4"
+                        />
+                    </div>
+                    {renderCustomFields(connectivityCustomFields, setConnectivityCustomFields, 'connectivityCustomFields')}
+                </FormSection>
+
+                {/* Cooling & Power */}
+                <FormSection
+                    title={getSectionTitle("Cooling & Power", "coolingPower")}
+                    defaultOpen={true}
+                    onAddSpec={() => addCustomField(portsCustomFields, setPortsCustomFields, 'portsCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("coolingPower", newTitle)}
+                    onDelete={() => hideSection("coolingPower")}
+                    isDeleted={isSectionHidden("coolingPower")}
+                >
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Cooling Solution", "graphics_coolingSolution")}
+                            value={productInfo.coolingSolution}
+                            onChange={(v) => setProductInfo({ ...productInfo, coolingSolution: v })}
+                            onLabelChange={(newLabel) => setFieldLabel("graphics_coolingSolution", newLabel)}
+                            placeholder="e.g. WINDFORCE 2X Cooling System (Dual Fans)"
+                        />
+                        <EditableFormInput
+                            label={getFieldLabel("Recommended PSU", "graphics_recommendedPSU")}
+                            value={productInfo.recommendedPSU}
+                            onChange={(v) => setProductInfo({ ...productInfo, recommendedPSU: v })}
+                            onLabelChange={(newLabel) => setFieldLabel("graphics_recommendedPSU", newLabel)}
+                            placeholder="e.g. 450W"
+                        />
+                        <EditableFormInput
+                            label={getFieldLabel("Power Connectors", "graphics_powerConnectors")}
+                            value={productInfo.powerConnectors}
+                            onChange={(v) => setProductInfo({ ...productInfo, powerConnectors: v })}
+                            onLabelChange={(newLabel) => setFieldLabel("graphics_powerConnectors", newLabel)}
+                            placeholder="e.g. 1 x 8-pin"
+                        />
+                        <EditableFormInput
+                            label={getFieldLabel("Power Consumption (TDP)", "graphics_tdp")}
+                            value={productInfo.tdp}
+                            onChange={(v) => setProductInfo({ ...productInfo, tdp: v })}
+                            onLabelChange={(newLabel) => setFieldLabel("graphics_tdp", newLabel)}
+                            placeholder="e.g. 115W"
+                        />
+                    </div>
+                    {renderCustomFields(portsCustomFields, setPortsCustomFields, 'portsCustomFields')}
+                </FormSection>
+
+                {/* Display Support */}
+                <FormSection
+                    title={getSectionTitle("Display Support", "displaySupport")}
+                    onAddSpec={() => addCustomField(displayCustomFields, setDisplayCustomFields, 'displayCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("displaySupport", newTitle)}
+                    onDelete={() => hideSection("displaySupport")}
+                    isDeleted={isSectionHidden("displaySupport")}
+                >
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("Maximum Resolution", "graphics_maxResolution")}
+                            value={productInfo.maxResolutionGraphics}
+                            onChange={(v) => setProductInfo({ ...productInfo, maxResolutionGraphics: v })}
+                            onLabelChange={(newLabel) => setFieldLabel("graphics_maxResolution", newLabel)}
+                            placeholder="e.g. 7680 x 4320"
+                        />
+                        <EditableFormInput
+                            label={getFieldLabel("DirectX Support", "graphics_directX")}
+                            value={productInfo.directXSupport}
+                            onChange={(v) => setProductInfo({ ...productInfo, directXSupport: v })}
+                            onLabelChange={(newLabel) => setFieldLabel("graphics_directX", newLabel)}
+                            placeholder="e.g. 12 Ultimate"
+                        />
+                        <EditableFormInput
+                            label={getFieldLabel("OpenGL Support", "graphics_openGL")}
+                            value={productInfo.openGLSupport}
+                            onChange={(v) => setProductInfo({ ...productInfo, openGLSupport: v })}
+                            onLabelChange={(newLabel) => setFieldLabel("graphics_openGL", newLabel)}
+                            placeholder="e.g. 4.6"
+                        />
+                        <EditableFormInput
+                            label={getFieldLabel("Ray Tracing Support", "graphics_rayTracingSupport")}
+                            value={productInfo.rayTracingSupport}
+                            onChange={(v) => setProductInfo({ ...productInfo, rayTracingSupport: v })}
+                            onLabelChange={(newLabel) => setFieldLabel("graphics_rayTracingSupport", newLabel)}
+                            placeholder="e.g. Yes (3rd Gen)"
+                        />
+                        <EditableFormInput
+                            label={getFieldLabel("DLSS / FSR Support", "graphics_dlssFsr")}
+                            value={productInfo.dlssFsrSupport}
+                            onChange={(v) => setProductInfo({ ...productInfo, dlssFsrSupport: v })}
+                            onLabelChange={(newLabel) => setFieldLabel("graphics_dlssFsr", newLabel)}
+                            placeholder="e.g. DLSS 3"
+                        />
+                    </div>
+                    {renderCustomFields(displayCustomFields, setDisplayCustomFields, 'displayCustomFields')}
+                </FormSection>
+
+                {/* Compatibility */}
+                <FormSection
+                    title={getSectionTitle("Compatibility", "compatibility")}
+                    onAddSpec={() => addCustomField(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("compatibility", newTitle)}
+                    onDelete={() => hideSection("compatibility")}
+                    isDeleted={isSectionHidden("compatibility")}
+                >
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("PCIe Compatibility", "graphics_pcieCompat")}
+                            value={productInfo.pcieCompatibility}
+                            onChange={(v) => setProductInfo({ ...productInfo, pcieCompatibility: v })}
+                            onLabelChange={(newLabel) => setFieldLabel("graphics_pcieCompat", newLabel)}
+                            placeholder="e.g. PCIe 4.0 backwards compatible with PCIe 3.0"
+                        />
+                        <EditableFormInput
+                            label={getFieldLabel("Compatible Operating Systems", "graphics_osCompat")}
+                            value={productInfo.compatibleOS}
+                            onChange={(v) => setProductInfo({ ...productInfo, compatibleOS: v })}
+                            onLabelChange={(newLabel) => setFieldLabel("graphics_osCompat", newLabel)}
+                            placeholder="e.g. Windows 10/11 64-bit, Linux"
+                        />
+                        <EditableFormInput
+                            label={getFieldLabel("Cabinet/Form Factor Compatibility", "graphics_cabinetCompat")}
+                            value={productInfo.cabinetFormFactorCompatibility}
+                            onChange={(v) => setProductInfo({ ...productInfo, cabinetFormFactorCompatibility: v })}
+                            onLabelChange={(newLabel) => setFieldLabel("graphics_cabinetCompat", newLabel)}
+                            placeholder="e.g. ATX / Micro-ATX (Card length: 198mm)"
+                        />
+                    </div>
+                    {renderCustomFields(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                </FormSection>
+
+                {/* Features */}
+                <FormSection
+                    title={getSectionTitle("Features", "features")}
+                    onAddSpec={() => addCustomField(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("features", newTitle)}
+                    onDelete={() => hideSection("features")}
+                    isDeleted={isSectionHidden("features")}
+                >
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        <EditableFormInput
+                            label={getFieldLabel("RGB Lighting", "graphics_rgb")}
+                            value={productInfo.rgbLighting}
+                            onChange={(v) => setProductInfo({ ...productInfo, rgbLighting: v })}
+                            onLabelChange={(newLabel) => setFieldLabel("graphics_rgb", newLabel)}
+                            placeholder="e.g. RGB Fusion / Yes / No"
+                        />
+                        <EditableFormInput
+                            label={getFieldLabel("Overclocked Edition", "graphics_oc")}
+                            value={productInfo.overclockedEdition}
+                            onChange={(v) => setProductInfo({ ...productInfo, overclockedEdition: v })}
+                            onLabelChange={(newLabel) => setFieldLabel("graphics_oc", newLabel)}
+                            placeholder="e.g. Yes (OC Edition)"
+                        />
+                        <EditableFormInput
+                            label={getFieldLabel("VR Ready", "graphics_vr")}
+                            value={productInfo.vrReady}
+                            onChange={(v) => setProductInfo({ ...productInfo, vrReady: v })}
+                            onLabelChange={(newLabel) => setFieldLabel("graphics_vr", newLabel)}
+                            placeholder="e.g. Yes"
+                        />
+                        <EditableFormInput
+                            label={getFieldLabel("Ray Tracing", "graphics_rayTracing")}
+                            value={productInfo.rayTracing}
+                            onChange={(v) => setProductInfo({ ...productInfo, rayTracing: v })}
+                            onLabelChange={(newLabel) => setFieldLabel("graphics_rayTracing", newLabel)}
+                            placeholder="e.g. Yes"
+                        />
+                        <EditableFormInput
+                            label={getFieldLabel("AI Acceleration", "graphics_ai")}
+                            value={productInfo.aiAcceleration}
+                            onChange={(v) => setProductInfo({ ...productInfo, aiAcceleration: v })}
+                            onLabelChange={(newLabel) => setFieldLabel("graphics_ai", newLabel)}
+                            placeholder="e.g. Yes (4th Gen Tensor Cores)"
+                        />
+                        <EditableFormInput
+                            label={getFieldLabel("Low Noise Cooling", "graphics_lowNoise")}
+                            value={productInfo.lowNoiseCooling}
+                            onChange={(v) => setProductInfo({ ...productInfo, lowNoiseCooling: v })}
+                            onLabelChange={(newLabel) => setFieldLabel("graphics_lowNoise", newLabel)}
+                            placeholder="e.g. Yes (0dB Silent Fans)"
+                        />
+                    </div>
+                    {renderCustomFields(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                </FormSection>
+
+                {/* Box Contents */}
+                <FormSection
+                    title={getSectionTitle("Package Contents", "boxContents")}
+                    onAddSpec={() => addCustomField(basicCustomFields, setBasicCustomFields, 'basicCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("boxContents", newTitle)}
+                    onDelete={() => hideSection("boxContents")}
+                    isDeleted={isSectionHidden("boxContents")}
+                >
+                    <div className="grid grid-cols-1">
+                        <EditableFormInput
+                            label={getFieldLabel("What's in the Box", "graphics_whatsInBox")}
+                            value={productInfo.whatsInTheBox}
+                            onChange={(v) => setProductInfo({ ...productInfo, whatsInTheBox: v })}
+                            onLabelChange={(newLabel) => setFieldLabel("graphics_whatsInBox", newLabel)}
+                            placeholder="e.g. Graphics Card, Quick Guide"
+                        />
+                    </div>
+                </FormSection>
+
+                {/* Warranty */}
+                <FormSection
+                    title={getSectionTitle("Warranty", "warranty")}
+                    onAddSpec={() => addCustomField(warrantyCustomFields, setWarrantyCustomFields, 'warrantyCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("warranty", newTitle)}
+                    onDelete={() => hideSection("warranty")}
+                    isDeleted={isSectionHidden("warranty")}
+                >
+                    <div className="grid grid-cols-1">
+                        <EditableFormInput
+                            label={getFieldLabel("Warranty", "graphics_warranty")}
+                            value={productInfo.warranty as any}
+                            onChange={(v) => setProductInfo({ ...productInfo, warranty: v } as any)}
+                            onLabelChange={(newLabel) => setFieldLabel("graphics_warranty", newLabel)}
+                            placeholder="e.g. 3 Years Warranty"
+                        />
+                    </div>
+                    {renderCustomFields(warrantyCustomFields, setWarrantyCustomFields, 'warrantyCustomFields')}
+                </FormSection>
+
+                {/* Appearance */}
+                <FormSection
+                    title={getSectionTitle("Appearance", "appearance")}
+                    onAddSpec={() => addCustomField(appearanceCustomFields, setAppearanceCustomFields, 'appearanceCustomFields')}
+                    onTitleChange={(newTitle) => setSectionTitle("appearance", newTitle)}
+                    onDelete={() => hideSection("appearance")}
+                    isDeleted={isSectionHidden("appearance")}
+                >
+                    <div className="grid grid-cols-1 gap-4">
                         <EditableFormInput
                             label={getFieldLabel("Product Color", "appearance_color")}
                             value={productInfo.appearance?.color}
                             onChange={(v) => updateNestedField('appearance', 'color', v)}
                             onLabelChange={(newLabel) => setFieldLabel("appearance_color", newLabel)}
                             placeholder="e.g. Black"
-                        />
-                        <EditableFormInput
-                            label={getFieldLabel("Mount Type", "webcam_mountType")}
-                            value={productInfo.mountType}
-                            onChange={(v) => setProductInfo({ ...productInfo, mountType: v })}
-                            onLabelChange={(newLabel) => setFieldLabel("webcam_mountType", newLabel)}
-                            placeholder="e.g. Clip mount / Tripod thread"
                         />
                     </div>
                     {renderCustomFields(appearanceCustomFields, setAppearanceCustomFields, 'appearanceCustomFields')}

@@ -371,6 +371,43 @@ function renderCategorySpecificFields(productInfo: any) {
         );
     }
 
+    // Memory - Memory Specifications (Capacity, Memory Type, Speed, Form Factor, Voltage, Latency)
+    if (has('memoryType') || has('speed') || has('voltage') || has('latency') || has('formFactorMemory')) {
+        sections.push(
+            <InfoSection key="memory-specs" title={getSectionTitle(productInfo, "Memory Specifications", "memorySpecs")} icon={FiHardDrive}>
+                <dl>
+                    <InfoRow label={getFieldLabel(productInfo, "Capacity", "memory_capacity")} value={productInfo.capacity} />
+                    <InfoRow label={getFieldLabel(productInfo, "Memory Type", "memory_memoryType")} value={productInfo.memoryType} />
+                    <InfoRow label={getFieldLabel(productInfo, "Speed", "memory_speed")} value={productInfo.speed} />
+                    <InfoRow label={getFieldLabel(productInfo, "Form Factor", "memory_formFactorMemory")} value={productInfo.formFactorMemory} />
+                    <InfoRow label={getFieldLabel(productInfo, "Voltage", "memory_voltage")} value={productInfo.voltage} />
+                    <InfoRow label={getFieldLabel(productInfo, "CAS Latency", "memory_latency")} value={productInfo.latency} />
+                    {renderCustomFields(productInfo.storageCustomFields)}
+                </dl>
+            </InfoSection>
+        );
+    }
+
+    // Storage - Storage Specifications (Storage Type, Capacity, Interface, Form Factor, Read Speed, Write Speed, TBW, NAND type, TRIM support)
+    if (has('storageType') || has('readSpeed') || has('writeSpeed') || has('nandType') || has('tbw') || has('trimSupport') || has('formFactorStorage')) {
+        sections.push(
+            <InfoSection key="storage-specs" title={getSectionTitle(productInfo, "Storage Specifications", "storageSpecs")} icon={FiHardDrive}>
+                <dl>
+                    <InfoRow label={getFieldLabel(productInfo, "Storage Type", "storage_storageType")} value={productInfo.storageType} />
+                    <InfoRow label={getFieldLabel(productInfo, "Capacity", "storage_capacity")} value={productInfo.capacity} />
+                    <InfoRow label={getFieldLabel(productInfo, "Interface", "storage_interface")} value={productInfo.interface} />
+                    <InfoRow label={getFieldLabel(productInfo, "Form Factor", "storage_formFactorStorage")} value={productInfo.formFactorStorage} />
+                    <InfoRow label={getFieldLabel(productInfo, "Read Speed", "storage_readSpeed")} value={productInfo.readSpeed} />
+                    <InfoRow label={getFieldLabel(productInfo, "Write Speed", "storage_writeSpeed")} value={productInfo.writeSpeed} />
+                    <InfoRow label={getFieldLabel(productInfo, "TBW (Endurance)", "storage_tbw")} value={productInfo.tbw} />
+                    <InfoRow label={getFieldLabel(productInfo, "NAND Flash Type", "storage_nandType")} value={productInfo.nandType} />
+                    <InfoRow label={getFieldLabel(productInfo, "TRIM Support", "storage_trimSupport")} value={productInfo.trimSupport} />
+                    {renderCustomFields(productInfo.storageCustomFields)}
+                </dl>
+            </InfoSection>
+        );
+    }
+
     // Generic 'dimensions' string if used (some accessories use this instead of the object)
     if (has('dimensions') && typeof productInfo.dimensions === 'string') {
         sections.push(
@@ -425,6 +462,15 @@ function renderCategorySpecificFields(productInfo: any) {
         'mDiscSupport', 'resolution', 'frameRate', 'imageSensor', 'fieldOfView', 'focusType',
         'builtInMicrophone', 'microphoneType', 'privacyShutter', 'autoLightCorrection', 'noiseReduction',
         'tripodSupport', 'mountType',
+        // Memory & Storage specific fields
+        'memoryType', 'speed', 'voltage', 'latency', 'formFactorMemory',
+        'storageType', 'formFactorStorage', 'tbw', 'nandType', 'trimSupport',
+        // Graphics Card specific fields
+        'cudaCores', 'boostClock', 'baseClock', 'hdmiPorts', 'displayPortPorts',
+        'dviPorts', 'usbCPorts', 'coolingSolution', 'powerConnectors', 'tdp',
+        'maxResolutionGraphics', 'directXSupport', 'openGLSupport', 'rayTracingSupport', 'dlssFsrSupport',
+        'pcieCompatibility', 'cabinetFormFactorCompatibility', 'rgbLighting', 'overclockedEdition',
+        'vrReady', 'aiAcceleration', 'lowNoiseCooling', 'recommendedPSU', 'rayTracing',
         // Monitor fields
         'screenSizeCm', 'resolutionNative', 'panelType', 'brightnessNits', 'responseTime', 'refreshRate',
         'aspectRatio', 'contrastRatio', 'colorSupport', 'displayInputs', 'operatingTemp', 'powerMaximum',
@@ -541,6 +587,10 @@ export default function ProductInfoSection({ productInfo, isAdmin = false, categ
 
     if (category === 'usb-flashdrives') {
         return renderUSBFlashDrivesSpecs();
+    }
+
+    if (category === 'graphics-cards') {
+        return renderGraphicsCardsSpecs();
     }
 
     if (category === 'dvd-writers') {
@@ -2400,12 +2450,151 @@ export default function ProductInfoSection({ productInfo, isAdmin = false, categ
                     </InfoSection>
                 )}
 
-                {/* Appearance */}
+                 {/* Appearance */}
                 {!isSectionHidden("appearance") && (hasContent(productInfo?.appearance) || productInfo?.mountType) && (
                     <InfoSection title={getSectionTitle(customProductInfo, "Appearance", "appearance")} icon={FiBox}>
                         <dl>
                             <InfoRow label={getFieldLabel(customProductInfo, "Product Color", "appearance_color")} value={productInfo?.appearance?.color} />
                             <InfoRow label={getFieldLabel(customProductInfo, "Mount Type", "webcam_mountType")} value={productInfo?.mountType} />
+                            {renderCustomFields(customProductInfo.appearanceCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+            </div>
+        );
+    }
+
+    function renderGraphicsCardsSpecs() {
+        const isSectionHidden = (sectionKey: string): boolean => {
+            const hidden = customProductInfo.hiddenSections || [];
+            return hidden.includes(sectionKey);
+        };
+
+        const has = (key: string) => customProductInfo[key] !== undefined && customProductInfo[key] !== null && customProductInfo[key] !== '';
+
+        return (
+            <div className="space-y-4">
+                {/* Series */}
+                {!isSectionHidden("categoryInfo") && (customProductInfo.series || (isAdmin && customProductInfo.partNo)) && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Series", "categoryInfo")} icon={FiPackage}>
+                        <dl>
+                            {isAdmin && customProductInfo.partNo && (
+                                <InfoRow label={getFieldLabel(customProductInfo, "Part Number", "basic_partNo")} value={customProductInfo.partNo} />
+                            )}
+                            <InfoRow label={getFieldLabel(customProductInfo, "Series", "basic_series")} value={customProductInfo.series} />
+                            {renderCustomFields(customProductInfo.basicCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Graphics Specifications */}
+                {!isSectionHidden("graphicsSpecs") && (has('cudaCores') || has('boostClock') || has('baseClock') || customProductInfo.graphics?.gpu) && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Graphics Specifications", "graphicsSpecs")} icon={FiMonitor}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "Graphics Processor (GPU)", "graphics_gpu")} value={customProductInfo.graphics?.gpu} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Memory Capacity", "graphics_capacity")} value={customProductInfo.capacity} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Memory Type", "graphics_memoryType")} value={customProductInfo.memoryType} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "CUDA Cores / Stream Processors", "graphics_cudaCores")} value={customProductInfo.cudaCores} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Boost Clock", "graphics_boostClock")} value={customProductInfo.boostClock} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Base Clock", "graphics_baseClock")} value={customProductInfo.baseClock} />
+                            {renderCustomFields(customProductInfo.graphicsCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Connectivity */}
+                {!isSectionHidden("connectivity") && (has('interface') || has('hdmiPorts') || has('displayPortPorts') || has('dviPorts') || has('usbCPorts') || has('maxDisplays')) && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Connectivity", "connectivity")} icon={FiWifi}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "Interface", "graphics_interface")} value={customProductInfo.interface} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "HDMI Ports", "graphics_hdmiPorts")} value={customProductInfo.hdmiPorts} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "DisplayPort Ports", "graphics_displayPortPorts")} value={customProductInfo.displayPortPorts} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "DVI Port", "graphics_dviPorts")} value={customProductInfo.dviPorts} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "USB Type-C (if available)", "graphics_usbCPorts")} value={customProductInfo.usbCPorts} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Maximum Displays Supported", "graphics_maxDisplays")} value={customProductInfo.maxDisplays} />
+                            {renderCustomFields(customProductInfo.connectivityCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Cooling & Power */}
+                {!isSectionHidden("coolingPower") && (has('coolingSolution') || has('recommendedPSU') || has('powerConnectors') || has('tdp')) && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Cooling & Power", "coolingPower")} icon={FiZap}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "Cooling Solution", "graphics_coolingSolution")} value={customProductInfo.coolingSolution} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Recommended PSU", "graphics_recommendedPSU")} value={customProductInfo.recommendedPSU} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Power Connectors", "graphics_powerConnectors")} value={customProductInfo.powerConnectors} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Power Consumption (TDP)", "graphics_tdp")} value={customProductInfo.tdp} />
+                            {renderCustomFields(customProductInfo.portsCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Display Support */}
+                {!isSectionHidden("displaySupport") && (has('maxResolutionGraphics') || has('directXSupport') || has('openGLSupport') || has('rayTracingSupport') || has('dlssFsrSupport')) && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Display Support", "displaySupport")} icon={FiMonitor}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "Maximum Resolution", "graphics_maxResolution")} value={customProductInfo.maxResolutionGraphics} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "DirectX Support", "graphics_directX")} value={customProductInfo.directXSupport} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "OpenGL Support", "graphics_openGL")} value={customProductInfo.openGLSupport} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Ray Tracing Support", "graphics_rayTracingSupport")} value={customProductInfo.rayTracingSupport} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "DLSS / FSR Support", "graphics_dlssFsr")} value={customProductInfo.dlssFsrSupport} />
+                            {renderCustomFields(customProductInfo.displayCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Compatibility */}
+                {!isSectionHidden("compatibility") && (has('pcieCompatibility') || has('compatibleOS') || has('cabinetFormFactorCompatibility')) && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Compatibility", "compatibility")} icon={FiSettings}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "PCIe Compatibility", "graphics_pcieCompat")} value={customProductInfo.pcieCompatibility} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Compatible Operating Systems", "graphics_osCompat")} value={customProductInfo.compatibleOS} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Cabinet/Form Factor Compatibility", "graphics_cabinetCompat")} value={customProductInfo.cabinetFormFactorCompatibility} />
+                            {renderCustomFields(customProductInfo.basicCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Features */}
+                {!isSectionHidden("features") && (has('rgbLighting') || has('overclockedEdition') || has('vrReady') || has('rayTracing') || has('aiAcceleration') || has('lowNoiseCooling')) && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Features", "features")} icon={FiCheckSquare}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "RGB Lighting", "graphics_rgb")} value={customProductInfo.rgbLighting} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Overclocked Edition", "graphics_oc")} value={customProductInfo.overclockedEdition} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "VR Ready", "graphics_vr")} value={customProductInfo.vrReady} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Ray Tracing", "graphics_rayTracing")} value={customProductInfo.rayTracing} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "AI Acceleration", "graphics_ai")} value={customProductInfo.aiAcceleration} />
+                            <InfoRow label={getFieldLabel(customProductInfo, "Low Noise Cooling", "graphics_lowNoise")} value={customProductInfo.lowNoiseCooling} />
+                            {renderCustomFields(customProductInfo.basicCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Package Contents */}
+                {!isSectionHidden("boxContents") && customProductInfo.whatsInTheBox && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Package Contents", "boxContents")} icon={FiGift}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "What's in the Box", "graphics_whatsInBox")} value={customProductInfo.whatsInTheBox} />
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Warranty */}
+                {!isSectionHidden("warranty") && customProductInfo.warranty && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Warranty", "warranty")} icon={FiAward}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "Warranty", "graphics_warranty")} value={customProductInfo.warranty} />
+                            {renderCustomFields(customProductInfo.warrantyCustomFields)}
+                        </dl>
+                    </InfoSection>
+                )}
+
+                {/* Appearance */}
+                {!isSectionHidden("appearance") && customProductInfo.appearance?.color && (
+                    <InfoSection title={getSectionTitle(customProductInfo, "Appearance", "appearance")} icon={FiBox}>
+                        <dl>
+                            <InfoRow label={getFieldLabel(customProductInfo, "Product Color", "appearance_color")} value={customProductInfo.appearance?.color} />
                             {renderCustomFields(customProductInfo.appearanceCustomFields)}
                         </dl>
                     </InfoSection>

@@ -64,7 +64,17 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
     
-    match /printers/{document=**} {
+    match /memory/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /storage/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /graphics-cards/{document=**} {
       allow read: if true;
       allow write: if isAdmin();
     }
@@ -75,20 +85,6 @@ service cloud.firestore {
     }
     
     match /cctv/{document=**} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
-    // ============================================
-    // PRINTER SUBCATEGORIES
-    // ============================================
-
-    match /cartridges/{document=**} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-    
-    match /toners/{document=**} {
       allow read: if true;
       allow write: if isAdmin();
     }
@@ -133,6 +129,11 @@ service cloud.firestore {
     }
     
     match /docks/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /hubs/{document=**} {
       allow read: if true;
       allow write: if isAdmin();
     }

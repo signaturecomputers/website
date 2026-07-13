@@ -32,7 +32,9 @@ import {
     Server,
     Camera,
     ShoppingBag,
-    Grid3X3
+    Grid3X3,
+    Cpu,
+    HardDrive
 } from 'lucide-react';
 
 // Main categories with their default local images
@@ -41,16 +43,16 @@ const MAIN_CATEGORIES = [
     { id: 'desktops', name: 'Desktops', icon: Monitor, defaultImage: '/images/categories/desktops.jpg', description: 'Custom-built and branded desktops' },
     { id: 'workstations', name: 'Workstations', icon: Server, defaultImage: '/images/categories/workstations.jpg', description: 'Power-house rigs for professionals' },
     { id: 'monitors', name: 'Monitors', icon: Monitor, defaultImage: '/images/categories/monitors.jpg', description: 'Crisp displays for work and gaming' },
-    { id: 'printers', name: 'Printers', icon: Printer, defaultImage: '/images/categories/printers.jpg', description: 'Reliable printing solutions', hasSubcategories: true },
+    { id: 'memory-storage', name: 'Memory, Storage & Graphics', icon: HardDrive, defaultImage: '/images/categories/memory-storage.jpg', description: 'High-speed memory, storage and graphics solutions', hasSubcategories: true },
     { id: 'accessories', name: 'Accessories', icon: ShoppingBag, defaultImage: '/images/categories/accessories.png', description: 'Keyboards, mice, and more', hasSubcategories: true },
     { id: 'cctv', name: 'CCTV', icon: Camera, defaultImage: '/images/categories/cctv.jpg', description: 'Advanced security systems' },
 ];
 
-// Subcategories under Printers
-const PRINTER_SUBCATEGORIES = [
-    { id: 'printers', name: 'Printers', parentId: 'printers-group', icon: Printer, defaultImage: '', description: 'Inkjet and laser printers' },
-    { id: 'cartridges', name: 'Cartridges', parentId: 'printers-group', icon: Package, defaultImage: '', description: 'Ink cartridges for all brands' },
-    { id: 'toners', name: 'Toners', parentId: 'printers-group', icon: Package, defaultImage: '', description: 'Laser printer toners' },
+// Subcategories under Memory & Storage
+const MEMORY_STORAGE_SUBCATEGORIES = [
+    { id: 'memory', name: 'Memory', parentId: 'memory-storage-group', icon: Cpu, defaultImage: '', description: 'High-speed DDR4 & DDR5 RAM' },
+    { id: 'storage', name: 'Storage', parentId: 'memory-storage-group', icon: HardDrive, defaultImage: '', description: 'Internal NVMe SSDs & External Drives' },
+    { id: 'graphics-cards', name: 'Graphics Cards', parentId: 'memory-storage-group', icon: Cpu, defaultImage: '', description: 'Nvidia GeForce & AMD Radeon GPUs' },
 ];
 
 // Subcategories under Accessories with their default local images
@@ -84,7 +86,7 @@ export default function CategoriesPage() {
     const [categoryMetadata, setCategoryMetadata] = useState<Record<string, CategoryData>>({});
     const [customCategories, setCustomCategories] = useState<CategoryData[]>([]);
     const [loading, setLoading] = useState(true);
-    const [expandedGroups, setExpandedGroups] = useState<string[]>(['main', 'printers', 'accessories']);
+    const [expandedGroups, setExpandedGroups] = useState<string[]>(['main', 'memory-storage', 'accessories']);
 
     // Modal state
     const [showModal, setShowModal] = useState(false);
@@ -112,7 +114,7 @@ export default function CategoriesPage() {
             // Fetch product counts for all categories
             const allCategoryIds = [
                 ...MAIN_CATEGORIES.map(c => c.id),
-                ...PRINTER_SUBCATEGORIES.map(c => c.id),
+                ...MEMORY_STORAGE_SUBCATEGORIES.map(c => c.id),
                 ...ACCESSORY_SUBCATEGORIES.map(c => c.id),
             ];
 
@@ -483,14 +485,14 @@ export default function CategoriesPage() {
                 )}
             </div>
 
-            {/* Printers & Supplies Section */}
+            {/* Memory & Storage Section */}
             <div>
-                {renderSectionHeader('Printers & Supplies', 'printers', Printer, 'printers-group')}
-                {expandedGroups.includes('printers') && (
+                {renderSectionHeader('Memory, Storage & Graphics', 'memory-storage', HardDrive, 'memory-storage-group')}
+                {expandedGroups.includes('memory-storage') && (
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                        {PRINTER_SUBCATEGORIES.filter(cat => !isDeleted(cat.id)).map(cat => renderCategoryCard(cat))}
-                        {/* Custom printer subcategories */}
-                        {getCustomSubcategories('printers-group').map(cat => renderCategoryCard({ ...cat, isCustom: true }))}
+                        {MEMORY_STORAGE_SUBCATEGORIES.filter(cat => !isDeleted(cat.id)).map(cat => renderCategoryCard(cat))}
+                        {/* Custom memory/storage subcategories */}
+                        {getCustomSubcategories('memory-storage-group').map(cat => renderCategoryCard({ ...cat, isCustom: true }))}
                     </div>
                 )}
             </div>
@@ -555,7 +557,7 @@ export default function CategoriesPage() {
                                         className="w-full p-3 rounded-lg border dark:bg-gray-900 dark:border-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500"
                                     >
                                         <option value="">None (Main Category)</option>
-                                        <option value="printers-group">Printers & Supplies</option>
+                                        <option value="memory-storage-group">Memory, Storage & Graphics</option>
                                         <option value="accessories">Accessories</option>
                                         {MAIN_CATEGORIES.map(cat => (
                                             <option key={cat.id} value={cat.id}>{cat.name}</option>

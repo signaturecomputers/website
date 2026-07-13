@@ -104,9 +104,9 @@ function getWarrantyInfo(category?: string, productName?: string): string {
     if (cat.includes('monitor')) {
         return '3 Years Warranty – Manufacturer';
     }
-    // Printers
-    if (cat.includes('printer')) {
-        return '1 Year Warranty – Manufacturer';
+    // Memory & Storage
+    if (cat.includes('memory') || cat.includes('storage')) {
+        return '3 Years Warranty – Manufacturer';
     }
     // Accessories - Signature Computers warranty
     if (cat.includes('keyboard') || cat.includes('mouse') || cat.includes('headphone') ||

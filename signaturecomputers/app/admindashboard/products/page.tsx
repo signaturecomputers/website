@@ -35,12 +35,11 @@ const DEFAULT_CATEGORIES: CategoryData[] = [
     { id: 'workstations', name: 'Workstations', group: null },
     { id: 'monitors', name: 'Monitors', group: null },
     { id: 'cctv', name: 'CCTV', group: null },
-    // Printers group
-    { id: 'printers', name: 'All Printers', group: 'Printers' },
-    { id: 'toners', name: 'Toners', group: 'Printers' },
-    { id: 'cartridges', name: 'Cartridges', group: 'Printers' },
+    // Memory, Storage & Graphics group
+    { id: 'memory', name: 'Memory', group: 'Memory, Storage & Graphics' },
+    { id: 'storage', name: 'Storage', group: 'Memory, Storage & Graphics' },
+    { id: 'graphics-cards', name: 'Graphics Cards', group: 'Memory, Storage & Graphics' },
     // Accessories group
-    { id: 'accessories', name: 'All Accessories', group: 'Accessories' },
     { id: 'keyboards', name: 'Keyboards', group: 'Accessories' },
     { id: 'headphones', name: 'Headphones', group: 'Accessories' },
     { id: 'cables', name: 'Cables', group: 'Accessories' },
@@ -51,7 +50,8 @@ const DEFAULT_CATEGORIES: CategoryData[] = [
     { id: 'docks', name: 'Docks', group: 'Accessories' },
     { id: 'hubs', name: 'Hubs', group: 'Accessories' },
     { id: 'usb-flashdrives', name: 'USB Flash Drives', group: 'Accessories' },
-    { id: 'dvd-writers', name: 'Others', group: 'Accessories' },
+    { id: 'dvd-writers', name: 'DVD Writer', group: 'Accessories' },
+    { id: 'webcams', name: 'Webcam', group: 'Accessories' },
 ];
 
 export default function ProductsPage() {
@@ -74,7 +74,7 @@ export default function ProductsPage() {
 
     const mapParentToGroup = (parentId: string | undefined | null) => {
         if (!parentId) return null;
-        if (parentId === 'printers-group') return 'Printers';
+        if (parentId === 'printers-group' || parentId === 'memory-storage-group') return 'Memory, Storage & Graphics';
         if (parentId === 'accessories') return 'Accessories';
         return parentId;
     };
@@ -108,7 +108,7 @@ export default function ProductsPage() {
                 const meta = metadataMap[cat.id];
                 return {
                     ...cat,
-                    name: meta?.name || cat.name,
+                    name: cat.id === 'dvd-writers' ? 'DVD Writer' : (meta?.name || cat.name), // Force dvd-writers to 'DVD Writer'
                     deleted: meta?.deleted || false
                 };
             }).filter(cat => !cat.deleted || cat.id === 'all'); // Always keep 'all'
@@ -130,8 +130,10 @@ export default function ProductsPage() {
         setLoading(true);
         try {
             if (selectedCategory === 'all') {
-                // Fetch from all known categories
-                const allCategoryIds = categories.filter(c => c.id !== 'all').map(c => c.id);
+                // Fetch from all known categories (excluding virtual category IDs like webcams and parent accessories)
+                const allCategoryIds = categories
+                    .filter(c => c.id !== 'all' && c.id !== 'accessories' && c.id !== 'webcams')
+                    .map(c => c.id);
                 // Remove duplicates if any
                 const uniqueCategoryIds = Array.from(new Set(allCategoryIds));
 
@@ -141,27 +143,41 @@ export default function ProductsPage() {
                     try {
                         const querySnapshot = await getDocs(collection(db, category));
                         querySnapshot.docs.forEach(doc => {
+                            const data = doc.data();
+                            const productCat = data.category || category;
                             allProducts.push({
                                 id: doc.id,
-                                category: category,
-                                ...doc.data()
+                                category: productCat,
+                                ...data
                             } as Product);
                         });
                     } catch (err) {
                         // Ignore errors for collections that might not exist yet or empty
-                        // console.warn(`Failed to fetch ${category}:`, err);
                     }
                 }));
 
                 setProducts(allProducts);
             } else {
-                const querySnapshot = await getDocs(collection(db, selectedCategory));
-                const productsData = querySnapshot.docs.map(doc => ({
-                    id: doc.id,
-                    category: selectedCategory,
-                    ...doc.data()
-                })) as Product[];
-                setProducts(productsData);
+                const targetCollection = selectedCategory === 'webcams' ? 'dvd-writers' : selectedCategory;
+                try {
+                    const querySnapshot = await getDocs(collection(db, targetCollection));
+                    let productsData = querySnapshot.docs.map(doc => ({
+                        id: doc.id,
+                        category: doc.data().category || targetCollection,
+                        ...doc.data()
+                    })) as Product[];
+
+                    if (selectedCategory === 'webcams') {
+                        productsData = productsData.filter(p => p.category === 'webcams' || p.productInfo?.othersType === 'webcam');
+                    } else if (selectedCategory === 'dvd-writers') {
+                        productsData = productsData.filter(p => p.category !== 'webcams' && p.productInfo?.othersType !== 'webcam');
+                    }
+
+                    setProducts(productsData);
+                } catch (err) {
+                    console.warn(`Failed to fetch from ${targetCollection}:`, err);
+                    setProducts([]);
+                }
             }
         } catch (error) {
             console.warn('Warning: Failed to fetch products (likely permissions):', error);
@@ -228,7 +244,7 @@ export default function ProductsPage() {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <h1 className="text-2xl font-bold dark:text-white">Products</h1>
                 <Link
-                    href="/admindashboard/products/add"
+                    href={selectedCategory && selectedCategory !== 'all' ? `/admindashboard/products/add?category=${selectedCategory}` : "/admindashboard/products/add"}
                     className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
                 >
                     <FiPlus className="mr-2" />
@@ -258,19 +274,11 @@ export default function ProductsPage() {
                         {/* Always show "All Products" first */}
                         <option value="all">All Products</option>
 
-                        {/* Ungrouped items (except 'all') */}
-                        {categories.filter(c => !c.group && c.id !== 'all').map(cat => (
-                            <option key={cat.id} value={cat.id}>{cat.name}</option>
-                        ))}
-
-                        {/* Grouped items */}
-                        {groups.map(group => (
-                            <optgroup key={group} label={group}>
-                                {categories.filter(c => c.group === group).map(cat => (
-                                    <option key={cat.id} value={cat.id}>{cat.name}</option>
-                                ))}
-                            </optgroup>
-                        ))}
+                        {categories
+                            .filter(cat => cat.id !== 'all' && cat.id !== 'accessories')
+                            .map(cat => (
+                                <option key={cat.id} value={cat.id}>{cat.name}</option>
+                            ))}
                     </select>
                 </div>
             </div>

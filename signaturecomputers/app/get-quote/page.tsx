@@ -12,10 +12,6 @@ const categories = [
     { id: 'workstations', name: 'Workstations', fields: ['processor', 'ram', 'storage', 'graphics', 'formFactor'] },
     // Displays
     { id: 'monitors', name: 'Monitors', fields: ['screenSize', 'resolution', 'panelType', 'refreshRate'] },
-    // Printers & Supplies
-    { id: 'printers', name: 'Printers', fields: ['printerType', 'printSpeed', 'connectivity', 'functions'] },
-    { id: 'toners', name: 'Toners', fields: ['tonerBrand', 'printerModel', 'tonerColor'] },
-    { id: 'cartridges', name: 'Cartridges', fields: ['cartridgeBrand', 'printerModel', 'cartridgeType'] },
     // Storage & Memory
     { id: 'hardDisk', name: 'Hard Disk / SSD', fields: ['storageType', 'storageCapacity', 'formFactorStorage', 'interface'] },
     { id: 'ram', name: 'RAM / Memory', fields: ['ramType', 'ramCapacity', 'ramSpeed'] },
@@ -299,8 +295,8 @@ export default function GetQuotePage() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 py-6 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-7xl mx-auto">
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 py-6 px-4 sm:px-8 lg:px-12">
+            <div className="w-full">
                 {/* Header */}
                 <div className="text-center mb-6">
                     <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-2">

@@ -187,10 +187,10 @@ export default function AccessoriesSubcategorySection() {
 
     return (
         <section className="py-8 bg-gray-50/50">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="w-full px-4 sm:px-8 lg:px-12">
                 <h2 className="text-xl font-bold text-gray-900 mb-6">Browse Accessories by Category</h2>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6">
                     {allSubcategories.map((subcategory) => {
                         const Icon = subcategory.icon;
                         const imageUrl = subcategory.image;
@@ -200,7 +200,7 @@ export default function AccessoriesSubcategorySection() {
                             <Link key={subcategory.id} href={subcategory.link} className="group block">
                                 <div className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 h-full flex flex-col border border-gray-100 hover:border-gray-200">
                                     {/* Image/Icon Area */}
-                                    <div className={`h-32 ${!imageUrl ? `bg-gradient-to-br ${subcategory.color}` : ''} w-full flex items-center justify-center relative overflow-hidden`}>
+                                    <div className={`aspect-[4/3] ${!imageUrl ? `bg-gradient-to-br ${subcategory.color}` : ''} w-full flex items-center justify-center relative overflow-hidden`}>
                                         {imageUrl ? (
                                             isFirebaseUrl ? (
                                                 <img

@@ -95,7 +95,7 @@ export default function CustomerReviewsSection() {
         <section className="relative bg-gray-50 py-16 overflow-hidden">
             {/* ALIGNMENT: Matches Hero/About max-width */}
             <div className="w-full">
-                <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-12">
+                <div className="w-full px-4 sm:px-8 lg:px-12">
 
                     {/* Header */}
                     <div className="text-center mb-12">

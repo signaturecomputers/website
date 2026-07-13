@@ -138,7 +138,7 @@ export default function HotDealsSection({ mode = 'home', subtitle }: HotDealsPro
                 onMouseEnter={handleMouseEnter}
                 onMouseLeave={handleMouseLeave}
             >
-                <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-12">
+                <div className="w-full px-4 sm:px-8 lg:px-12">
 
                     {/* Heading */}
                     <div className="text-center mb-10">
@@ -154,7 +154,7 @@ export default function HotDealsSection({ mode = 'home', subtitle }: HotDealsPro
                     </div>
 
                     {/* Main Content Area - Full Width Slider */}
-                    <div className="relative bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden min-h-[500px]">
+                    <div className="relative bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden min-h-[500px] lg:min-h-[650px] xl:min-h-[750px] flex flex-col lg:flex-row">
 
                         {/* Navigation Arrows */}
                         {deals.length > 1 && (
@@ -175,11 +175,11 @@ export default function HotDealsSection({ mode = 'home', subtitle }: HotDealsPro
                         )}
 
                         {/* Content Grid */}
-                        <div className="flex flex-col lg:flex-row h-full">
+                        <div className="flex flex-col lg:flex-row w-full lg:min-h-full">
 
                             {/* LEFT COLUMN: Media (Images + Thumbnails) */}
                             <div
-                                className="lg:w-1/2 bg-gray-50 p-6 lg:p-12 flex flex-col justify-center items-center relative cursor-pointer"
+                                className="lg:w-1/2 bg-gray-50 p-6 lg:p-12 flex flex-col justify-center items-center relative cursor-pointer lg:min-h-full border-r border-gray-100/50"
                                 onClick={() => handleCardClick(activeDeal.id)}
                             >
                                 {/* Main Image View */}
@@ -226,7 +226,7 @@ export default function HotDealsSection({ mode = 'home', subtitle }: HotDealsPro
 
                             {/* RIGHT COLUMN: Product Details */}
                             <div
-                                className="lg:w-1/2 p-6 lg:p-12 flex flex-col justify-center bg-white cursor-pointer group"
+                                className="lg:w-1/2 p-6 lg:p-12 flex flex-col justify-center bg-white cursor-pointer group lg:min-h-full"
                                 onClick={() => handleCardClick(activeDeal.id)}
                             >
                                 <div className="max-w-xl group-hover:opacity-90 transition-opacity">
@@ -313,9 +313,9 @@ export default function HotDealsSection({ mode = 'home', subtitle }: HotDealsPro
             {
                 mode === 'page' && (
                     <section className="py-12 bg-gray-50 border-t border-gray-100">
-                        <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-12">
+                        <div className="w-full px-4 sm:px-8 lg:px-12">
                             <h3 className="text-2xl font-bold text-gray-900 mb-8">All Hot Deals</h3>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6">
                                 {deals.map((deal, index) => (
                                     <div key={deal.id} className={currentSlide === index ? 'ring-2 ring-blue-600 rounded-xl' : ''}>
                                         <ProductCard

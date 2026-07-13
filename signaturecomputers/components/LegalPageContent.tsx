@@ -102,7 +102,7 @@ export default function LegalPageContent({ pageId, defaultTitle }: LegalPageCont
         <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
             {/* Header */}
             <div className="bg-gradient-to-r from-slate-800 via-slate-900 to-slate-800 text-white py-8 sm:py-10">
-                <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="w-full px-4 sm:px-8 lg:px-12">
                     <div className="flex items-start gap-4">
                         <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
                             {getIcon()}
@@ -130,7 +130,7 @@ export default function LegalPageContent({ pageId, defaultTitle }: LegalPageCont
             </div>
 
             {/* Trust Badges - Only 2 badges, no returns */}
-            <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 -mt-5">
+            <div className="w-full px-4 sm:px-8 lg:px-12 -mt-5">
                 <div className="grid grid-cols-2 gap-3 sm:gap-4 max-w-md mx-auto sm:max-w-lg">
                     <div className="bg-white rounded-lg shadow-md p-3 flex items-center gap-3">
                         <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
@@ -154,7 +154,7 @@ export default function LegalPageContent({ pageId, defaultTitle }: LegalPageCont
             </div>
 
             {/* Main Content - No card, blends with background */}
-            <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="w-full px-4 sm:px-8 lg:px-12 py-8">
                 {/* Company Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6 pb-4 border-b border-gray-200">
                     <div>

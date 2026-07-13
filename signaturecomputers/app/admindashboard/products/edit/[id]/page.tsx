@@ -28,10 +28,10 @@ const DEFAULT_CATEGORIES = [
     { id: 'workstations', name: 'Workstations', group: null },
     { id: 'monitors', name: 'Monitors', group: null },
     { id: 'cctv', name: 'CCTV', group: null },
-    // Printers group
-    { id: 'printers', name: 'Printers', group: 'Printers' },
-    { id: 'toners', name: 'Toners', group: 'Printers' },
-    { id: 'cartridges', name: 'Cartridges', group: 'Printers' },
+    // Memory, Storage & Graphics group
+    { id: 'memory', name: 'Memory', group: 'Memory, Storage & Graphics' },
+    { id: 'storage', name: 'Storage', group: 'Memory, Storage & Graphics' },
+    { id: 'graphics-cards', name: 'Graphics Cards', group: 'Memory, Storage & Graphics' },
     // Accessories group
     { id: 'accessories', name: 'Accessories', group: 'Accessories' },
     { id: 'keyboards', name: 'Keyboards', group: 'Accessories' },
@@ -44,7 +44,7 @@ const DEFAULT_CATEGORIES = [
     { id: 'docks', name: 'Docks', group: 'Accessories' },
     { id: 'hubs', name: 'Hubs', group: 'Accessories' },
     { id: 'usb-flashdrives', name: 'USB Flash Drives', group: 'Accessories' },
-    { id: 'dvd-writers', name: 'DVD', group: 'Accessories' },
+    { id: 'dvd-writers', name: 'DVD Writer', group: 'Accessories' },
     { id: 'webcams', name: 'Webcam', group: 'Accessories' },
 ];
 
@@ -122,7 +122,9 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
 
             // Populate Form
             const formCategory = productCategory === 'dvd-writers' 
-                ? (productData.productInfo?.othersType === 'webcam' ? 'webcams' : 'dvd-writers')
+                ? (productData.productInfo?.othersType === 'webcam' 
+                    ? 'webcams' 
+                    : (productData.productInfo?.othersType === 'other' ? 'others' : 'dvd-writers'))
                 : productCategory;
 
             setFormData({
@@ -198,7 +200,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                 const meta = metadataMap[cat.id];
                 return {
                     ...cat,
-                    name: meta?.name || cat.name,
+                    name: cat.id === 'dvd-writers' ? 'DVD Writer' : (meta?.name || cat.name), // Force dvd-writers to 'DVD Writer'
                     deleted: meta?.deleted || false
                 };
             });
@@ -218,7 +220,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
 
     const mapParentToGroup = (parentId: string | undefined | null) => {
         if (!parentId) return null;
-        if (parentId === 'printers-group') return 'Printers';
+        if (parentId === 'printers-group' || parentId === 'memory-storage-group') return 'Memory, Storage & Graphics';
         if (parentId === 'accessories') return 'Accessories';
         return parentId;
     };
@@ -506,55 +508,13 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                         >
                             <option value="">Select Category</option>
 
-                            {/* Standalone Categories */}
-                            <optgroup label="Main Categories">
-                                {allCategories
-                                    .filter(cat => !cat.group && !cat.deleted)
-                                    .map(cat => (
-                                        <option key={cat.id} value={cat.id}>
-                                            {cat.name}
-                                        </option>
-                                    ))}
-                            </optgroup>
-
-                            {/* Printers Group */}
-                            {allCategories.some(cat => cat.group === 'Printers' && !cat.deleted) && (
-                                <optgroup label="Printers">
-                                    {allCategories
-                                        .filter(cat => cat.group === 'Printers' && !cat.deleted)
-                                        .map(cat => (
-                                            <option key={cat.id} value={cat.id}>
-                                                {cat.name}
-                                            </option>
-                                        ))}
-                                </optgroup>
-                            )}
-
-                            {/* Accessories Group */}
-                            {allCategories.some(cat => cat.group === 'Accessories' && !cat.deleted) && (
-                                <optgroup label="Accessories">
-                                    {allCategories
-                                        .filter(cat => cat.group === 'Accessories' && !cat.deleted)
-                                        .map(cat => (
-                                            <option key={cat.id} value={cat.id}>
-                                                {cat.name}
-                                            </option>
-                                        ))}
-                                </optgroup>
-                            )}
-
-                            {/* Custom Categories */}
-                            {allCategories.some(cat => cat.isCustom && !cat.deleted) && (
-                                <optgroup label="Custom Categories">
-                                    {allCategories
-                                        .filter(cat => cat.isCustom && !cat.deleted)
-                                        .map(cat => (
-                                            <option key={cat.id} value={cat.id}>
-                                                {cat.name}
-                                            </option>
-                                        ))}
-                                </optgroup>
-                            )}
+                            {allCategories
+                                .filter(cat => cat.id !== 'all' && cat.id !== 'accessories' && !cat.deleted)
+                                .map(cat => (
+                                    <option key={cat.id} value={cat.id}>
+                                        {cat.name}
+                                    </option>
+                                ))}
                         </select>
                     </div>
 

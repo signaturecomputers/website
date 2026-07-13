@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Printer, Package } from 'lucide-react';
+import { Cpu, HardDrive, Tv } from 'lucide-react';
 
 interface CategoryData {
     id: string;
@@ -18,35 +18,35 @@ interface CategoryData {
 
 const defaultSubcategories = [
     {
-        id: 'printers',
-        title: 'Printers',
-        description: 'Inkjet and laser printers',
-        link: '/products?category=printers',
-        icon: Printer,
-        color: 'from-orange-500 to-amber-600',
-        image: '',
-    },
-    {
-        id: 'cartridges',
-        title: 'Cartridges',
-        description: 'Ink cartridges for all printer brands',
-        link: '/products?category=cartridges',
-        icon: Package,
+        id: 'memory',
+        title: 'Memory',
+        description: 'High-speed DDR4 & DDR5 RAM',
+        link: '/products?category=memory',
+        icon: Cpu,
         color: 'from-blue-500 to-indigo-600',
         image: '',
     },
     {
-        id: 'toners',
-        title: 'Toners',
-        description: 'Laser printer toners',
-        link: '/products?category=toners',
-        icon: Package,
-        color: 'from-gray-500 to-slate-600',
+        id: 'storage',
+        title: 'Storage',
+        description: 'Internal NVMe SSDs & External Drives',
+        link: '/products?category=storage',
+        icon: HardDrive,
+        color: 'from-emerald-500 to-teal-600',
+        image: '',
+    },
+    {
+        id: 'graphics-cards',
+        title: 'Graphics Cards',
+        description: 'Nvidia GeForce & AMD Radeon GPUs',
+        link: '/products?category=graphics-cards',
+        icon: Tv,
+        color: 'from-purple-500 to-violet-600',
         image: '',
     },
 ];
 
-export default function PrinterSubcategorySection() {
+export default function MemoryStorageSubcategorySection() {
     const [categoryMetadata, setCategoryMetadata] = useState<Record<string, CategoryData>>({});
     const [customSubcategories, setCustomSubcategories] = useState<CategoryData[]>([]);
     const [loading, setLoading] = useState(true);
@@ -65,11 +65,11 @@ export default function PrinterSubcategorySection() {
             });
             setCategoryMetadata(metadata);
 
-            // Fetch custom subcategories under printers-group
+            // Fetch custom subcategories under memory-storage-group
             const customCatsSnapshot = await getDocs(collection(db, 'custom_categories'));
             const customs = customCatsSnapshot.docs
                 .map(doc => ({ id: doc.id, ...doc.data() } as CategoryData))
-                .filter(c => c.parentId === 'printers-group');
+                .filter(c => c.parentId === 'memory-storage-group');
             setCustomSubcategories(customs);
         } catch (error) {
             console.error('Failed to fetch category data:', error);
@@ -104,7 +104,7 @@ export default function PrinterSubcategorySection() {
                 title: cat.name,
                 description: cat.description || '',
                 link: `/products?category=${cat.id}`,
-                icon: Package,
+                icon: HardDrive,
                 color: 'from-gray-500 to-slate-600',
                 image: cat.image || '',
             })),
@@ -112,10 +112,10 @@ export default function PrinterSubcategorySection() {
 
     return (
         <section className="py-8 bg-gray-50/50">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <h2 className="text-xl font-bold text-gray-900 mb-6">Browse Printers & Supplies</h2>
+            <div className="w-full px-4 sm:px-8 lg:px-12">
+                <h2 className="text-xl font-bold text-gray-900 mb-6">Browse Memory, Storage & Graphics</h2>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6">
                     {allSubcategories.map((subcategory) => {
                         const Icon = subcategory.icon;
                         const imageUrl = subcategory.image;
@@ -125,20 +125,20 @@ export default function PrinterSubcategorySection() {
                             <Link key={subcategory.id} href={subcategory.link} className="group block">
                                 <div className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 h-full flex flex-col border border-gray-100 hover:border-gray-200">
                                     {/* Image/Icon Area */}
-                                    <div className={`h-40 ${!imageUrl ? `bg-gradient-to-br ${subcategory.color}` : 'bg-gray-100'} w-full flex items-center justify-center relative overflow-hidden`}>
+                                    <div className={`aspect-[4/3] ${!imageUrl ? `bg-gradient-to-br ${subcategory.color}` : 'bg-gray-100'} w-full flex items-center justify-center relative overflow-hidden`}>
                                         {imageUrl ? (
                                             isFirebaseUrl ? (
                                                 <img
                                                     src={imageUrl}
                                                     alt={subcategory.title}
-                                                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                                                    className="w-full h-full object-cover object-center group-hover:scale-110 transition-transform duration-300"
                                                 />
                                             ) : (
                                                 <Image
                                                     src={imageUrl}
                                                     alt={subcategory.title}
                                                     fill
-                                                    className="object-cover group-hover:scale-110 transition-transform duration-300"
+                                                    className="object-cover object-center group-hover:scale-110 transition-transform duration-300"
                                                 />
                                             )
                                         ) : (

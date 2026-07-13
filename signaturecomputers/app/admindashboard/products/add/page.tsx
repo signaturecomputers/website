@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { collection, addDoc, serverTimestamp, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAdminAuth } from '@/context/AdminAuthContext';
@@ -28,10 +28,10 @@ const DEFAULT_CATEGORIES = [
     { id: 'workstations', name: 'Workstations', group: null },
     { id: 'monitors', name: 'Monitors', group: null },
     { id: 'cctv', name: 'CCTV', group: null },
-    // Printers group
-    { id: 'printers', name: 'Printers', group: 'Printers' },
-    { id: 'toners', name: 'Toners', group: 'Printers' },
-    { id: 'cartridges', name: 'Cartridges', group: 'Printers' },
+    // Memory, Storage & Graphics group
+    { id: 'memory', name: 'Memory', group: 'Memory, Storage & Graphics' },
+    { id: 'storage', name: 'Storage', group: 'Memory, Storage & Graphics' },
+    { id: 'graphics-cards', name: 'Graphics Cards', group: 'Memory, Storage & Graphics' },
     // Accessories group
     { id: 'accessories', name: 'Accessories', group: 'Accessories' },
     { id: 'keyboards', name: 'Keyboards', group: 'Accessories' },
@@ -44,13 +44,15 @@ const DEFAULT_CATEGORIES = [
     { id: 'docks', name: 'Docks', group: 'Accessories' },
     { id: 'hubs', name: 'Hubs', group: 'Accessories' },
     { id: 'usb-flashdrives', name: 'USB Flash Drives', group: 'Accessories' },
-    { id: 'dvd-writers', name: 'DVD', group: 'Accessories' },
+    { id: 'dvd-writers', name: 'DVD Writer', group: 'Accessories' },
     { id: 'webcams', name: 'Webcam', group: 'Accessories' },
 ];
 
-export default function AddProductPage() {
+function AddProductForm() {
     const { adminUser } = useAdminAuth();
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const categoryFromUrl = searchParams ? searchParams.get('category') : null;
     const [submitting, setSubmitting] = useState(false);
 
     // Form State
@@ -109,7 +111,7 @@ export default function AddProductPage() {
                 const meta = metadataMap[cat.id];
                 return {
                     ...cat,
-                    name: meta?.name || cat.name, // Use custom name if exists
+                    name: cat.id === 'dvd-writers' ? 'DVD Writer' : (meta?.name || cat.name), // Force dvd-writers to 'DVD Writer'
                     deleted: meta?.deleted || false
                 };
             }).filter(cat => !cat.deleted); // Exclude deleted categories
@@ -125,7 +127,7 @@ export default function AddProductPage() {
 
     const mapParentToGroup = (parentId: string | undefined | null) => {
         if (!parentId) return null;
-        if (parentId === 'printers-group') return 'Printers';
+        if (parentId === 'printers-group' || parentId === 'memory-storage-group') return 'Memory, Storage & Graphics';
         if (parentId === 'accessories') return 'Accessories';
         // Check if parentId matches any main category ID, if so, maybe group by that?
         // For now, simple mapping
@@ -151,6 +153,9 @@ export default function AddProductPage() {
         'usb-flashdrives': ['Capacity', 'Interface', 'Read Speed', 'Write Speed', 'Connector Type', 'Compatibility'],
         'dvd-writers': ['Drive Type', 'Interface', 'Optical Drive Type', 'Read Speed', 'Write Speed', 'Compatibility'],
         'webcams': ['Resolution', 'Frame Rate', 'Microphone', 'Interface', 'Focus Type', 'Compatibility'],
+        memory: ['Capacity', 'Memory Type', 'Speed', 'Form Factor', 'Voltage', 'Compatibility'],
+        storage: ['Storage Type', 'Capacity', 'Interface', 'Form Factor', 'Read Speed', 'Write Speed'],
+        'graphics-cards': ['Interface', 'GPU Brand', 'GPU Model', 'Memory Size', 'Memory Type', 'Outputs', 'Recommended PSU'],
     };
 
     // Auto-populate specs based on category
@@ -179,13 +184,27 @@ export default function AddProductPage() {
 
     // Apply default template on mount if applicable
     useEffect(() => {
+        if (categoryFromUrl) {
+            // Verify if it is a valid category in DEFAULT_CATEGORIES
+            const isValid = DEFAULT_CATEGORIES.some(c => c.id === categoryFromUrl);
+            if (isValid) {
+                setFormData(prev => ({ ...prev, category: categoryFromUrl }));
+                if (SPEC_TEMPLATES[categoryFromUrl]) {
+                    setSpecs(SPEC_TEMPLATES[categoryFromUrl].map(key => ({ key, value: '' })));
+                } else {
+                    setSpecs([{ key: 'Processor', value: '' }, { key: 'RAM', value: '' }, { key: 'Storage', value: '' }]);
+                }
+                return;
+            }
+        }
+
         // If default category is laptops and specs are generic, load laptop template
         if (formData.category === 'laptops' && specs.length === 3 && specs[0].key === 'Processor' && specs[0].value === '') {
             if (SPEC_TEMPLATES['laptops']) {
                 setSpecs(SPEC_TEMPLATES['laptops'].map(key => ({ key, value: '' })));
             }
         }
-    }, []);
+    }, [categoryFromUrl]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
@@ -305,10 +324,10 @@ export default function AddProductPage() {
 
     // Sort: Null group (Main) first, then others
     const ungrouped = groupedCategories['Other'] || [];
-    const printerGroup = groupedCategories['Printers'] || [];
+    const memoryStorageGroup = groupedCategories['Memory & Storage'] || [];
     const accessoryGroup = groupedCategories['Accessories'] || [];
     const otherGroups = Object.keys(groupedCategories)
-        .filter(key => key !== 'Other' && key !== 'Printers' && key !== 'Accessories')
+        .filter(key => key !== 'Other' && key !== 'Memory & Storage' && key !== 'Accessories')
         .map(key => ({ name: key, cats: groupedCategories[key] }));
 
 
@@ -402,37 +421,11 @@ export default function AddProductPage() {
                         >
                             {loadingCategories && <option>Loading categories...</option>}
 
-                            {/* Ungrouped items */}
-                            {ungrouped.map(cat => (
-                                <option key={cat.id} value={cat.id}>{cat.name}</option>
-                            ))}
-
-                            {/* Printers group */}
-                            {printerGroup.length > 0 && (
-                                <optgroup label="Printers">
-                                    {printerGroup.map(cat => (
-                                        <option key={cat.id} value={cat.id}>{cat.name}</option>
-                                    ))}
-                                </optgroup>
-                            )}
-
-                            {/* Accessories group */}
-                            {accessoryGroup.length > 0 && (
-                                <optgroup label="Accessories">
-                                    {accessoryGroup.map(cat => (
-                                        <option key={cat.id} value={cat.id}>{cat.name}</option>
-                                    ))}
-                                </optgroup>
-                            )}
-
-                            {/* Any other dynamic groups */}
-                            {otherGroups.map(group => (
-                                <optgroup key={group.name} label={group.name || 'Custom'}>
-                                    {group.cats.map(cat => (
-                                        <option key={cat.id} value={cat.id}>{cat.name}</option>
-                                    ))}
-                                </optgroup>
-                            ))}
+                            {allCategories
+                                .filter(cat => cat.id !== 'all' && cat.id !== 'accessories' && !cat.deleted)
+                                .map(cat => (
+                                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                ))}
                         </select>
                     </div>
 
@@ -530,5 +523,13 @@ export default function AddProductPage() {
                 </div>
             </form >
         </div >
+    );
+}
+
+export default function AddProductPage() {
+    return (
+        <Suspense fallback={<div className="p-6 text-center text-gray-500">Loading...</div>}>
+            <AddProductForm />
+        </Suspense>
     );
 }

@@ -6,7 +6,7 @@ import ProductFilters from '@/components/ProductFilters';
 import ProductCard from '@/components/ProductCard';
 import CategorySection from '@/components/CategorySection';
 import AccessoriesSubcategorySection from '@/components/AccessoriesSubcategorySection';
-import PrinterSubcategorySection from '@/components/PrinterSubcategorySection';
+import MemoryStorageSubcategorySection from '@/components/MemoryStorageSubcategorySection';
 import { getAllProducts, Product } from '@/lib/products';
 import { FiLoader, FiGrid, FiList } from 'react-icons/fi';
 
@@ -74,11 +74,12 @@ export default function ProductsPage() {
     // Accessory subcategory IDs
     const accessorySubcategories = [
         'keyboards', 'mouse', 'keyboard-mouse-combo', 'headphones', 'cables',
-        'power-adapters', 'bags', 'docks', 'hubs', 'usb-flashdrives', 'dvd-writers'
+        'power-adapters', 'bags', 'docks', 'hubs', 'usb-flashdrives', 'dvd-writers',
+        'webcams', 'others'
     ];
 
-    // Printer subcategory IDs
-    const printerSubcategories = ['printers', 'cartridges', 'toners'];
+    // Memory & Storage subcategory IDs
+    const memoryStorageSubcategories = ['memory', 'storage', 'graphics-cards'];
 
     // Filter by category and search first
     useEffect(() => {
@@ -96,16 +97,21 @@ export default function ProductsPage() {
 
         // Category Filter
         if (selectedCategory !== 'all') {
-            const productCategory = (p: Product) => p.category?.toLowerCase();
+            const productCategory = (p: Product) => {
+                if (p.category?.toLowerCase() === 'dvd-writers') {
+                    if (p.productInfo?.othersType === 'webcam') return 'webcams';
+                    if (p.productInfo?.othersType === 'other') return 'others';
+                    return 'dvd-writers';
+                }
+                return p.category?.toLowerCase();
+            };
 
             if (selectedCategory === 'accessories') {
                 result = result.filter(p =>
                     productCategory(p) === 'accessories' || accessorySubcategories.includes(productCategory(p) || '')
                 );
-            } else if (selectedCategory === 'printers-all') {
-                result = result.filter(p => printerSubcategories.includes(productCategory(p) || ''));
-            } else if (selectedCategory === 'docks') {
-                result = result.filter(p => productCategory(p) === 'docks' || productCategory(p) === 'hubs');
+            } else if (selectedCategory === 'memory-storage' || selectedCategory === 'memory-storage-all') {
+                result = result.filter(p => memoryStorageSubcategories.includes(productCategory(p) || ''));
             } else {
                 result = result.filter(p => productCategory(p) === selectedCategory.toLowerCase());
             }
@@ -135,10 +141,11 @@ export default function ProductsPage() {
         'desktops': 'Desktops',
         'workstations': 'Workstations',
         'monitors': 'Monitors',
-        'printers': 'Printers',
+        'memory-storage': 'Memory, Storage & Graphics',
+        'memory': 'Memory',
+        'storage': 'Storage',
+        'graphics-cards': 'Graphics Cards',
         'accessories': 'All Accessories',
-        'cartridges': 'Cartridges',
-        'toners': 'Toners',
         'cctv': 'CCTV',
         'keyboards': 'Keyboards',
         'mouse': 'Mouse',
@@ -151,6 +158,7 @@ export default function ProductsPage() {
         'hubs': 'Hubs',
         'usb-flashdrives': 'USB Flash Drives',
         'dvd-writers': 'Others',
+        'webcams': 'Webcam',
     };
 
     // Get display title based on selected category or search query
@@ -166,11 +174,11 @@ export default function ProductsPage() {
             {/* Show Accessories Subcategory Cards when on 'Accessories' view */}
             {selectedCategory === 'accessories' && <AccessoriesSubcategorySection />}
 
-            {/* Show Printers Subcategory Cards when on 'Printers' view */}
-            {selectedCategory === 'printers' && <PrinterSubcategorySection />}
+            {/* Show Memory & Storage Subcategory Cards when on 'Memory & Storage' view */}
+            {selectedCategory === 'memory-storage' && <MemoryStorageSubcategorySection />}
 
 
-            <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="w-full px-4 sm:px-8 lg:px-12 py-8">
                 {/* Page Header */}
                 <div className="mb-6">
                     <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">{pageTitle}</h1>
@@ -254,7 +262,7 @@ export default function ProductsPage() {
                                 <p className="text-gray-400 text-sm mt-2">Try adjusting your filters or search terms.</p>
                             </div>
                         ) : viewMode === 'grid' ? (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-4 3xl:grid-cols-5 4xl:grid-cols-6 gap-4 lg:gap-6">
                                 {sortedProducts.map((product) => (
                                     <ProductCard key={product.id} product={product} />
                                 ))}
