@@ -1,10 +1,5 @@
-'use client';
-
-import { useEffect, useState } from 'react';
 import { Product } from '@/lib/products';
 import { generateProductSchema, generateBreadcrumbSchema, getCategoryLabel, BUSINESS_INFO } from '@/lib/seo-schema';
-
-import Script from 'next/script';
 
 interface ProductSchemaProps {
     product: Product;
@@ -12,16 +7,9 @@ interface ProductSchemaProps {
 
 /**
  * Component that injects Product JSON-LD structured data into the page.
- * This is a client component that runs on hydration to add schema non-blocking.
  */
 export default function ProductSchema({ product }: ProductSchemaProps) {
-    const [mounted, setMounted] = useState(false);
-
-    useEffect(() => {
-        setMounted(true);
-    }, []);
-
-    if (!mounted || !product) return null;
+    if (!product) return null;
 
     const baseUrl = BUSINESS_INFO.url;
     const productSchema = generateProductSchema(product, baseUrl);
@@ -37,7 +25,7 @@ export default function ProductSchema({ product }: ProductSchemaProps) {
     return (
         <>
             {/* Product Schema */}
-            <Script
+            <script
                 id={`product-schema-${product.id}`}
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{
@@ -45,7 +33,7 @@ export default function ProductSchema({ product }: ProductSchemaProps) {
                 }}
             />
             {/* Breadcrumb Schema */}
-            <Script
+            <script
                 id={`breadcrumb-schema-${product.id}`}
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{
