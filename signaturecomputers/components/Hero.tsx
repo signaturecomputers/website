@@ -230,11 +230,7 @@ export default function Hero() {
             {/* All Slides - Using fade transition */}
             <div
                 ref={slideRef}
-                className={`relative transition-all duration-500 ${
-                    isEdmActive
-                        ? 'w-full aspect-[1920/530] min-h-[300px] lg:min-h-[350px] xl:min-h-[400px] 2xl:min-h-[450px] 3xl:min-h-[500px]'
-                        : 'min-h-[500px] lg:min-h-[550px] 3xl:min-h-[600px] 4xl:min-h-[680px] 5xl:min-h-[730px]'
-                }`}
+                className="relative transition-all duration-500 w-full min-h-[500px] lg:min-h-[550px] 3xl:min-h-[600px] 4xl:min-h-[680px] 5xl:min-h-[730px]"
             >
 
                 {/* SLIDE 0: Static Hero Section */}

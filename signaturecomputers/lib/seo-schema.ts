@@ -29,7 +29,7 @@ export const BUSINESS_INFO = {
         // 'https://www.instagram.com/signaturecomputers',
     ],
     // Brands we deal with
-    brands: ['HP', 'Dell', 'Lenovo', 'Acer', 'ASUS', 'Microsoft'],
+    brands: ['HP'],
     // Opening hours (Mon-Sat 10am-8pm)
     openingHours: 'Mo-Sa 10:00-20:00',
     // Price range
@@ -171,17 +171,11 @@ export function generateLocalBusinessSchema() {
             name: area,
         })),
         sameAs: BUSINESS_INFO.sameAs,
-        // Signals for authorized reseller
-        makesOffer: BUSINESS_INFO.brands.map(brand => ({
-            '@type': 'Offer',
-            itemOffered: {
-                '@type': 'Product',
-                brand: {
-                    '@type': 'Brand',
-                    name: brand,
-                },
-            },
-        })),
+        // Brand details for authorized reseller
+        brand: {
+            '@type': 'Brand',
+            name: 'HP',
+        },
     };
 }
 
