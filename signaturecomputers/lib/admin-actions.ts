@@ -156,3 +156,35 @@ export async function deleteProduct(category: string, productId: string) {
         return { success: false, error: 'Failed to delete product' };
     }
 }
+
+export async function createCarePack(carePackData: any) {
+    try {
+        const sanitized = sanitizeData(carePackData);
+        const docRef = await adminDb.collection('care_packs').add(sanitized);
+        return { success: true, id: docRef.id };
+    } catch (error) {
+        console.error('Error creating care pack:', error);
+        return { success: false, error: 'Failed to create care pack' };
+    }
+}
+
+export async function updateCarePack(carePackId: string, carePackData: any) {
+    try {
+        const sanitized = sanitizeData(carePackData);
+        await adminDb.collection('care_packs').doc(carePackId).update(sanitized);
+        return { success: true };
+    } catch (error) {
+        console.error('Error updating care pack:', error);
+        return { success: false, error: 'Failed to update care pack' };
+    }
+}
+
+export async function deleteCarePack(carePackId: string) {
+    try {
+        await adminDb.collection('care_packs').doc(carePackId).delete();
+        return { success: true };
+    } catch (error) {
+        console.error('Error deleting care pack:', error);
+        return { success: false, error: 'Failed to delete care pack' };
+    }
+}

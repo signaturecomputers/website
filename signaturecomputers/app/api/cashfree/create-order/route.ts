@@ -31,6 +31,12 @@ interface OrderItem {
     totalAmount: number;
     windowsInstallation?: boolean;
     windowsInstallationPrice?: number;
+    carePack?: {
+        title: string;
+        duration: string;
+        price: number;
+        partNumber: string;
+    } | null;
 }
 
 interface CreateOrderRequest {

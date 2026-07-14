@@ -39,6 +39,12 @@ interface CheckoutModalProps {
     quantity: number;
     windowsInstallation?: boolean;
     windowsInstallationPrice?: number;
+    carePack?: {
+        title: string;
+        duration: string;
+        price: number;
+        partNumber: string;
+    };
 }
 
 interface BillingAddress {
@@ -53,7 +59,7 @@ interface BillingAddress {
     isDefault?: boolean;
 }
 
-export default function CheckoutModal({ isOpen, onClose, product, quantity, windowsInstallation, windowsInstallationPrice }: CheckoutModalProps) {
+export default function CheckoutModal({ isOpen, onClose, product, quantity, windowsInstallation, windowsInstallationPrice, carePack }: CheckoutModalProps) {
     const { user } = useAuth();
     const router = useRouter();
     const [loading, setLoading] = useState(false);
@@ -132,7 +138,8 @@ export default function CheckoutModal({ isOpen, onClose, product, quantity, wind
 
     const productTotal = product.price * quantity;
     const windowsTotal = windowsInstallation && windowsInstallationPrice ? windowsInstallationPrice * quantity : 0;
-    const totalAmount = productTotal + windowsTotal;
+    const carePackTotal = carePack ? carePack.price * quantity : 0;
+    const totalAmount = productTotal + windowsTotal + carePackTotal;
     const selectedAddress = savedAddresses.find(a => a.id === selectedAddressId);
 
     const handleNewAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -298,6 +305,10 @@ export default function CheckoutModal({ isOpen, onClose, product, quantity, wind
         // Only add windowsInstallationPrice if it exists
         if (windowsInstallation && windowsInstallationPrice) {
             orderData.windowsInstallationPrice = windowsInstallationPrice;
+        }
+
+        if (carePack) {
+            orderData.carePack = carePack;
         }
 
         await addDoc(collection(db, 'orders'), orderData);
@@ -617,6 +628,12 @@ export default function CheckoutModal({ isOpen, onClose, product, quantity, wind
                                             <div className="flex justify-between text-sm">
                                                 <span className="text-gray-600 dark:text-gray-400">Windows 11 Pro OEM Key</span>
                                                 <span className="dark:text-white">₹{windowsTotal.toLocaleString('en-IN')}</span>
+                                            </div>
+                                        )}
+                                        {carePack && (
+                                            <div className="flex justify-between text-sm">
+                                                <span className="text-gray-600 dark:text-gray-400">{carePack.title} ({carePack.duration})</span>
+                                                <span className="dark:text-white">₹{carePackTotal.toLocaleString('en-IN')}</span>
                                             </div>
                                         )}
                                         <div className="flex justify-between font-bold text-lg mt-2 pt-2 border-t dark:border-gray-700">

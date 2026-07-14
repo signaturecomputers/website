@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { FiStar, FiShoppingCart, FiHeart, FiCreditCard, FiChevronDown, FiChevronUp } from 'react-icons/fi';
+import { FiStar, FiShoppingCart, FiHeart, FiCreditCard, FiChevronDown, FiChevronUp, FiShield } from 'react-icons/fi';
 import { getProductById, getRelatedProducts, getSuggestedAccessories, Product, CATEGORY_NAMES } from '@/lib/products';
 import Link from 'next/link';
 import { toast } from 'sonner';
@@ -13,6 +13,8 @@ import { useCart } from '@/context/CartContext';
 import { isFreeDOSProduct, getWindowsInstallationPrice } from '@/lib/windowsInstallationConfig';
 import ProductSchema from '@/components/seo/ProductSchema';
 import ProductSEOContent from '@/components/ProductSEOContent';
+import { db } from '@/lib/firebase';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 
 interface ProductDetailsProps {
     id: string;
@@ -41,6 +43,23 @@ export default function ProductDetails({ id }: ProductDetailsProps) {
     const [windowsPrice, setWindowsPrice] = useState(5000);
     const [showWindowsModal, setShowWindowsModal] = useState(false);
     const [modalDismissed, setModalDismissed] = useState(false);
+
+    // Care Pack state
+    interface CarePack {
+        id: string;
+        productPartNo: string;
+        title: string;
+        duration: string;
+        price: number;
+        partNumber: string;
+        supportedSeries: string;
+        enabled: boolean;
+    }
+    const [carePacks, setCarePacks] = useState<CarePack[]>([]);
+    const [selectedCarePack, setSelectedCarePack] = useState<CarePack | null>(null);
+    const [showCarePackModal, setShowCarePackModal] = useState(false);
+    const [carePackModalDismissed, setCarePackModalDismissed] = useState(false);
+    const [isCartFlow, setIsCartFlow] = useState(false);
 
     // Thumbnail scroll state
     const [canScrollUp, setCanScrollUp] = useState(false);
@@ -118,6 +137,38 @@ export default function ProductDetails({ id }: ProductDetailsProps) {
         };
     }, [product, activeImage]);
 
+    const executeCartAction = (includeWindows: boolean, finalCarePack: CarePack | null) => {
+        if (product) {
+            const success = addToCart({
+                id: product.id,
+                name: product.name,
+                price: product.price,
+                image: product.images?.[0] || '',
+                quantity: quantity,
+                windowsInstallation: includeWindows,
+                windowsInstallationPrice: includeWindows ? windowsPrice : undefined,
+                carePack: finalCarePack ? {
+                    title: finalCarePack.title,
+                    duration: finalCarePack.duration,
+                    price: finalCarePack.price,
+                    partNumber: finalCarePack.partNumber
+                } : undefined,
+                stock: product.stock,
+            });
+
+            if (success) {
+                if (isCartFlow) {
+                    toast.success('Added to cart!', {
+                        description: `${product.productInfo?.title || product.name} (Qty: ${quantity})${includeWindows ? ' + Windows 11 Pro' : ''}${finalCarePack ? ` + ${finalCarePack.title}` : ''}`,
+                        duration: 3000,
+                    });
+                } else {
+                    router.push('/checkout');
+                }
+            }
+        }
+    };
+
     const handleBuyNow = () => {
         if (!user) {
             toast.error('Please login to checkout');
@@ -125,55 +176,65 @@ export default function ProductDetails({ id }: ProductDetailsProps) {
             return;
         }
 
+        setIsCartFlow(false);
+
+        if (quantity > 1 && selectedCarePack) {
+            toast.info('For bulk laptop orders with Care Packs, please request a quote.');
+            router.push('/get-quote');
+            return;
+        }
+
         // Show modal if Free DOS product, no Windows selected, and modal not dismissed yet
         if (isFreeDOS && !windowsInstallation && !modalDismissed) {
             setShowWindowsModal(true);
             return;
         }
 
-        // Proceed with adding to cart
-        if (product) {
-            const success = addToCart({
-                id: product.id,
-                name: product.name,
-                price: product.price,
-                image: product.images?.[0] || '',
-                quantity: quantity,
-                windowsInstallation: windowsInstallation,
-                windowsInstallationPrice: windowsInstallation ? windowsPrice : undefined,
-                stock: product.stock,
-            });
-            if (success) {
-                router.push('/checkout');
-            }
+        // Show Care Pack popup if Care Packs exist and not dismissed yet
+        if (carePacks.length > 0 && !carePackModalDismissed) {
+            setShowCarePackModal(true);
+            return;
         }
+
+        executeCartAction(windowsInstallation, selectedCarePack);
     };
 
     const handleAddToCart = () => {
+        setIsCartFlow(true);
+
+        if (quantity > 1 && selectedCarePack) {
+            toast.info('For bulk laptop orders with Care Packs, please request a quote.');
+            router.push('/get-quote');
+            return;
+        }
+
         // Show modal if Free DOS product, no Windows selected, and modal not dismissed yet
         if (isFreeDOS && !windowsInstallation && !modalDismissed) {
             setShowWindowsModal(true);
             return;
         }
 
-        // Proceed with adding to cart
-        if (product) {
-            const success = addToCart({
-                id: product.id,
-                name: product.name,
-                price: product.price,
-                image: product.images?.[0] || '',
-                quantity: quantity,
-                windowsInstallation: windowsInstallation,
-                windowsInstallationPrice: windowsInstallation ? windowsPrice : undefined,
-                stock: product.stock,
-            });
-            if (success) {
-                toast.success('Added to cart!', {
-                    description: `${product.productInfo?.title || product.name} (Qty: ${quantity})${windowsInstallation ? ' + Windows 11 Pro' : ''}`,
-                    duration: 3000,
-                });
+        // Show Care Pack popup if Care Packs exist and not dismissed yet
+        if (carePacks.length > 0 && !carePackModalDismissed) {
+            setShowCarePackModal(true);
+            return;
+        }
+
+        executeCartAction(windowsInstallation, selectedCarePack);
+    };
+
+    const handleAddCarePackFromPage = (pack: CarePack) => {
+        if (selectedCarePack?.id === pack.id) {
+            setSelectedCarePack(null);
+            toast.info('Care Pack removed from your bill');
+        } else {
+            if (quantity > 1) {
+                toast.info('For bulk laptop orders with Care Packs, please request a quote.');
+                router.push('/get-quote');
+                return;
             }
+            setSelectedCarePack(pack);
+            toast.success(`Added: ${pack.title} (${pack.duration})`);
         }
     };
 
@@ -210,6 +271,54 @@ export default function ProductDetails({ id }: ProductDetailsProps) {
         }
     };
 
+    // Handler to add to cart from modal
+    const handleAddFromModal = (includeWindows: boolean) => {
+        setShowWindowsModal(false);
+        setModalDismissed(true);
+
+        if (includeWindows) {
+            setWindowsInstallation(true);
+        }
+
+        // Proceed to Care Pack modal if Care Packs exist and not dismissed
+        if (carePacks.length > 0 && !carePackModalDismissed) {
+            setShowCarePackModal(true);
+        } else {
+            executeCartAction(includeWindows, selectedCarePack);
+        }
+    };
+
+    // Handler to close modal without adding
+    const handleCloseModal = () => {
+        setShowWindowsModal(false);
+        setModalDismissed(true);
+
+        // Proceed to Care Pack modal if Care Packs exist and not dismissed
+        if (carePacks.length > 0 && !carePackModalDismissed) {
+            setShowCarePackModal(true);
+        } else {
+            executeCartAction(windowsInstallation, selectedCarePack);
+        }
+    };
+
+    const handleCarePackConfirm = (pack: CarePack | null) => {
+        setShowCarePackModal(false);
+        setCarePackModalDismissed(true);
+        setSelectedCarePack(pack);
+        if (quantity > 1 && pack) {
+            toast.info('For bulk laptop orders with Care Packs, please request a quote.');
+            router.push('/get-quote');
+            return;
+        }
+        executeCartAction(windowsInstallation, pack);
+    };
+
+    const handleCarePackClose = () => {
+        setShowCarePackModal(false);
+        setCarePackModalDismissed(true);
+        executeCartAction(windowsInstallation, selectedCarePack);
+    };
+
     // Preferred spec order for display
     const SPEC_ORDER = ['Processor', 'Operating System', 'Display Size', 'Graphics', 'RAM', 'Storage'];
 
@@ -243,6 +352,23 @@ export default function ProductDetails({ id }: ProductDetailsProps) {
                     setWindowsPrice(price);
                 }
 
+                // Fetch Care Packs
+                const partNo = data.partNumber || data.productInfo?.partNo || '';
+                if (partNo) {
+                    try {
+                        const carePacksRef = collection(db, 'care_packs');
+                        const q = query(carePacksRef, where('productPartNo', '==', partNo), where('enabled', '==', true));
+                        const snapshot = await getDocs(q);
+                        const packs = snapshot.docs.map(doc => ({
+                            id: doc.id,
+                            ...doc.data()
+                        })) as CarePack[];
+                        setCarePacks(packs);
+                    } catch (e) {
+                        console.error("Failed to fetch care packs: ", e);
+                    }
+                }
+
                 // Fetch related products from same category
                 const related = await getRelatedProducts(data.category, data.id, 4);
                 setRelatedProducts(related);
@@ -272,40 +398,7 @@ export default function ProductDetails({ id }: ProductDetailsProps) {
         };
     }, [product, isInSaved]);
 
-    // Handler to add to cart from modal
-    const handleAddFromModal = (includeWindows: boolean) => {
-        setShowWindowsModal(false);
-        setModalDismissed(true);
 
-        if (includeWindows) {
-            setWindowsInstallation(true);
-        }
-
-        // Add to cart
-        if (product) {
-            addToCart({
-                id: product.id,
-                name: product.name,
-                price: product.price,
-                image: product.images?.[0] || '',
-                quantity: quantity,
-                windowsInstallation: includeWindows,
-                windowsInstallationPrice: includeWindows ? windowsPrice : undefined,
-            });
-
-            // Show success toast
-            toast.success('Added to cart!', {
-                description: `${product.productInfo?.title || product.name} (Qty: ${quantity})${includeWindows ? ' + Windows 11 Pro' : ''}`,
-                duration: 3000,
-            });
-        }
-    };
-
-    // Handler to close modal without adding
-    const handleCloseModal = () => {
-        setShowWindowsModal(false);
-        setModalDismissed(true);
-    };
 
     if (loading) {
         return (
@@ -549,7 +642,19 @@ export default function ProductDetails({ id }: ProductDetailsProps) {
                                     <div className="flex items-center border border-gray-300 rounded-md dark:border-gray-700">
                                         <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800 text-lg">-</button>
                                         <span className="px-3 py-2.5 font-medium border-l border-r border-gray-300 dark:border-gray-700 min-w-[40px] text-center">{quantity}</span>
-                                        <button onClick={() => setQuantity(Math.min(product.stock, quantity + 1))} className="px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800 text-lg">+</button>
+                                        <button 
+                                            onClick={() => {
+                                                if (selectedCarePack) {
+                                                    toast.info('For bulk laptop orders with Care Packs, please request a quote.');
+                                                    router.push('/get-quote');
+                                                } else {
+                                                    setQuantity(Math.min(product.stock, quantity + 1));
+                                                }
+                                            }} 
+                                            className="px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800 text-lg"
+                                        >
+                                            +
+                                        </button>
                                     </div>
 
                                     <button
@@ -635,49 +740,104 @@ export default function ProductDetails({ id }: ProductDetailsProps) {
                     </div>
                 </div>
 
-                {/* Suggested Accessories Section */}
-                {suggestedAccessories.length > 0 && (
+                {/* Care Packs & Suggested Accessories Responsive Grid */}
+                {(carePacks.length > 0 || suggestedAccessories.length > 0) && (
                     <div className="mt-16 border-t border-gray-200 dark:border-gray-800 pt-12">
-                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-8">Suggested Accessories</h2>
-                        <div className="space-y-8">
-                            {suggestedAccessories.map((group) => (
-                                <div key={group.category}>
-                                    <div className="flex items-center justify-between mb-4">
-                                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{group.categoryName}</h3>
-                                        <button
-                                            onClick={() => router.push(`/category/${group.category}`)}
-                                            className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-                                        >
-                                            See more options →
-                                        </button>
-                                    </div>
-                                    <div className="space-y-3">
-                                        {group.products.map((accessory) => (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
+                            
+                            {/* LEFT COLUMN: Care Packs */}
+                            {carePacks.length > 0 && (
+                                <div className="space-y-6">
+                                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">HP Care Packs</h2>
+                                    <div className="space-y-4">
+                                        {carePacks.map((pack) => (
                                             <div
-                                                key={accessory.id}
-                                                onClick={() => router.push(`/product/${accessory.id}`)}
-                                                className="flex items-center gap-4 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                                                key={pack.id}
+                                                className={`bg-white dark:bg-gray-900 p-3.5 rounded-lg shadow-xs border-2 transition-all flex items-center justify-between ${
+                                                    selectedCarePack?.id === pack.id
+                                                        ? 'border-blue-500 bg-blue-50/10 dark:bg-blue-900/10'
+                                                        : 'border-gray-100 dark:border-gray-800 hover:border-blue-300'
+                                                }`}
                                             >
-                                                <div className="w-16 h-16 bg-white dark:bg-gray-800 rounded-lg flex items-center justify-center p-2 flex-shrink-0">
-                                                    <img
-                                                        src={accessory.images?.[0] || accessory.image}
-                                                        alt={accessory.name}
-                                                        className="max-w-full max-h-full object-contain"
-                                                    />
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-full bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 flex-shrink-0">
+                                                        <FiShield className="w-4 h-4" />
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="font-bold text-sm text-gray-900 dark:text-white">{pack.title}</h4>
+                                                        <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">{pack.duration}</p>
+                                                        <div className="flex items-baseline gap-1 mt-1">
+                                                            <span className="text-base font-bold text-blue-600">₹{pack.price.toLocaleString('en-IN')}</span>
+                                                            <span className="text-[10px] text-gray-400 font-medium">(+18% GST)</span>
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <h4 className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                                                        {accessory.name}
-                                                    </h4>
-                                                    <p className="text-sm font-bold text-blue-600">
-                                                        ₹{accessory.price.toLocaleString('en-IN')}
-                                                    </p>
+
+                                                <button
+                                                    onClick={() => handleAddCarePackFromPage(pack)}
+                                                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors flex-shrink-0 ${
+                                                        selectedCarePack?.id === pack.id
+                                                            ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                                                            : 'bg-blue-600 hover:bg-blue-700 text-white'
+                                                    }`}
+                                                >
+                                                    {selectedCarePack?.id === pack.id ? '✓ Added' : '+ Add'}
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* RIGHT COLUMN: Suggested Accessories */}
+                            {suggestedAccessories.length > 0 && (
+                                <div className={`space-y-6 ${carePacks.length === 0 ? 'md:col-span-2' : ''}`}>
+                                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Suggested Accessories</h2>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                        {suggestedAccessories.map((group) => (
+                                            <div key={group.category} className="space-y-3">
+                                                <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-800 pb-2">
+                                                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate" title={group.categoryName}>
+                                                        {group.categoryName}
+                                                    </h3>
+                                                    <button
+                                                        onClick={() => router.push(`/category/${group.category}`)}
+                                                        className="text-xs text-blue-600 hover:text-blue-700 font-medium whitespace-nowrap ml-2"
+                                                    >
+                                                        See more →
+                                                    </button>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    {group.products.map((accessory) => (
+                                                        <div
+                                                            key={accessory.id}
+                                                            onClick={() => router.push(`/product/${accessory.id}`)}
+                                                            className="flex items-center gap-3 p-2 bg-gray-50 dark:bg-gray-900 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-100 dark:border-gray-800/40 transition-colors"
+                                                        >
+                                                            <div className="w-12 h-12 bg-white dark:bg-gray-800 rounded-md flex items-center justify-center p-1.5 flex-shrink-0">
+                                                                <img
+                                                                    src={accessory.images?.[0] || accessory.image}
+                                                                    alt={accessory.name}
+                                                                    className="max-w-full max-h-full object-contain"
+                                                                />
+                                                            </div>
+                                                            <div className="flex-1 min-w-0">
+                                                                <h4 className="text-xs font-semibold text-gray-900 dark:text-white truncate" title={accessory.name}>
+                                                                    {accessory.name}
+                                                                </h4>
+                                                                <p className="text-xs font-bold text-blue-600 mt-0.5">
+                                                                    ₹{accessory.price.toLocaleString('en-IN')}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    ))}
                                                 </div>
                                             </div>
                                         ))}
                                     </div>
                                 </div>
-                            ))}
+                            )}
+
                         </div>
                     </div>
                 )}
@@ -810,6 +970,91 @@ export default function ProductDetails({ id }: ProductDetailsProps) {
                         <p className="text-xs text-gray-500 dark:text-gray-400 text-center mt-4">
                             You can also check the Windows installation option above before adding to cart
                         </p>
+                    </div>
+                </div>
+            )}
+
+            {/* Care Pack Selection Modal */}
+            {showCarePackModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                    <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200">
+                        {/* Close Button */}
+                        <button
+                            onClick={handleCarePackClose}
+                            className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                            aria-label="Close"
+                        >
+                            <svg className="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+
+                        {/* Title */}
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white text-center mb-3">
+                            Protect Your Device
+                        </h3>
+
+                        {/* Description */}
+                        <p className="text-gray-600 dark:text-gray-400 text-center mb-6">
+                            Choose an HP Care Pack for official extended warranty coverage.
+                        </p>
+
+                        {/* Care Packs Options */}
+                        <div className="space-y-3 mb-6 max-h-[250px] overflow-y-auto pr-1">
+                            {carePacks.map((pack) => {
+                                const isSelected = selectedCarePack?.id === pack.id;
+                                return (
+                                    <div
+                                        key={pack.id}
+                                        onClick={() => setSelectedCarePack(pack)}
+                                        className={`p-4 rounded-xl border-2 cursor-pointer transition-all flex items-center justify-between ${
+                                            isSelected
+                                                ? 'border-blue-500 bg-blue-50/20 dark:bg-blue-900/30'
+                                                : 'border-gray-200 dark:border-gray-700 hover:border-blue-300'
+                                        }`}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <FiShield className={`w-5 h-5 ${isSelected ? 'text-blue-600' : 'text-gray-400'}`} />
+                                            <div>
+                                                <p className="font-semibold text-sm text-gray-900 dark:text-white">{pack.title}</p>
+                                                <p className="text-xs text-gray-500 dark:text-gray-400">{pack.duration}</p>
+                                            </div>
+                                        </div>
+                                        <span className="font-bold text-blue-600">₹{pack.price.toLocaleString('en-IN')}</span>
+                                    </div>
+                                );
+                            })}
+
+                            <div
+                                onClick={() => setSelectedCarePack(null)}
+                                className={`p-4 rounded-xl border-2 cursor-pointer transition-all flex items-center justify-between ${
+                                    selectedCarePack === null
+                                        ? 'border-blue-500 bg-blue-50/20 dark:bg-blue-900/30'
+                                        : 'border-gray-200 dark:border-gray-700 hover:border-blue-300'
+                                }`}
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="w-5 h-5 rounded-full border-2 border-gray-400 dark:border-gray-600 flex items-center justify-center">
+                                        {selectedCarePack === null && <div className="w-2.5 h-2.5 rounded-full bg-blue-600" />}
+                                    </div>
+                                    <p className="font-semibold text-sm text-gray-900 dark:text-white">No Care Pack</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="space-y-3">
+                            <button
+                                onClick={() => handleCarePackConfirm(selectedCarePack)}
+                                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-xl transition-colors flex items-center justify-center gap-2"
+                            >
+                                Confirm & Continue (₹{(
+                                    product.price * quantity +
+                                    (windowsInstallation ? windowsPrice * quantity : 0) +
+                                    (selectedCarePack ? selectedCarePack.price * quantity : 0)
+                                ).toLocaleString('en-IN')})
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

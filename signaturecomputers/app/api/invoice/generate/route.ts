@@ -48,6 +48,14 @@ interface OrderData {
     invoiceNumber?: string;
     invoiceGenerated?: boolean;
     warranty?: string;
+    windowsInstallation?: boolean;
+    windowsInstallationPrice?: number;
+    carePack?: {
+        title: string;
+        duration: string;
+        price: number;
+        partNumber: string;
+    } | null;
 }
 
 /**
@@ -245,17 +253,52 @@ export async function POST(request: NextRequest) {
             paymentMode: getPaymentMode(orderData.paymentMethod),
 
             // Items - Price includes GST
-            items: [
-                {
-                    sno: 1,
-                    productId: partNumber,  // Part Number
+            items: (() => {
+                const list = [];
+                let sno = 1;
+                
+                // Base laptop product
+                const baseLaptopTotal = (orderData.unitPrice || (grandTotal / quantity)) * quantity;
+                list.push({
+                    sno: sno++,
+                    productId: partNumber || "PRODUCT",
                     description: orderData.productName,
                     warranty: warrantyInfo,
                     quantity: quantity,
-                    unitPrice: unitPrice,  // Per unit price (includes GST)
-                    amount: grandTotal,  // Total = unitPrice * quantity (includes GST)
-                },
-            ],
+                    unitPrice: orderData.unitPrice || (grandTotal / quantity),
+                    amount: baseLaptopTotal
+                });
+
+                // Windows installation addon
+                if (orderData.windowsInstallation && orderData.windowsInstallationPrice) {
+                    const windowsTotal = orderData.windowsInstallationPrice * quantity;
+                    list.push({
+                        sno: sno++,
+                        productId: "WIN11PRO-OEM",
+                        description: "Windows 11 Pro OEM Key & Installation Add-on",
+                        warranty: "Signature Computers Installation Support",
+                        quantity: quantity,
+                        unitPrice: orderData.windowsInstallationPrice,
+                        amount: windowsTotal
+                    });
+                }
+
+                // HP Care Pack addon
+                if (orderData.carePack) {
+                    const carePackTotal = orderData.carePack.price * quantity;
+                    list.push({
+                        sno: sno++,
+                        productId: orderData.carePack.partNumber || "HP-CAREPACK",
+                        description: `${orderData.carePack.title} (${orderData.carePack.duration})`,
+                        warranty: "HP Official Extended Warranty",
+                        quantity: quantity,
+                        unitPrice: orderData.carePack.price,
+                        amount: carePackTotal
+                    });
+                }
+
+                return list;
+            })(),
 
             // Tax Details (reverse calculated from Grand Total)
             // Grand Total INCLUDES GST, so we extract it

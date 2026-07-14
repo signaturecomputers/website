@@ -148,9 +148,12 @@ export default function CheckoutPage() {
                     partNumber: (item as { partNumber?: string }).partNumber || product?.productInfo?.partNo || '',
                     quantity: item.quantity,
                     unitPrice: item.price,
-                    totalAmount: item.price * item.quantity + (item.windowsInstallation && item.windowsInstallationPrice ? item.windowsInstallationPrice * item.quantity : 0),
+                    totalAmount: item.price * item.quantity + 
+                        (item.windowsInstallation && item.windowsInstallationPrice ? item.windowsInstallationPrice * item.quantity : 0) +
+                        (item.carePack ? item.carePack.price * item.quantity : 0),
                     windowsInstallation: item.windowsInstallation || false,
                     windowsInstallationPrice: item.windowsInstallationPrice,
+                    carePack: item.carePack || null,
                 };
             }));
 
@@ -369,6 +372,12 @@ export default function CheckoutPage() {
                                             <div className="flex justify-between mt-1 pl-4 border-l-2 border-blue-500">
                                                 <p className="text-xs text-gray-600 dark:text-gray-400">+ Windows 11 Pro OEM</p>
                                                 <p className="text-xs font-medium text-blue-600">₹{(item.windowsInstallationPrice * item.quantity).toLocaleString('en-IN')}</p>
+                                            </div>
+                                        )}
+                                        {item.carePack && (
+                                            <div className="flex justify-between mt-1 pl-4 border-l-2 border-emerald-500">
+                                                <p className="text-xs text-gray-600 dark:text-gray-400">+ {item.carePack.title} ({item.carePack.duration})</p>
+                                                <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400">₹{(item.carePack.price * item.quantity).toLocaleString('en-IN')}</p>
                                             </div>
                                         )}
                                     </li>

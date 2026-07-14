@@ -247,6 +247,10 @@ async function handlePaymentSuccess(data: PaymentSuccessData) {
                         orderDocument.windowsInstallationPrice = item.windowsInstallationPrice;
                     }
 
+                    if (item.carePack) {
+                        orderDocument.carePack = item.carePack;
+                    }
+
                     t.set(newOrderRef, orderDocument);
                     createdOrderIds.push(orderId);
 

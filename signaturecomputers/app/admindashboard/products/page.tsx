@@ -267,13 +267,22 @@ export default function ProductsPage() {
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <h1 className="text-2xl font-bold dark:text-white">Products</h1>
-                <Link
-                    href={selectedCategory && selectedCategory !== 'all' ? `/admindashboard/products/add?category=${selectedCategory}` : "/admindashboard/products/add"}
-                    className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-                >
-                    <FiPlus className="mr-2" />
-                    Add Product
-                </Link>
+                <div className="flex gap-2">
+                    <Link
+                        href="/admindashboard/products/care-packs"
+                        className="flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium"
+                    >
+                        <FiPlus className="mr-2" />
+                        Add Care Pack
+                    </Link>
+                    <Link
+                        href={selectedCategory && selectedCategory !== 'all' ? `/admindashboard/products/add?category=${selectedCategory}` : "/admindashboard/products/add"}
+                        className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                    >
+                        <FiPlus className="mr-2" />
+                        Add Product
+                    </Link>
+                </div>
             </div>
 
             {/* Filters & Search */}

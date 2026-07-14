@@ -14,6 +14,12 @@ interface CartItem {
     quantity: number;
     windowsInstallation?: boolean;
     windowsInstallationPrice?: number;
+    carePack?: {
+        title: string;
+        duration: string;
+        price: number;
+        partNumber: string;
+    };
     stock?: number;
 }
 
@@ -31,6 +37,7 @@ interface CartContextType {
     removeFromCart: (itemId: string) => void;
     updateQuantity: (itemId: string, quantity: number) => void;
     toggleWindowsInstallation: (itemId: string, windowsPrice?: number) => void;
+    removeCarePack: (itemId: string) => void;
     clearCart: () => void;
     saveForLater: (item: SavedItem) => boolean;
     removeFromSaved: (itemId: string) => void;
@@ -49,6 +56,7 @@ const CartContext = createContext<CartContextType>({
     removeFromCart: () => { },
     updateQuantity: () => { },
     toggleWindowsInstallation: () => { },
+    removeCarePack: () => { },
     clearCart: () => { },
     saveForLater: () => false,
     removeFromSaved: () => { },
@@ -335,6 +343,18 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         }));
     }, []);
 
+    // Remove Care Pack for cart item
+    const removeCarePack = useCallback((itemId: string) => {
+        setCart((prev) => prev.map((item) => {
+            if (item.id === itemId) {
+                const cleanedItem = { ...item };
+                delete cleanedItem.carePack;
+                return cleanedItem;
+            }
+            return item;
+        }));
+    }, []);
+
     const clearCart = useCallback(() => {
         setCart([]);
     }, []);
@@ -379,7 +399,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         const windowsTotal = item.windowsInstallation && item.windowsInstallationPrice
             ? item.windowsInstallationPrice * item.quantity
             : 0;
-        return total + itemTotal + windowsTotal;
+        const carePackTotal = item.carePack
+            ? item.carePack.price * item.quantity
+            : 0;
+        return total + itemTotal + windowsTotal + carePackTotal;
     }, 0);
     const cartCount = cart.reduce((count, item) => count + item.quantity, 0);
 
@@ -391,6 +414,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             removeFromCart,
             updateQuantity,
             toggleWindowsInstallation,
+            removeCarePack,
             clearCart,
             saveForLater,
             removeFromSaved,

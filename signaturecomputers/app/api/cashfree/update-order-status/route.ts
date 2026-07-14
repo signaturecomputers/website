@@ -162,6 +162,9 @@ export async function POST(request: NextRequest) {
                     if (item.windowsInstallation && item.windowsInstallationPrice) {
                         orderDocument.windowsInstallationPrice = item.windowsInstallationPrice;
                     }
+                    if (item.carePack) {
+                        orderDocument.carePack = item.carePack;
+                    }
                     if (cfPaymentId) orderDocument.cfPaymentId = cfPaymentId;
                     if (paymentMethod) orderDocument.paymentMethod = paymentMethod;
                     if (paymentTime) orderDocument.paymentTime = paymentTime;

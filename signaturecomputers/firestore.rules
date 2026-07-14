@@ -206,6 +206,11 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    match /care_packs/{packId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     match /header_settings/{docId} {
       allow read: if true;
       allow write: if isAdmin();
