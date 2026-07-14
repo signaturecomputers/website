@@ -290,7 +290,7 @@ export default function CategoryProducts({ slug }: CategoryProductsProps) {
                 <div className="flex gap-6 lg:gap-8">
                     {/* Sidebar Filters - Desktop Only */}
                     <aside className="hidden md:block w-64 lg:w-72 flex-shrink-0">
-                        <div className="bg-white dark:bg-gray-900 p-5 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 sticky top-24">
+                        <div className="bg-white dark:bg-gray-900 p-5 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 sticky top-24 max-h-[calc(100vh-140px)] overflow-y-auto custom-scrollbar">
                             <ProductFilters
                                 products={products}
                                 onFilterChange={handleFilterChange}

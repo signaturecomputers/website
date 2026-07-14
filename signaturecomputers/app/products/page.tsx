@@ -212,7 +212,7 @@ export default function ProductsPage() {
                     </aside>
 
                     {/* Main Content */}
-                    <div className="flex-1 min-w-0 md:max-h-[calc(100vh-140px)] md:overflow-y-auto md:pr-4 custom-scrollbar">
+                    <div className="flex-1 min-w-0">
                         {/* Toolbar */}
                         <div className="flex flex-wrap items-center justify-between gap-4 mb-6 bg-white dark:bg-gray-900 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800">
                             <div className="flex items-center gap-3">
