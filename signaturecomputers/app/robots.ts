@@ -26,7 +26,6 @@ export default function robots(): MetadataRoute.Robots {
                     '/*add-to-cart*',
                     '/*add-to-wishlist*',
                     '/*remove_compare_item*',
-                    '/*?*',
                 ],
             },
             {
@@ -45,7 +44,6 @@ export default function robots(): MetadataRoute.Robots {
                     '/*add-to-cart*',
                     '/*add-to-wishlist*',
                     '/*remove_compare_item*',
-                    '/*?*',
                 ],
             },
         ],
