@@ -45,8 +45,8 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'en_IN',
     url: '/',
-    title: 'Signature Computers | Premium Tech Store',
-    description: 'Your ultimate destination for premium laptops, desktops, and accessories.',
+    title: 'Signature Computers | Laptop, Desktop & PC Store in Egmore, Chennai',
+    description: 'Buy new and refurbished laptops, desktops, workstations, monitors, and computer accessories at Signature Computers, Egmore, Chennai. Authorized HP partner with genuine parts, warranty, and doorstep service.',
     siteName: 'Signature Computers',
     images: [
       {
@@ -59,8 +59,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Signature Computers | Premium Tech Store',
-    description: 'Your ultimate destination for premium laptops, desktops, and accessories.',
+    title: 'Signature Computers | Laptop, Desktop & PC Store in Egmore, Chennai',
+    description: 'Buy new and refurbished laptops, desktops, workstations, monitors, and computer accessories at Signature Computers, Egmore, Chennai. Authorized HP partner with genuine parts, warranty, and doorstep service.',
     images: ['/twitter-image.jpg'], // Fallback to OG image if this specific one doesn't exist
   },
   robots: {

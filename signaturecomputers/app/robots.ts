@@ -12,10 +12,11 @@ export default function robots(): MetadataRoute.Robots {
         rules: [
             {
                 userAgent: '*',
-                allow: '/',
+                allow: ['/', '/products', '/products?category='],
                 disallow: [
                     '/admindashboard/',  // Exclude admin pages
                     '/admin/',
+                    '/adminaccess',       // Exclude admin access
                     '/api/',              // Exclude API routes
                     '/checkout/',         // Exclude checkout for privacy
                     '/profile/',          // Exclude user profiles
@@ -30,10 +31,11 @@ export default function robots(): MetadataRoute.Robots {
             },
             {
                 userAgent: 'Googlebot',
-                allow: '/',
+                allow: ['/', '/products', '/products?category='],
                 disallow: [
                     '/admindashboard/',
                     '/admin/',
+                    '/adminaccess',
                     '/api/',
                     '/checkout/',
                     '/profile/',

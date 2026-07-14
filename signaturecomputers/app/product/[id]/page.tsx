@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         };
     }
 
-    const title = `${product.productInfo?.title || product.name} Price in Chennai | Signature Computers Egmore`;
+    const title = `${product.productInfo?.title || product.name} Price in Chennai`;
     const description = product.description 
         ? product.description.substring(0, 155) + '...'
         : `Buy ${product.name} at Signature Computers in Egmore, Chennai. Best deals on laptops and desktops with warranty.`;

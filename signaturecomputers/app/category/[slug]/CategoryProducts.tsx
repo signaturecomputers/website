@@ -258,9 +258,10 @@ export default function CategoryProducts({ slug }: CategoryProductsProps) {
     // Format slug for title
     const title = CATEGORY_NAMES[slug] || (slug ? slug.charAt(0).toUpperCase() + slug.slice(1) : 'Category');
     const introText = categoryIntros[slug] || `Shop for premium ${title} at Signature Computers in Egmore, Chennai.`;
-    const relatedCategories = Object.entries(CATEGORY_NAMES)
-        .filter(([key]) => key !== slug)
-        .slice(0, 4);
+    const shopByCategoriesList = ['laptops', 'desktops', 'workstations', 'monitors', 'accessories'];
+    const shopByCategories = shopByCategoriesList
+        .filter(key => key !== slug)
+        .map(key => [key, CATEGORY_NAMES[key] || key.charAt(0).toUpperCase() + key.slice(1)]);
 
     const seoData = getSEOContent(slug, title);
 
@@ -419,12 +420,12 @@ export default function CategoryProducts({ slug }: CategoryProductsProps) {
                 </div>
             </div>
 
-            {/* Related Categories visible section */}
+            {/* Shop by Category visible section */}
             <div className="border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 py-8 mt-12">
                 <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
-                    <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-4">Related Categories</h3>
+                    <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-4">Shop by Category</h3>
                     <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
-                        {relatedCategories.map(([key, name]) => (
+                        {shopByCategories.map(([key, name]) => (
                             <Link key={key} href={`/category/${key}`} className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                                 {name}
                             </Link>

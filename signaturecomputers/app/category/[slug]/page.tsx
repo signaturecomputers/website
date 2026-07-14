@@ -14,7 +14,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     const description = introText.length > 150 ? introText.substring(0, 150) + '...' : introText;
 
     return {
-        title: `${categoryName} in Egmore, Chennai | Signature Computers`,
+        title: `${categoryName} in Egmore, Chennai`,
         description,
         robots: { index: true, follow: true },
         alternates: {
