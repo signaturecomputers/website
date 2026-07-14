@@ -62,8 +62,8 @@ export default function ProductsPage() {
             // Set initial price range
             if (data.length > 0) {
                 const prices = data.map(p => p.price);
-                const minPrice = Math.floor(Math.min(...prices) / 1000) * 1000;
-                const maxPrice = Math.ceil(Math.max(...prices) / 1000) * 1000;
+                const minPrice = Math.min(...prices);
+                const maxPrice = Math.max(...prices);
                 setPriceRange([minPrice, maxPrice]);
             }
             setLoading(false);
@@ -119,6 +119,16 @@ export default function ProductsPage() {
 
         setFilteredProducts(result);
     }, [products, selectedCategory, searchQueryText]);
+
+    // Dynamically adjust price range bounds when filtered category products change
+    useEffect(() => {
+        if (filteredProducts.length > 0) {
+            const prices = filteredProducts.map(p => p.price);
+            const minPrice = Math.min(...prices);
+            const maxPrice = Math.max(...prices);
+            setPriceRange([minPrice, maxPrice]);
+        }
+    }, [filteredProducts]);
 
     // Handle filter change from ProductFilters component
     const handleFilterChange = useCallback((filtered: Product[]) => {
@@ -190,7 +200,7 @@ export default function ProductsPage() {
                 <div className="flex gap-6 lg:gap-8">
                     {/* Sidebar - Desktop Only */}
                     <aside className="hidden md:block w-64 lg:w-72 flex-shrink-0">
-                        <div className="bg-white dark:bg-gray-900 p-5 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 sticky top-24">
+                        <div className="bg-white dark:bg-gray-900 p-5 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 sticky top-24 max-h-[calc(100vh-140px)] overflow-y-auto custom-scrollbar">
                             <ProductFilters
                                 products={filteredProducts}
                                 onFilterChange={handleFilterChange}
@@ -202,7 +212,7 @@ export default function ProductsPage() {
                     </aside>
 
                     {/* Main Content */}
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 md:max-h-[calc(100vh-140px)] md:overflow-y-auto md:pr-4 custom-scrollbar">
                         {/* Toolbar */}
                         <div className="flex flex-wrap items-center justify-between gap-4 mb-6 bg-white dark:bg-gray-900 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800">
                             <div className="flex items-center gap-3">

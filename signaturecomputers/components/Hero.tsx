@@ -144,8 +144,64 @@ export default function Hero() {
         router.push(`/product/${productId}`);
     };
 
+    // Touch & Mouse Drag/Swipe gesture states and handlers
+    const [dragStartX, setDragStartX] = useState<number | null>(null);
+    const [dragCurrentX, setDragCurrentX] = useState<number | null>(null);
+
+    const handleTouchStart = (e: React.TouchEvent) => {
+        setDragStartX(e.touches[0].clientX);
+    };
+
+    const handleTouchMove = (e: React.TouchEvent) => {
+        if (dragStartX === null) return;
+        setDragCurrentX(e.touches[0].clientX);
+    };
+
+    const handleTouchEnd = () => {
+        if (dragStartX === null || dragCurrentX === null) return;
+        const diff = dragStartX - dragCurrentX;
+        if (Math.abs(diff) > 50) {
+            if (diff > 0) {
+                nextSlide();
+            } else {
+                prevSlide();
+            }
+        }
+        setDragStartX(null);
+        setDragCurrentX(null);
+    };
+
+    const handleMouseDown = (e: React.MouseEvent) => {
+        setDragStartX(e.clientX);
+    };
+
+    const handleMouseMove = (e: React.MouseEvent) => {
+        if (dragStartX === null) return;
+        setDragCurrentX(e.clientX);
+    };
+
+    const handleMouseUp = () => {
+        if (dragStartX === null || dragCurrentX === null) return;
+        const diff = dragStartX - dragCurrentX;
+        if (Math.abs(diff) > 50) {
+            if (diff > 0) {
+                nextSlide();
+            } else {
+                prevSlide();
+            }
+        }
+        setDragStartX(null);
+        setDragCurrentX(null);
+    };
+
+    const handleMouseLeaveDrag = () => {
+        setDragStartX(null);
+        setDragCurrentX(null);
+    };
+
     const hasHotDeals = !loading && hotDeals.length > 0;
     const showNavigation = totalSlides > 1;
+    const isEdmActive = currentSlide > 0 && currentSlide <= edmCount;
 
     // Decorative shapes colors
     const decorColors = [
@@ -158,12 +214,28 @@ export default function Hero() {
 
     return (
         <div
-            className="relative overflow-hidden group/hero"
+            className="relative overflow-hidden group/hero select-none"
             onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
+            onMouseLeave={(e) => {
+                handleMouseLeave();
+                handleMouseLeaveDrag();
+            }}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
         >
             {/* All Slides - Using fade transition */}
-            <div ref={slideRef} className="relative min-h-[500px] lg:min-h-[550px]">
+            <div
+                ref={slideRef}
+                className={`relative transition-all duration-500 ${
+                    isEdmActive
+                        ? 'w-full aspect-[1920/530] min-h-[300px] lg:min-h-[350px] xl:min-h-[400px] 2xl:min-h-[450px] 3xl:min-h-[500px]'
+                        : 'min-h-[500px] lg:min-h-[550px] 3xl:min-h-[600px] 4xl:min-h-[680px] 5xl:min-h-[730px]'
+                }`}
+            >
 
                 {/* SLIDE 0: Static Hero Section */}
                 <div
@@ -234,8 +306,9 @@ export default function Hero() {
                                     src={edm.imageUrl}
                                     alt={edm.alt || `EDM Offer ${index + 1}`}
                                     fill
-                                    className="object-fill"
+                                    className="object-fill pointer-events-none"
                                     priority={index === 0}
+                                    draggable={false}
                                 />
                             </div>
                         </div>

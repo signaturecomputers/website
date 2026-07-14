@@ -195,17 +195,59 @@ export default function ProductFilters({
 
     const [showMobileFilters, setShowMobileFilters] = useState(false);
 
-    // Calculate price bounds from products
+    // Local states for inputs to allow typing freely
+    const [minInput, setMinInput] = useState(priceRange[0].toString());
+    const [maxInput, setMaxInput] = useState(priceRange[1].toString());
+    const [sliderVal, setSliderVal] = useState(priceRange[1]);
+
+    // Sync input states when priceRange props change
+    useEffect(() => {
+        setMinInput(priceRange[0].toString());
+        setMaxInput(priceRange[1].toString());
+        setSliderVal(priceRange[1]);
+    }, [priceRange]);
+
+    const handleMinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setMinInput(e.target.value);
+    };
+
+    const handleMinBlur = () => {
+        let val = Number(minInput);
+        if (minInput.trim() === '' || isNaN(val) || val < priceBounds.min) {
+            val = priceBounds.min;
+        }
+        if (val > priceRange[1]) {
+            val = priceRange[1];
+        }
+        setMinInput(val.toString());
+        setPriceRange([val, priceRange[1]]);
+    };
+
+    const handleMaxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setMaxInput(e.target.value);
+    };
+
+    const handleMaxBlur = () => {
+        let val = Number(maxInput);
+        if (maxInput.trim() === '' || isNaN(val) || val > priceBounds.max) {
+            val = priceBounds.max;
+        }
+        if (val < priceRange[0]) {
+            val = priceRange[0];
+        }
+        setMaxInput(val.toString());
+        setPriceRange([priceRange[0], val]);
+    };
+
+    // Calculate price bounds from products (exact min/max values without rounding)
     const priceBounds = useMemo(() => {
         if (products.length === 0) return { min: 0, max: 500000 };
         const prices = products.map(p => p.price);
         const minPrice = Math.min(...prices);
         const maxPrice = Math.max(...prices);
         return {
-            // Round min down to nearest 1000
-            min: Math.floor(minPrice / 1000) * 1000,
-            // Round max up to nearest 1000
-            max: Math.ceil(maxPrice / 1000) * 1000
+            min: minPrice,
+            max: maxPrice
         };
     }, [products]);
 
@@ -524,9 +566,10 @@ export default function ProductFilters({
                             min={priceBounds.min}
                             max={priceBounds.max}
                             step={1000}
-                            value={priceRange[1]}
+                            value={sliderVal}
                             onChange={(e) => {
                                 const val = Number(e.target.value);
+                                setSliderVal(val);
                                 if (val >= priceRange[0]) {
                                     setPriceRange([priceRange[0], val]);
                                 }
@@ -541,13 +584,9 @@ export default function ProductFilters({
                                 type="number"
                                 min={priceBounds.min}
                                 max={priceRange[1]}
-                                value={priceRange[0]}
-                                onChange={(e) => {
-                                    const val = Number(e.target.value);
-                                    if (val >= priceBounds.min && val <= priceRange[1]) {
-                                        setPriceRange([val, priceRange[1]]);
-                                    }
-                                }}
+                                value={minInput}
+                                onChange={handleMinChange}
+                                onBlur={handleMinBlur}
                                 className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 dark:text-white"
                             />
                         </div>
@@ -557,13 +596,9 @@ export default function ProductFilters({
                                 type="number"
                                 min={priceRange[0]}
                                 max={priceBounds.max}
-                                value={priceRange[1]}
-                                onChange={(e) => {
-                                    const val = Number(e.target.value);
-                                    if (val >= priceRange[0] && val <= priceBounds.max) {
-                                        setPriceRange([priceRange[0], val]);
-                                    }
-                                }}
+                                value={maxInput}
+                                onChange={handleMaxChange}
+                                onBlur={handleMaxBlur}
                                 className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 dark:text-white"
                             />
                         </div>

@@ -59,7 +59,7 @@ export default function AdminDashboardLayout({
     ];
 
     return (
-        <div className="flex min-h-screen h-full bg-gray-100 dark:bg-gray-900">
+        <div className="flex h-screen w-screen overflow-hidden bg-gray-100 dark:bg-gray-900">
             {/* Mobile Sidebar Backoff */}
             {sidebarOpen && (
                 <div
@@ -70,7 +70,7 @@ export default function AdminDashboardLayout({
 
             {/* Sidebar */}
             <aside
-                className={`fixed inset-y-0 left-0 z-30 w-64 min-w-[16rem] max-w-[18rem] xl:w-72 xl:max-w-[20rem] transform bg-white dark:bg-gray-800 shadow-lg transition-transform duration-200 ease-in-out lg:static lg:translate-x-0 lg:flex-shrink-0 overflow-y-auto ${sidebarOpen ? "translate-x-0" : "-translate-x-full"
+                className={`fixed inset-y-0 left-0 z-30 w-64 min-w-[16rem] max-w-[18rem] xl:w-72 xl:max-w-[20rem] transform bg-white dark:bg-gray-800 shadow-lg transition-transform duration-200 ease-in-out lg:static lg:translate-x-0 lg:flex-shrink-0 overflow-y-auto custom-scrollbar ${sidebarOpen ? "translate-x-0" : "-translate-x-full"
                     }`}
             >
                 <div className="flex h-16 items-center justify-between px-6 border-b dark:border-gray-700">
@@ -157,7 +157,7 @@ export default function AdminDashboardLayout({
                     </div>
                 </header>
 
-                <main className="flex-1 overflow-y-auto overflow-x-auto bg-gray-50 dark:bg-gray-900 p-4 md:p-6 lg:p-8">
+                <main className="flex-1 overflow-y-auto overflow-x-auto custom-scrollbar bg-gray-50 dark:bg-gray-900 p-4 md:p-6 lg:p-8">
                     <div className="min-w-0 max-w-full">
                         {children}
                     </div>

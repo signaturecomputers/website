@@ -70,7 +70,7 @@ export default function ProductsPage() {
 
     useEffect(() => {
         fetchProducts();
-    }, [selectedCategory, categories]); // Re-fetch products if category selection changes or categories load
+    }, [categories]);
 
     const mapParentToGroup = (parentId: string | undefined | null) => {
         if (!parentId) return null;
@@ -124,61 +124,38 @@ export default function ProductsPage() {
 
     const fetchProducts = async () => {
         if (categories.length === 1 && categories[0].id === 'all' && loading) {
-            // Avoid fetching if categories haven't loaded fully unless it's just the initial state
+            return;
         }
 
         setLoading(true);
         try {
-            if (selectedCategory === 'all') {
-                // Fetch from all known categories (excluding virtual category IDs like webcams and parent accessories)
-                const allCategoryIds = categories
-                    .filter(c => c.id !== 'all' && c.id !== 'accessories' && c.id !== 'webcams')
-                    .map(c => c.id);
-                // Remove duplicates if any
-                const uniqueCategoryIds = Array.from(new Set(allCategoryIds));
+            // Fetch from all known categories (excluding virtual category IDs like webcams and parent accessories)
+            const allCategoryIds = categories
+                .filter(c => c.id !== 'all' && c.id !== 'accessories' && c.id !== 'webcams')
+                .map(c => c.id);
+            // Remove duplicates if any
+            const uniqueCategoryIds = Array.from(new Set(allCategoryIds));
 
-                const allProducts: Product[] = [];
+            const allProducts: Product[] = [];
 
-                await Promise.all(uniqueCategoryIds.map(async (category) => {
-                    try {
-                        const querySnapshot = await getDocs(collection(db, category));
-                        querySnapshot.docs.forEach(doc => {
-                            const data = doc.data();
-                            const productCat = data.category || category;
-                            allProducts.push({
-                                id: doc.id,
-                                category: productCat,
-                                ...data
-                            } as Product);
-                        });
-                    } catch (err) {
-                        // Ignore errors for collections that might not exist yet or empty
-                    }
-                }));
-
-                setProducts(allProducts);
-            } else {
-                const targetCollection = selectedCategory === 'webcams' ? 'dvd-writers' : selectedCategory;
+            await Promise.all(uniqueCategoryIds.map(async (category) => {
                 try {
-                    const querySnapshot = await getDocs(collection(db, targetCollection));
-                    let productsData = querySnapshot.docs.map(doc => ({
-                        id: doc.id,
-                        category: doc.data().category || targetCollection,
-                        ...doc.data()
-                    })) as Product[];
-
-                    if (selectedCategory === 'webcams') {
-                        productsData = productsData.filter(p => p.category === 'webcams' || p.productInfo?.othersType === 'webcam');
-                    } else if (selectedCategory === 'dvd-writers') {
-                        productsData = productsData.filter(p => p.category !== 'webcams' && p.productInfo?.othersType !== 'webcam');
-                    }
-
-                    setProducts(productsData);
+                    const querySnapshot = await getDocs(collection(db, category));
+                    querySnapshot.docs.forEach(doc => {
+                        const data = doc.data();
+                        const productCat = data.category || category;
+                        allProducts.push({
+                            id: doc.id,
+                            category: productCat,
+                            ...data
+                        } as Product);
+                    });
                 } catch (err) {
-                    console.warn(`Failed to fetch from ${targetCollection}:`, err);
-                    setProducts([]);
+                    // Ignore errors for collections that might not exist yet or empty
                 }
-            }
+            }));
+
+            setProducts(allProducts);
         } catch (error) {
             console.warn('Warning: Failed to fetch products (likely permissions):', error);
             toast.error('Failed to load products');
@@ -231,10 +208,57 @@ export default function ProductsPage() {
         }
     };
 
-    const filteredProducts = products.filter(product =>
-        product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.brand.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const getProductCountForCategory = (catId: string) => {
+        let count = 0;
+        products.forEach(p => {
+            if (p.stock <= 0) return; // Skip if stock is 0 (out of stock)
+            
+            if (catId === 'all') {
+                count++;
+                return;
+            }
+            
+            if (catId === 'webcams') {
+                if (p.category === 'webcams' || p.productInfo?.othersType === 'webcam') {
+                    count++;
+                }
+            } else if (catId === 'dvd-writers') {
+                if (p.category === 'dvd-writers' && p.productInfo?.othersType !== 'webcam') {
+                    count++;
+                }
+            } else {
+                if (p.category === catId) {
+                    count++;
+                }
+            }
+        });
+        return count;
+    };
+
+    const filteredProducts = products.filter(product => {
+        // 1. Category Filter
+        if (selectedCategory !== 'all') {
+            if (selectedCategory === 'webcams') {
+                if (product.category !== 'webcams' && product.productInfo?.othersType !== 'webcam') {
+                    return false;
+                }
+            } else if (selectedCategory === 'dvd-writers') {
+                if (product.category !== 'dvd-writers' || product.productInfo?.othersType === 'webcam') {
+                    return false;
+                }
+            } else {
+                if (product.category !== selectedCategory) return false;
+            }
+        }
+
+        // 2. Search Query Filter
+        const query = searchQuery.toLowerCase();
+        return (
+            product.name.toLowerCase().includes(query) ||
+            product.brand.toLowerCase().includes(query) ||
+            (product.productInfo?.partNo || '').toLowerCase().includes(query)
+        );
+    });
 
     // Get unique groups for optgroups
     const groups = Array.from(new Set(categories.map(c => c.group))).filter(Boolean) as string[];
@@ -272,12 +296,14 @@ export default function ProductsPage() {
                         className="p-2 pr-8 rounded-lg border dark:bg-gray-900 dark:border-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500"
                     >
                         {/* Always show "All Products" first */}
-                        <option value="all">All Products</option>
+                        <option value="all">All Products ({getProductCountForCategory('all')} nos)</option>
 
                         {categories
                             .filter(cat => cat.id !== 'all' && cat.id !== 'accessories')
                             .map(cat => (
-                                <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                <option key={cat.id} value={cat.id}>
+                                    {cat.name} ({getProductCountForCategory(cat.id)} nos)
+                                </option>
                             ))}
                     </select>
                 </div>

@@ -216,8 +216,8 @@ export default function CategoryProducts({ slug }: CategoryProductsProps) {
                 // Set initial price range based on products
                 if (fetchedProducts.length > 0) {
                     const prices = fetchedProducts.map(p => p.price);
-                    const minPrice = Math.floor(Math.min(...prices) / 1000) * 1000;
-                    const maxPrice = Math.ceil(Math.max(...prices) / 1000) * 1000;
+                    const minPrice = Math.min(...prices);
+                    const maxPrice = Math.max(...prices);
                     setPriceRange([minPrice, maxPrice]);
                 }
             } catch (error) {

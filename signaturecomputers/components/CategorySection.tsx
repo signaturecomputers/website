@@ -133,13 +133,13 @@ export default function CategorySection() {
 
     return (
         <section className="py-16 bg-gray-50/50">
-            <div className="w-full px-4 sm:px-8 lg:px-12">
+            <div className="w-full px-4 sm:px-8 lg:px-12 3xl:px-20 4xl:px-32 mx-auto">
                 <div className="text-center mb-10">
                     <h2 className="text-2xl font-bold text-gray-900">Products</h2>
                     <div className="w-16 h-1 bg-blue-600 mx-auto rounded-full mt-2"></div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 lg:gap-10">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 3xl:grid-cols-5 4xl:grid-cols-6 gap-8 lg:gap-10">
                     {allCategories.map((category) => (
                         <Link key={category.id} href={category.link} className="group block">
                             <div className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 h-full flex flex-col">
