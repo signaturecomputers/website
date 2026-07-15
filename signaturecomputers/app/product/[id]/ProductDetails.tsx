@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { FiStar, FiShoppingCart, FiHeart, FiCreditCard, FiChevronDown, FiChevronUp, FiShield } from 'react-icons/fi';
 import { getProductById, getRelatedProducts, getSuggestedAccessories, Product, CATEGORY_NAMES } from '@/lib/products';
@@ -15,6 +15,66 @@ import ProductSchema from '@/components/seo/ProductSchema';
 import ProductSEOContent from '@/components/ProductSEOContent';
 import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
+
+interface ZoomableImageProps {
+    src: string;
+    alt: string;
+}
+
+function ZoomableImage({ src, alt }: ZoomableImageProps) {
+    const [zoomStyle, setZoomStyle] = useState<React.CSSProperties>({
+        transform: 'scale(1)',
+        transformOrigin: 'center center',
+        transition: 'transform 0.3s ease-out, transform-origin 0.3s ease-out'
+    });
+
+    const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+        const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
+        const x = ((e.clientX - left) / width) * 100;
+        const y = ((e.clientY - top) / height) * 100;
+        
+        setZoomStyle({
+            transform: 'scale(2.2)',
+            transformOrigin: `${x}% ${y}%`,
+            transition: 'transform 0.08s ease-out'
+        });
+    };
+
+    const handleMouseEnter = (e: React.MouseEvent<HTMLDivElement>) => {
+        const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
+        const x = ((e.clientX - left) / width) * 100;
+        const y = ((e.clientY - top) / height) * 100;
+        setZoomStyle({
+            transform: 'scale(2.2)',
+            transformOrigin: `${x}% ${y}%`,
+            transition: 'transform 0.2s ease-out'
+        });
+    };
+
+    const handleMouseLeave = () => {
+        setZoomStyle({
+            transform: 'scale(1)',
+            transformOrigin: 'center center',
+            transition: 'transform 0.35s ease-out, transform-origin 0.35s ease-out'
+        });
+    };
+
+    return (
+        <div 
+            className="w-full h-full overflow-hidden flex items-center justify-center cursor-crosshair"
+            onMouseMove={handleMouseMove}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+        >
+            <img 
+                src={src} 
+                alt={alt} 
+                className="max-w-full max-h-full object-contain select-none"
+                style={zoomStyle}
+            />
+        </div>
+    );
+}
 
 interface ProductDetailsProps {
     id: string;
@@ -489,7 +549,7 @@ export default function ProductDetails({ id }: ProductDetailsProps) {
                         {/* Main Image - Scales to fit container */}
                         <div ref={mainImageContainerRef} className="aspect-[4/3] overflow-hidden flex items-center justify-center bg-gray-50 dark:bg-gray-900 rounded-lg w-full max-w-full 2xl:max-w-2xl 3xl:max-w-xl 4xl:max-w-lg mx-auto">
                             {activeImage ? (
-                                <img src={activeImage} alt={`${product.productInfo?.title || product.name} product image`} className="max-w-full max-h-full object-contain" />
+                                <ZoomableImage src={activeImage} alt={`${product.productInfo?.title || product.name} product image`} />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center">
                                     <span className="text-gray-400">No Image</span>
