@@ -285,13 +285,7 @@ export default function ProductsPage() {
                                         className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-4 flex gap-4 hover:shadow-md transition-shadow"
                                     >
                                         <div className="w-32 h-32 flex-shrink-0 bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden relative">
-                                            {product.stock === 0 && (
-                                                <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-10 pointer-events-none">
-                                                    <div className="absolute w-[150%] py-1 bg-red-800/85 text-white/90 font-semibold text-[9px] uppercase tracking-widest text-center rotate-[-45deg] shadow-md border-y border-white/10">
-                                                        Out of Stock
-                                                    </div>
-                                                </div>
-                                            )}
+
                                             <img
                                                 src={product.image || '/placeholder-product.png'}
                                                 alt={product.name}
@@ -305,7 +299,7 @@ export default function ProductsPage() {
                                             <p className="text-sm text-gray-500 mt-1">{product.brand}</p>
                                             {product.stock === 0 ? (
                                                 <div className="mt-2">
-                                                    <span className="text-xs font-semibold text-red-800 dark:text-red-500 uppercase tracking-wider">Out of Stock</span>
+                                                    <span className="text-xs font-semibold text-red-600 dark:text-red-500">Unavailable</span>
                                                 </div>
                                             ) : (
                                                 <div className="mt-2">

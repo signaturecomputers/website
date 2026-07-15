@@ -74,13 +74,7 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
             className="bg-white dark:bg-gray-900 rounded-xl shadow-sm hover:shadow-lg transition-shadow border border-gray-100 dark:border-gray-800 overflow-hidden group cursor-pointer"
         >
             <div className="relative aspect-square overflow-hidden bg-gray-100 dark:bg-gray-800">
-                {product.stock === 0 && (
-                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-10 pointer-events-none">
-                        <div className="absolute w-[150%] py-1.5 bg-red-800/85 text-white/90 font-semibold text-[10px] md:text-xs uppercase tracking-widest text-center rotate-[-45deg] shadow-md border-y border-white/10">
-                            Out of Stock
-                        </div>
-                    </div>
-                )}
+
                 <div className="w-full h-full flex items-center justify-center text-gray-400">
                     {product.image ? (
                         <img src={product.image} alt={product.name} className="object-cover w-full h-full group-hover:scale-105 transition-transform" />
@@ -105,7 +99,7 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
                 </h3>
                 <div className="flex items-center justify-between mt-4">
                     {product.stock === 0 ? (
-                        <span className="text-xs font-semibold text-red-800 dark:text-red-500 uppercase tracking-wider">Out of Stock</span>
+                        <span className="text-xs font-semibold text-red-600 dark:text-red-500">Unavailable</span>
                     ) : (
                         <div className="flex flex-col">
                             <span className="text-lg font-bold text-gray-900 dark:text-white">₹{product.price.toLocaleString('en-IN')}</span>
