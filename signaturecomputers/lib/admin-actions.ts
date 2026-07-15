@@ -221,3 +221,51 @@ export async function updateProductStock(productId: string, category: string, ne
         return { success: false, error: error.message || 'Failed to update stock' };
     }
 }
+
+export async function updateSiteTheme(theme: string, username: string) {
+    try {
+        await adminDb.collection("site_settings").doc("theme").set({
+            currentTheme: theme,
+            isActive: theme !== "default",
+            updatedBy: username,
+            updatedAt: new Date()
+        }, { merge: true });
+        revalidatePath('/admindashboard/settings');
+        return { success: true };
+    } catch (error: any) {
+        console.error("Error updating theme:", error);
+        return { success: false, error: error.message || "Failed to update theme" };
+    }
+}
+
+export async function updateWindowsPrice(price: number, username: string) {
+    try {
+        await adminDb.collection("site_settings").doc("windowsInstallation").set({
+            price: price,
+            serviceName: "Windows 11 Pro OEM Key & Installation",
+            enabled: true,
+            updatedBy: username,
+            updatedAt: new Date()
+        }, { merge: true });
+        revalidatePath('/admindashboard/settings');
+        return { success: true };
+    } catch (error: any) {
+        console.error("Error updating Windows price:", error);
+        return { success: false, error: error.message || "Failed to update Windows price" };
+    }
+}
+
+export async function updateAdminAccessKey(key: string, username: string) {
+    try {
+        await adminDb.collection("admin_settings").doc("admin_access_key").set({
+            key: key,
+            updatedBy: username,
+            updatedAt: new Date()
+        }, { merge: true });
+        revalidatePath('/admindashboard/settings');
+        return { success: true };
+    } catch (error: any) {
+        console.error("Error updating key:", error);
+        return { success: false, error: error.message || "Failed to update key" };
+    }
+}

@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { doc, getDoc, setDoc, updateDoc, Timestamp } from "firebase/firestore";
+import { doc, getDoc, Timestamp } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { db, storage } from "@/lib/firebase";
 import { useAdminAuth } from "@/context/AdminAuthContext";
+import { updateSiteTheme, updateWindowsPrice, updateAdminAccessKey } from "@/lib/admin-actions";
 import { Save, AlertTriangle, Upload, Trash2, Image as ImageIcon, FileSignature, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
@@ -61,16 +62,13 @@ export default function AdminSettings() {
 
         setUpdatingTheme(true);
         try {
-            const docRef = doc(db, "site_settings", "theme");
-            await setDoc(docRef, {
-                currentTheme: newTheme,
-                isActive: newTheme !== "default",
-                updatedBy: adminUser.username,
-                updatedAt: Timestamp.now()
-            }, { merge: true });
-
-            setCurrentTheme(newTheme);
-            toast.success(`Theme updated to ${newTheme}`);
+            const result = await updateSiteTheme(newTheme, adminUser.username);
+            if (result.success) {
+                setCurrentTheme(newTheme);
+                toast.success(`Theme updated to ${newTheme}`);
+            } else {
+                throw new Error(result.error);
+            }
         } catch (error) {
             console.error("Error updating theme:", error);
             toast.error("Failed to update theme");
@@ -110,23 +108,13 @@ export default function AdminSettings() {
         setMessage({ type: "", text: "" });
 
         try {
-            const docRef = doc(db, "admin_settings", "admin_access_key");
-            const docSnap = await getDoc(docRef);
-
-            const data = {
-                key: newKey,
-                updatedBy: adminUser.username,
-                updatedAt: Timestamp.now(),
-            };
-
-            if (docSnap.exists()) {
-                await updateDoc(docRef, data);
+            const result = await updateAdminAccessKey(newKey, adminUser.username);
+            if (result.success) {
+                setMessage({ type: "success", text: "Access Key updated successfully!" });
+                setNewKey("");
             } else {
-                await setDoc(docRef, data);
+                throw new Error(result.error);
             }
-
-            setMessage({ type: "success", text: "Access Key updated successfully!" });
-            setNewKey("");
         } catch (err) {
             console.error("Error updating key:", err);
             setMessage({ type: "error", text: "Failed to update key." });
@@ -250,18 +238,14 @@ export default function AdminSettings() {
 
         setUpdatingWindowsPrice(true);
         try {
-            const docRef = doc(db, "site_settings", "windowsInstallation");
-            await setDoc(docRef, {
-                price: priceValue,
-                serviceName: "Windows 11 Pro OEM Key & Installation",
-                enabled: true,
-                updatedBy: adminUser.username,
-                updatedAt: Timestamp.now()
-            }, { merge: true });
-
-            setWindowsPrice(priceValue);
-            setNewWindowsPrice("");
-            toast.success("Windows installation price updated successfully!");
+            const result = await updateWindowsPrice(priceValue, adminUser.username);
+            if (result.success) {
+                setWindowsPrice(priceValue);
+                setNewWindowsPrice("");
+                toast.success("Windows installation price updated successfully!");
+            } else {
+                throw new Error(result.error);
+            }
         } catch (error) {
             console.error("Error updating Windows price:", error);
             toast.error("Failed to update Windows installation price");
