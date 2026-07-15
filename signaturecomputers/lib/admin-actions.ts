@@ -198,3 +198,26 @@ export async function deleteCarePack(carePackId: string) {
         return { success: false, error: 'Failed to delete care pack' };
     }
 }
+
+export async function updateProductStock(productId: string, category: string, newStock: number) {
+    try {
+        let targetCategory = category === 'webcams' ? 'dvd-writers' : category;
+        if (targetCategory === 'probook' || targetCategory === 'zbook-firefly' || targetCategory === 'elitebook') {
+            targetCategory = 'laptops';
+        }
+        const collectionName = targetCategory === 'hubs' ? 'docks' : targetCategory;
+
+        await adminDb.collection(collectionName).doc(productId).update({
+            stock: newStock,
+            updatedAt: new Date().toISOString()
+        });
+
+        revalidatePath('/admindashboard/products');
+        revalidatePath('/products');
+        revalidatePath(`/product/${productId}`);
+        return { success: true };
+    } catch (error: any) {
+        console.error('Error updating stock:', error);
+        return { success: false, error: error.message || 'Failed to update stock' };
+    }
+}

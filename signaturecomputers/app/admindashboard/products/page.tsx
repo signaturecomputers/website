@@ -5,8 +5,9 @@ import { useSearchParams } from 'next/navigation';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import Link from 'next/link';
-import { FiPlus, FiTrash2, FiEdit2, FiSearch, FiFilter, FiEye } from 'react-icons/fi';
+import { FiPlus, FiTrash2, FiEdit2, FiSearch, FiFilter, FiEye, FiCheck, FiX } from 'react-icons/fi';
 import { toast } from 'sonner';
+import { updateProductStock } from '@/lib/admin-actions';
 
 interface Product {
     id: string;
@@ -66,6 +67,11 @@ export default function ProductsPage() {
     const [selectedCategory, setSelectedCategory] = useState(categoryFromUrl || 'all');
     const [searchQuery, setSearchQuery] = useState('');
     const [categories, setCategories] = useState<CategoryData[]>(DEFAULT_CATEGORIES);
+
+    // Stock Inline Edit State
+    const [editingStockId, setEditingStockId] = useState<string | null>(null);
+    const [editingStockValue, setEditingStockValue] = useState<string>('');
+    const [updatingStock, setUpdatingStock] = useState(false);
 
     useEffect(() => {
         fetchCategories();
@@ -179,6 +185,46 @@ export default function ProductsPage() {
             toast.error('Failed to load products');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const startEditStock = (productId: string, currentStock: number) => {
+        setEditingStockId(productId);
+        setEditingStockValue(currentStock.toString());
+    };
+
+    const handleCancelStock = () => {
+        setEditingStockId(null);
+        setEditingStockValue('');
+    };
+
+    const handleSaveStock = async (productId: string, productCategory: string) => {
+        const newStock = parseInt(editingStockValue, 10);
+        if (isNaN(newStock) || newStock < 0) {
+            toast.error('Please enter a valid stock quantity');
+            return;
+        }
+
+        setUpdatingStock(true);
+        try {
+            const result = await updateProductStock(productId, productCategory, newStock);
+            if (result.success) {
+                setProducts(prev => prev.map(p => {
+                    if (p.id === productId) {
+                        return { ...p, stock: newStock };
+                    }
+                    return p;
+                }));
+                toast.success('Stock updated successfully');
+                setEditingStockId(null);
+            } else {
+                throw new Error(result.error || 'Failed to update stock');
+            }
+        } catch (error: any) {
+            console.error('Error updating stock:', error);
+            toast.error(error.message || 'Failed to update stock');
+        } finally {
+            setUpdatingStock(false);
         }
     };
 
@@ -391,14 +437,65 @@ export default function ProductsPage() {
                                         <td className="p-4 text-gray-500 dark:text-gray-400">{product.brand}</td>
                                         <td className="p-4 font-medium dark:text-gray-200">₹{product.price.toLocaleString('en-IN')}</td>
                                         <td className="p-4">
-                                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${product.stock > 5
-                                                ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                                                : product.stock > 0
-                                                    ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-                                                    : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                                                }`}>
-                                                {product.stock} in stock
-                                            </span>
+                                            {editingStockId === product.id ? (
+                                                <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                                                    <input
+                                                        type="number"
+                                                        value={editingStockValue}
+                                                        onChange={(e) => setEditingStockValue(e.target.value)}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter') {
+                                                                handleSaveStock(product.id, product.category || selectedCategory);
+                                                            } else if (e.key === 'Escape') {
+                                                                handleCancelStock();
+                                                            }
+                                                        }}
+                                                        disabled={updatingStock}
+                                                        className="w-16 px-1.5 py-0.5 text-sm border rounded dark:bg-gray-900 dark:border-gray-700 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                                        min="0"
+                                                        autoFocus
+                                                    />
+                                                    <button
+                                                        onClick={() => handleSaveStock(product.id, product.category || selectedCategory)}
+                                                        disabled={updatingStock}
+                                                        className="p-1 text-green-600 hover:bg-green-50 rounded dark:hover:bg-green-900/20 transition-colors disabled:opacity-50"
+                                                        title="Save"
+                                                    >
+                                                        <FiCheck className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={handleCancelStock}
+                                                        disabled={updatingStock}
+                                                        className="p-1 text-red-600 hover:bg-red-50 rounded dark:hover:bg-red-900/20 transition-colors disabled:opacity-50"
+                                                        title="Cancel"
+                                                    >
+                                                        <FiX className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center gap-2 group/stock">
+                                                    <span 
+                                                        onClick={() => startEditStock(product.id, product.stock)}
+                                                        className={`px-2 py-1 rounded-full text-xs font-medium cursor-pointer transition-all hover:ring-1 hover:ring-blue-400 ${
+                                                            product.stock > 5
+                                                                ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                                                : product.stock > 0
+                                                                    ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                                                                    : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                                                        }`}
+                                                        title="Click to edit stock"
+                                                    >
+                                                        {product.stock} in stock
+                                                    </span>
+                                                    <button
+                                                        onClick={() => startEditStock(product.id, product.stock)}
+                                                        className="opacity-0 group-hover/stock:opacity-100 p-1 text-gray-400 hover:text-blue-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-all"
+                                                        title="Quick edit stock"
+                                                    >
+                                                        <FiEdit2 className="w-3.5 h-3.5" />
+                                                    </button>
+                                                </div>
+                                            )}
                                         </td>
                                         <td className="p-4 text-right">
                                             <div className="flex items-center justify-end gap-2">
