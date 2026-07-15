@@ -33,6 +33,7 @@ const DEFAULT_CATEGORIES: CategoryData[] = [
     { id: 'laptops', name: 'Laptops', group: null },
     { id: 'probook', name: 'ProBook', group: null },
     { id: 'zbook-firefly', name: 'ZBook Firefly', group: null },
+    { id: 'elitebook', name: 'EliteBook', group: null },
     { id: 'desktops', name: 'Desktops', group: null },
     { id: 'workstations', name: 'Workstations', group: null },
     { id: 'monitors', name: 'Monitors', group: null },
@@ -133,7 +134,7 @@ export default function ProductsPage() {
         try {
             // Fetch from all known categories (excluding virtual category IDs like webcams and parent accessories)
             const allCategoryIds = categories
-                .filter(c => c.id !== 'all' && c.id !== 'accessories' && c.id !== 'webcams' && c.id !== 'probook' && c.id !== 'zbook-firefly')
+                .filter(c => c.id !== 'all' && c.id !== 'accessories' && c.id !== 'webcams' && c.id !== 'probook' && c.id !== 'zbook-firefly' && c.id !== 'elitebook')
                 .map(c => c.id);
             // Remove duplicates if any
             const uniqueCategoryIds = Array.from(new Set(allCategoryIds));
@@ -148,12 +149,14 @@ export default function ProductsPage() {
                         let productCat = data.category || category;
 
                         // Dynamically resolve category for admin panel based on name
-                        if (productCat === 'laptops' || productCat === 'probook' || productCat === 'zbook-firefly') {
+                        if (productCat === 'laptops' || productCat === 'probook' || productCat === 'zbook-firefly' || productCat === 'elitebook') {
                             const nameLower = (data.name || '').toLowerCase();
                             if (nameLower.includes('hp probook')) {
                                 productCat = 'probook';
                             } else if (nameLower.includes('zbook firefly')) {
                                 productCat = 'zbook-firefly';
+                            } else if (nameLower.includes('elitebook')) {
+                                productCat = 'elitebook';
                             } else {
                                 productCat = 'laptops';
                             }
@@ -185,7 +188,7 @@ export default function ProductsPage() {
         // Use the product's actual category, not selectedCategory (which could be 'all')
         let categoryToDelete = productCategory || selectedCategory;
 
-        if (categoryToDelete === 'probook' || categoryToDelete === 'zbook-firefly') {
+        if (categoryToDelete === 'probook' || categoryToDelete === 'zbook-firefly' || categoryToDelete === 'elitebook') {
             categoryToDelete = 'laptops';
         }
 

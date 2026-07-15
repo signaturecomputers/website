@@ -26,6 +26,7 @@ const DEFAULT_CATEGORIES = [
     { id: 'laptops', name: 'Laptops', group: null },
     { id: 'probook', name: 'ProBook', group: null },
     { id: 'zbook-firefly', name: 'ZBook Firefly', group: null },
+    { id: 'elitebook', name: 'EliteBook', group: null },
     { id: 'desktops', name: 'Desktops', group: null },
     { id: 'workstations', name: 'Workstations', group: null },
     { id: 'monitors', name: 'Monitors', group: null },
@@ -142,6 +143,7 @@ function AddProductForm() {
         laptops: ['Processor', 'Operating System', 'Display Size', 'Graphics', 'RAM', 'Storage'],
         probook: ['Processor', 'Operating System', 'Display Size', 'Graphics', 'RAM', 'Storage'],
         'zbook-firefly': ['Processor', 'Operating System', 'Display Size', 'Graphics', 'RAM', 'Storage'],
+        elitebook: ['Processor', 'Operating System', 'Display Size', 'Graphics', 'RAM', 'Storage'],
         desktops: ['Processor', 'Operating System', 'Graphics', 'RAM', 'Storage'],
         workstations: ['Processor', 'Operating System', 'Graphics', 'RAM', 'Storage', 'Power Supply'],
         monitors: ['Screen Size', 'Resolution', 'Display Type', 'Response Type', 'Response Time', 'Display Input Type', 'Display Features'],
@@ -202,8 +204,8 @@ function AddProductForm() {
             }
         }
 
-        // If default category is laptops/probook/zbook-firefly and specs are generic, load laptop template
-        const isLaptopCategory = ['laptops', 'probook', 'zbook-firefly'].includes(formData.category);
+        // If default category is laptops/probook/zbook-firefly/elitebook and specs are generic, load laptop template
+        const isLaptopCategory = ['laptops', 'probook', 'zbook-firefly', 'elitebook'].includes(formData.category);
         if (isLaptopCategory && specs.length === 3 && specs[0].key === 'Processor' && specs[0].value === '') {
             if (SPEC_TEMPLATES['laptops']) {
                 setSpecs(SPEC_TEMPLATES['laptops'].map(key => ({ key, value: '' })));
@@ -277,7 +279,7 @@ function AddProductForm() {
 
             // 2. Prepare Data (Server Action expects plain object)
             let targetCategory = formData.category === 'webcams' ? 'dvd-writers' : formData.category;
-            if (targetCategory === 'probook' || targetCategory === 'zbook-firefly') {
+            if (targetCategory === 'probook' || targetCategory === 'zbook-firefly' || targetCategory === 'elitebook') {
                 targetCategory = 'laptops';
             }
 
@@ -293,6 +295,8 @@ function AddProductForm() {
                 name = 'HP ProBook ' + name;
             } else if (formData.category === 'zbook-firefly' && !name.toLowerCase().includes('zbook firefly')) {
                 name = 'HP ZBook Firefly ' + name;
+            } else if (formData.category === 'elitebook' && !name.toLowerCase().includes('elitebook')) {
+                name = 'HP EliteBook ' + name;
             }
 
             const productData = {

@@ -27,6 +27,7 @@ const DEFAULT_CATEGORIES = [
     { id: 'laptops', name: 'Laptops', group: null },
     { id: 'probook', name: 'ProBook', group: null },
     { id: 'zbook-firefly', name: 'ZBook Firefly', group: null },
+    { id: 'elitebook', name: 'EliteBook', group: null },
     { id: 'desktops', name: 'Desktops', group: null },
     { id: 'workstations', name: 'Workstations', group: null },
     { id: 'monitors', name: 'Monitors', group: null },
@@ -108,7 +109,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
             // Check all potential collections (Default + Custom, excluding virtual categories)
             const collectionNames = fetchedCategories
                 .map(c => c.id)
-                .filter(id => id !== 'probook' && id !== 'zbook-firefly');
+                .filter(id => id !== 'probook' && id !== 'zbook-firefly' && id !== 'elitebook');
 
             for (const colName of collectionNames) {
                 const docRef = doc(db, colName, productId);
@@ -138,6 +139,8 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                     formCategory = 'probook';
                 } else if (nameLower.includes('zbook firefly')) {
                     formCategory = 'zbook-firefly';
+                } else if (nameLower.includes('elitebook')) {
+                    formCategory = 'elitebook';
                 }
             }
 
@@ -336,7 +339,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
 
             // 2. Prepare Data
             let targetCategory = formData.category === 'webcams' ? 'dvd-writers' : formData.category;
-            if (targetCategory === 'probook' || targetCategory === 'zbook-firefly') {
+            if (targetCategory === 'probook' || targetCategory === 'zbook-firefly' || targetCategory === 'elitebook') {
                 targetCategory = 'laptops';
             }
 
@@ -352,6 +355,8 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                 name = 'HP ProBook ' + name;
             } else if (formData.category === 'zbook-firefly' && !name.toLowerCase().includes('zbook firefly')) {
                 name = 'HP ZBook Firefly ' + name;
+            } else if (formData.category === 'elitebook' && !name.toLowerCase().includes('elitebook')) {
+                name = 'HP EliteBook ' + name;
             }
 
             const productData = {

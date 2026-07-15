@@ -85,7 +85,7 @@ function getWarrantyInfo(category?: string, productName?: string): string {
     const cat = (category || '').toLowerCase();
 
     // HP products
-    if (name.includes('hp') || name.includes('hewlett') || name.includes('probook')) {
+    if (name.includes('hp') || name.includes('hewlett') || name.includes('probook') || name.includes('elitebook')) {
         return '3 Years Warranty – Provided by HP';
     }
     // Dell products
