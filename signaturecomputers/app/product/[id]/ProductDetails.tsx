@@ -10,7 +10,7 @@ import ProductInfoSection from '@/components/ProductInfoSection';
 import { useAdminAuth } from '@/context/AdminAuthContext';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
-import { isFreeDOSProduct, getWindowsInstallationPrice } from '@/lib/windowsInstallationConfig';
+import { isFreeDOSProduct, getWindowsInstallationPrice, getProductOS } from '@/lib/windowsInstallationConfig';
 import ProductSchema from '@/components/seo/ProductSchema';
 import ProductSEOContent from '@/components/ProductSEOContent';
 import { db } from '@/lib/firebase';
@@ -600,7 +600,7 @@ export default function ProductDetails({ id }: ProductDetailsProps) {
                                                     <span className="text-xl font-bold text-blue-600">+₹{windowsPrice.toLocaleString('en-IN')}</span>
                                                 </div>
                                                 <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-                                                    This product comes with Free DOS. Check this option to have <strong>Windows 11 Pro</strong> pre-installed by our expert team with a genuine OEM key included.
+                                                    This product comes with {getProductOS(product) || 'Free DOS'}. Check this option to have <strong>Windows 11 Pro</strong> pre-installed by our expert team with a genuine OEM key included.
                                                 </p>
                                                 {windowsInstallation && (
                                                     <div className="mt-2 flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
@@ -928,9 +928,9 @@ export default function ProductDetails({ id }: ProductDetailsProps) {
 
                         {/* Description */}
                         <p className="text-gray-600 dark:text-gray-400 text-center mb-6">
-                            This product comes with <strong className="text-gray-900 dark:text-white">Free DOS</strong>.
-                            Would you like to add <strong className="text-blue-600">Windows 11 Pro OEM</strong> installation for <strong className="text-blue-600">₹{windowsPrice.toLocaleString('en-IN')}</strong>?
-                        </p>
+                                                    This product comes with <strong className="text-gray-900 dark:text-white">{getProductOS(product) || 'Free DOS'}</strong>.
+                                                    Would you like to add <strong className="text-blue-600">Windows 11 Pro OEM</strong> installation for <strong className="text-blue-600">₹{windowsPrice.toLocaleString('en-IN')}</strong>?
+                                                </p>
 
                         {/* Windows Option Box */}
                         <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-800 rounded-xl">

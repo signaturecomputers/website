@@ -31,6 +31,8 @@ interface CategoryData {
 const DEFAULT_CATEGORIES: CategoryData[] = [
     { id: 'all', name: 'All Products', group: null }, // Special case for filter
     { id: 'laptops', name: 'Laptops', group: null },
+    { id: 'probook', name: 'ProBook', group: null },
+    { id: 'zbook-firefly', name: 'ZBook Firefly', group: null },
     { id: 'desktops', name: 'Desktops', group: null },
     { id: 'workstations', name: 'Workstations', group: null },
     { id: 'monitors', name: 'Monitors', group: null },
@@ -131,7 +133,7 @@ export default function ProductsPage() {
         try {
             // Fetch from all known categories (excluding virtual category IDs like webcams and parent accessories)
             const allCategoryIds = categories
-                .filter(c => c.id !== 'all' && c.id !== 'accessories' && c.id !== 'webcams')
+                .filter(c => c.id !== 'all' && c.id !== 'accessories' && c.id !== 'webcams' && c.id !== 'probook' && c.id !== 'zbook-firefly')
                 .map(c => c.id);
             // Remove duplicates if any
             const uniqueCategoryIds = Array.from(new Set(allCategoryIds));
@@ -143,11 +145,24 @@ export default function ProductsPage() {
                     const querySnapshot = await getDocs(collection(db, category));
                     querySnapshot.docs.forEach(doc => {
                         const data = doc.data();
-                        const productCat = data.category || category;
+                        let productCat = data.category || category;
+
+                        // Dynamically resolve category for admin panel based on name
+                        if (productCat === 'laptops' || productCat === 'probook' || productCat === 'zbook-firefly') {
+                            const nameLower = (data.name || '').toLowerCase();
+                            if (nameLower.includes('hp probook')) {
+                                productCat = 'probook';
+                            } else if (nameLower.includes('zbook firefly')) {
+                                productCat = 'zbook-firefly';
+                            } else {
+                                productCat = 'laptops';
+                            }
+                        }
+
                         allProducts.push({
                             id: doc.id,
-                            category: productCat,
-                            ...data
+                            ...data,
+                            category: productCat
                         } as Product);
                     });
                 } catch (err) {
@@ -168,7 +183,11 @@ export default function ProductsPage() {
         if (!confirm('Are you sure you want to delete this product? This action cannot be undone.')) return;
 
         // Use the product's actual category, not selectedCategory (which could be 'all')
-        const categoryToDelete = productCategory || selectedCategory;
+        let categoryToDelete = productCategory || selectedCategory;
+
+        if (categoryToDelete === 'probook' || categoryToDelete === 'zbook-firefly') {
+            categoryToDelete = 'laptops';
+        }
 
         if (categoryToDelete === 'all') {
             toast.error('Cannot delete product: unknown category');

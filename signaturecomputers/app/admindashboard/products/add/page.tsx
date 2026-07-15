@@ -24,6 +24,8 @@ interface CategoryData {
 
 const DEFAULT_CATEGORIES = [
     { id: 'laptops', name: 'Laptops', group: null },
+    { id: 'probook', name: 'ProBook', group: null },
+    { id: 'zbook-firefly', name: 'ZBook Firefly', group: null },
     { id: 'desktops', name: 'Desktops', group: null },
     { id: 'workstations', name: 'Workstations', group: null },
     { id: 'monitors', name: 'Monitors', group: null },
@@ -138,6 +140,8 @@ function AddProductForm() {
     // Spec templates with specific order
     const SPEC_TEMPLATES: Record<string, string[]> = {
         laptops: ['Processor', 'Operating System', 'Display Size', 'Graphics', 'RAM', 'Storage'],
+        probook: ['Processor', 'Operating System', 'Display Size', 'Graphics', 'RAM', 'Storage'],
+        'zbook-firefly': ['Processor', 'Operating System', 'Display Size', 'Graphics', 'RAM', 'Storage'],
         desktops: ['Processor', 'Operating System', 'Graphics', 'RAM', 'Storage'],
         workstations: ['Processor', 'Operating System', 'Graphics', 'RAM', 'Storage', 'Power Supply'],
         monitors: ['Screen Size', 'Resolution', 'Display Type', 'Response Type', 'Response Time', 'Display Input Type', 'Display Features'],
@@ -198,8 +202,9 @@ function AddProductForm() {
             }
         }
 
-        // If default category is laptops and specs are generic, load laptop template
-        if (formData.category === 'laptops' && specs.length === 3 && specs[0].key === 'Processor' && specs[0].value === '') {
+        // If default category is laptops/probook/zbook-firefly and specs are generic, load laptop template
+        const isLaptopCategory = ['laptops', 'probook', 'zbook-firefly'].includes(formData.category);
+        if (isLaptopCategory && specs.length === 3 && specs[0].key === 'Processor' && specs[0].value === '') {
             if (SPEC_TEMPLATES['laptops']) {
                 setSpecs(SPEC_TEMPLATES['laptops'].map(key => ({ key, value: '' })));
             }
@@ -271,7 +276,11 @@ function AddProductForm() {
             );
 
             // 2. Prepare Data (Server Action expects plain object)
-            const targetCategory = formData.category === 'webcams' ? 'dvd-writers' : formData.category;
+            let targetCategory = formData.category === 'webcams' ? 'dvd-writers' : formData.category;
+            if (targetCategory === 'probook' || targetCategory === 'zbook-firefly') {
+                targetCategory = 'laptops';
+            }
+
             const updatedProductInfo = { ...productInfo };
             if (formData.category === 'webcams') {
                 updatedProductInfo.othersType = 'webcam';
@@ -279,8 +288,15 @@ function AddProductForm() {
                 updatedProductInfo.othersType = 'dvd';
             }
 
+            let name = formData.name;
+            if (formData.category === 'probook' && !name.toLowerCase().includes('hp probook')) {
+                name = 'HP ProBook ' + name;
+            } else if (formData.category === 'zbook-firefly' && !name.toLowerCase().includes('zbook firefly')) {
+                name = 'HP ZBook Firefly ' + name;
+            }
+
             const productData = {
-                name: formData.name,
+                name,
                 brand: formData.brand,
                 price: parseFloat(formData.price),
                 originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : null,

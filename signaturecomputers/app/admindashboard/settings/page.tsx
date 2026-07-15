@@ -473,7 +473,7 @@ export default function AdminSettings() {
                     Windows Installation Pricing
                 </h2>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-                    Configure the price for Windows 11 Pro OEM Key & Installation service for Free DOS products. This price will be added to the product price when customers select the Windows installation option.
+                    Configure the price for Windows 11 Pro OEM Key & Installation service for non-Windows (Free DOS, Ubuntu, Linux, etc.) products. This price will be added to the product price when customers select the Windows installation option.
                 </p>
 
                 {windowsPriceLoading ? (

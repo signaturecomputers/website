@@ -129,18 +129,28 @@ export async function createProduct(category: string, productData: any) {
     }
 }
 
-export async function updateProduct(category: string, productId: string, productData: any) {
+export async function updateProduct(productId: string, productData: any, targetCategory: string, originalCategory: string) {
     try {
         const sanitized = sanitizeData(productData);
-        const collectionName = category === 'hubs' ? 'docks' : category;
-        await adminDb.collection(collectionName).doc(productId).update(sanitized);
+        const newCollection = targetCategory === 'hubs' ? 'docks' : targetCategory;
+        const oldCollection = originalCategory === 'hubs' ? 'docks' : originalCategory;
+
+        if (newCollection !== oldCollection) {
+            // Move product: Set in new collection, then delete from old
+            await adminDb.collection(newCollection).doc(productId).set(sanitized);
+            await adminDb.collection(oldCollection).doc(productId).delete();
+        } else {
+            // Update in same collection
+            await adminDb.collection(newCollection).doc(productId).update(sanitized);
+        }
+
         revalidatePath('/admindashboard/products');
         revalidatePath('/products');
         revalidatePath(`/product/${productId}`);
         return { success: true };
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error updating product:', error);
-        return { success: false, error: 'Failed to update product' };
+        return { success: false, error: error.message || 'Failed to update product' };
     }
 }
 

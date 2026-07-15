@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import ProductInfoFormSection from '@/components/admin/ProductInfoFormSection';
 import ImageUploadZone from '@/components/admin/ImageUploadZone';
 import { ProductInfo } from '@/lib/products';
+import { updateProduct } from '@/lib/admin-actions';
 
 interface CategoryData {
     id: string;
@@ -24,6 +25,8 @@ interface CategoryData {
 
 const DEFAULT_CATEGORIES = [
     { id: 'laptops', name: 'Laptops', group: null },
+    { id: 'probook', name: 'ProBook', group: null },
+    { id: 'zbook-firefly', name: 'ZBook Firefly', group: null },
     { id: 'desktops', name: 'Desktops', group: null },
     { id: 'workstations', name: 'Workstations', group: null },
     { id: 'monitors', name: 'Monitors', group: null },
@@ -102,8 +105,10 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
             let productData = null;
             let productCategory = '';
 
-            // Check all potential collections (Default + Custom)
-            const collectionNames = fetchedCategories.map(c => c.id);
+            // Check all potential collections (Default + Custom, excluding virtual categories)
+            const collectionNames = fetchedCategories
+                .map(c => c.id)
+                .filter(id => id !== 'probook' && id !== 'zbook-firefly');
 
             for (const colName of collectionNames) {
                 const docRef = doc(db, colName, productId);
@@ -121,11 +126,20 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
             }
 
             // Populate Form
-            const formCategory = productCategory === 'dvd-writers' 
+            let formCategory = productCategory === 'dvd-writers' 
                 ? (productData.productInfo?.othersType === 'webcam' 
                     ? 'webcams' 
                     : (productData.productInfo?.othersType === 'other' ? 'others' : 'dvd-writers'))
                 : productCategory;
+
+            if (formCategory === 'laptops') {
+                const nameLower = (productData.name || '').toLowerCase();
+                if (nameLower.includes('hp probook')) {
+                    formCategory = 'probook';
+                } else if (nameLower.includes('zbook firefly')) {
+                    formCategory = 'zbook-firefly';
+                }
+            }
 
             setFormData({
                 name: productData.name || '',
@@ -321,7 +335,11 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
             const allImages = [...existingImages, ...newImageUrls];
 
             // 2. Prepare Data
-            const targetCategory = formData.category === 'webcams' ? 'dvd-writers' : formData.category;
+            let targetCategory = formData.category === 'webcams' ? 'dvd-writers' : formData.category;
+            if (targetCategory === 'probook' || targetCategory === 'zbook-firefly') {
+                targetCategory = 'laptops';
+            }
+
             const updatedProductInfo = { ...productInfo };
             if (formData.category === 'webcams') {
                 updatedProductInfo.othersType = 'webcam';
@@ -329,8 +347,15 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                 updatedProductInfo.othersType = 'dvd';
             }
 
+            let name = formData.name;
+            if (formData.category === 'probook' && !name.toLowerCase().includes('hp probook')) {
+                name = 'HP ProBook ' + name;
+            } else if (formData.category === 'zbook-firefly' && !name.toLowerCase().includes('zbook firefly')) {
+                name = 'HP ZBook Firefly ' + name;
+            }
+
             const productData = {
-                name: formData.name,
+                name,
                 brand: formData.brand,
                 price: parseFloat(formData.price),
                 originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : null,
@@ -344,39 +369,20 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                 updatedAt: new Date().toISOString(),
                 updatedBy: adminUser?.username || 'admin',
                 productInfo: updatedProductInfo,
+                category: targetCategory,
             };
 
             console.log('Update payload:', productData);
 
-            // 3. Check if category has changed
-            const categoryChanged = originalCategory !== targetCategory;
+            // 3. Update or move product via server action (Admin SDK)
+            const result = await updateProduct(productId, productData, targetCategory, originalCategory);
 
-            if (categoryChanged) {
-                console.log(`Category changed from '${originalCategory}' to '${targetCategory}'. Moving product...`);
-
-                // Add to new collection with same ID using setDoc
-                const newDocRef = doc(db, targetCategory, productId);
-                await setDoc(newDocRef, {
-                    ...productData,
-                    createdAt: new Date().toISOString(), // Reset created date for new collection
-                    createdBy: adminUser?.username || 'admin'
-                });
-
-                // Delete from old collection
-                const oldDocRef = doc(db, originalCategory, productId);
-                await deleteDoc(oldDocRef);
-
-                console.log('Product moved to new collection successfully.');
-                toast.success('Product category changed and saved successfully!');
+            if (result.success) {
+                toast.success('Product saved successfully!');
+                router.push('/admindashboard/products');
             } else {
-                // Just update in same collection
-                const docRef = doc(db, targetCategory, productId);
-                await updateDoc(docRef, productData);
-                console.log('Firestore document updated successfully.');
-                toast.success('Product updated successfully!');
+                throw new Error(result.error);
             }
-
-            router.push('/admindashboard/products');
 
         } catch (error) {
             console.error('Error updating product:', error);

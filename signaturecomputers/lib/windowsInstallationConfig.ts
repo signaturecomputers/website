@@ -4,21 +4,31 @@ import { db } from '@/lib/firebase';
 export const DEFAULT_WINDOWS_PRICE = 5000;
 export const WINDOWS_SERVICE_NAME = 'Windows 11 Pro OEM Key & Installation';
 
-// Check if a product has Free DOS operating system
-export function isFreeDOSProduct(product: any): boolean {
+// Get the operating system of a product
+export function getProductOS(product: any): string | null {
+    if (!product) return null;
+
     // Check in specs
     if (product.specs?.['Operating System']) {
-        const os = product.specs['Operating System'].toLowerCase();
-        return os.includes('freedos') || os.includes('free dos');
+        return product.specs['Operating System'];
     }
 
     // Check in productInfo
     if (product.productInfo?.operatingSystem?.os) {
-        const os = product.productInfo.operatingSystem.os.toLowerCase();
-        return os.includes('freedos') || os.includes('free dos');
+        return product.productInfo.operatingSystem.os;
     }
 
-    return false;
+    return null;
+}
+
+// Check if a product has a non-Windows operating system
+export function isFreeDOSProduct(product: any): boolean {
+    const os = getProductOS(product);
+    if (!os) return false;
+
+    const lowerOS = os.toLowerCase();
+    // Return true if the operating system is specified and does NOT contain "windows"
+    return !lowerOS.includes('windows');
 }
 
 // Get Windows installation price from Firestore
