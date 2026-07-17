@@ -269,3 +269,63 @@ export async function updateAdminAccessKey(key: string, username: string) {
         return { success: false, error: error.message || "Failed to update key" };
     }
 }
+
+export async function addHotDeal(productId: string, order: number) {
+    try {
+        const dealRef = adminDb.collection('hot_deals').doc(productId);
+        const docSnap = await dealRef.get();
+        if (docSnap.exists) {
+            return { success: false, error: 'Product is already a hot deal' };
+        }
+
+        await dealRef.set({
+            productId,
+            order,
+            addedAt: new Date().toISOString()
+        });
+
+        revalidatePath('/admindashboard/hot-deals');
+        revalidatePath('/hot-deals');
+        return { success: true };
+    } catch (error: any) {
+        console.error('Error adding hot deal:', error);
+        return { success: false, error: error.message || 'Failed to add hot deal' };
+    }
+}
+
+export async function removeHotDeal(dealId: string) {
+    try {
+        await adminDb.collection('hot_deals').doc(dealId).delete();
+        revalidatePath('/admindashboard/hot-deals');
+        revalidatePath('/hot-deals');
+        return { success: true };
+    } catch (error: any) {
+        console.error('Error removing hot deal:', error);
+        return { success: false, error: error.message || 'Failed to remove hot deal' };
+    }
+}
+
+export async function updateHotDealPrice(category: string, productId: string, price: number, originalPrice: number) {
+    try {
+        let targetCategory = category === 'webcams' ? 'dvd-writers' : category;
+        if (targetCategory === 'probook' || targetCategory === 'zbook-firefly' || targetCategory === 'elitebook') {
+            targetCategory = 'laptops';
+        }
+        const collectionName = targetCategory === 'hubs' ? 'docks' : targetCategory;
+
+        await adminDb.collection(collectionName).doc(productId).update({
+            price,
+            originalPrice,
+            updatedAt: new Date().toISOString()
+        });
+
+        revalidatePath('/admindashboard/hot-deals');
+        revalidatePath('/hot-deals');
+        revalidatePath(`/product/${productId}`);
+        return { success: true };
+    } catch (error: any) {
+        console.error('Error updating hot deal price:', error);
+        return { success: false, error: error.message || 'Failed to update hot deal price' };
+    }
+}
+

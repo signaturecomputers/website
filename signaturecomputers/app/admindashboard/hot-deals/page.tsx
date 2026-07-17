@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { collection, getDocs, doc, setDoc, deleteDoc, getDoc, updateDoc } from 'firebase/firestore';
+import { collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { getAllProducts, Product } from '@/lib/products';
+import { addHotDeal, removeHotDeal, updateHotDealPrice } from '@/lib/admin-actions';
 import { FiSearch, FiPlus, FiTrash2, FiStar, FiEdit2, FiSave, FiX } from 'react-icons/fi';
 import { toast } from 'sonner';
 
@@ -66,24 +67,14 @@ export default function HotDealsPage() {
 
     const addToHotDeals = async (product: Product) => {
         try {
-            const dealRef = doc(db, 'hot_deals', product.id);
-
-            // Check if already exists
-            const existing = await getDoc(dealRef);
-            if (existing.exists()) {
-                toast.error('Product is already a hot deal');
-                return;
+            const result = await addHotDeal(product.id, hotDeals.length + 1);
+            if (result.success) {
+                toast.success('Added to hot deals!');
+                setShowAddModal(false);
+                fetchData();
+            } else {
+                toast.error(result.error || 'Failed to add hot deal');
             }
-
-            await setDoc(dealRef, {
-                productId: product.id,
-                order: hotDeals.length + 1,
-                addedAt: new Date()
-            });
-
-            toast.success('Added to hot deals!');
-            setShowAddModal(false);
-            fetchData();
         } catch (error) {
             console.error('Failed to add hot deal:', error);
             toast.error('Failed to add hot deal');
@@ -94,9 +85,13 @@ export default function HotDealsPage() {
         if (!confirm('Remove this product from hot deals?')) return;
 
         try {
-            await deleteDoc(doc(db, 'hot_deals', dealId));
-            toast.success('Removed from hot deals');
-            fetchData();
+            const result = await removeHotDeal(dealId);
+            if (result.success) {
+                toast.success('Removed from hot deals');
+                fetchData();
+            } else {
+                toast.error(result.error || 'Failed to remove hot deal');
+            }
         } catch (error) {
             console.error('Failed to remove hot deal:', error);
             toast.error('Failed to remove hot deal');
@@ -120,16 +115,19 @@ export default function HotDealsPage() {
 
         setSaving(true);
         try {
-            // Update the product in its category collection
-            const productRef = doc(db, deal.product.category, deal.productId);
-            await updateDoc(productRef, {
-                price: editingPrice.price,
-                originalPrice: editingPrice.originalPrice
-            });
-
-            toast.success('Price updated successfully!');
-            setEditingPrice(null);
-            fetchData();
+            const result = await updateHotDealPrice(
+                deal.product.category,
+                deal.productId,
+                editingPrice.price,
+                editingPrice.originalPrice
+            );
+            if (result.success) {
+                toast.success('Price updated successfully!');
+                setEditingPrice(null);
+                fetchData();
+            } else {
+                toast.error(result.error || 'Failed to update price');
+            }
         } catch (error) {
             console.error('Failed to update price:', error);
             toast.error('Failed to update price');
