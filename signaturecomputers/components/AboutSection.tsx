@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { FiClock, FiUsers, FiAward } from 'react-icons/fi';
@@ -95,6 +96,11 @@ export default function AboutSection() {
                                     <p>
                                         For bulk orders, special configurations, or customized requirements, customers are encouraged to contact us directly for coordinated assistance.
                                     </p>
+                                    <div className="pt-4 text-left">
+                                        <Link href="/about" className="inline-block px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg text-sm transition-colors shadow-sm">
+                                            Read More
+                                        </Link>
+                                    </div>
                                 </div>
                             </div>
 

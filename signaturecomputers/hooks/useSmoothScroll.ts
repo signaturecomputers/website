@@ -10,16 +10,13 @@ export const useSmoothScroll = () => {
     const smoothScrollTo = (e: MouseEvent<HTMLAnchorElement>, targetId: string) => {
         e.preventDefault();
 
-        // 1. If on Home Page
-        if (pathname === '/') {
-            const element = document.getElementById(targetId);
-            if (element) {
-                element.scrollIntoView({ behavior: 'smooth' });
-                // Clean URL hash (ensure it doesn't stay #targetId)
-                window.history.replaceState(null, '', '/');
-            }
+        const element = document.getElementById(targetId);
+        if (element) {
+            element.scrollIntoView({ behavior: 'smooth' });
+            // Clean URL hash (ensure it doesn't stay #targetId)
+            window.history.replaceState(null, '', pathname);
         }
-        // 2. If elsewhere
+        // 2. If element is not on current page
         else {
             router.push(`/?scrollTo=${targetId}`);
         }

@@ -103,7 +103,7 @@ export default function Navbar() {
                         <nav className="flex space-x-6 items-center">
                             <Link href="/" className="text-sm font-semibold text-gray-700 hover:text-blue-600 transition-colors">Home</Link>
                             <Link href="/products" className="text-sm font-semibold text-gray-700 hover:text-blue-600 transition-colors">Products</Link>
-                            <a href="#about-us" onClick={(e) => smoothScrollTo(e, 'about-us')} className="text-sm font-semibold text-gray-700 hover:text-blue-600 transition-colors cursor-pointer">About Us</a>
+                            <Link href="/about" className="text-sm font-semibold text-gray-700 hover:text-blue-600 transition-colors">About Us</Link>
                             {/* Hot Deals Color Fix: Removed red, now matches others */}
                             <Link href="/hot-deals" className="text-sm font-semibold text-gray-700 hover:text-blue-600 transition-colors">Hot Deals</Link>
                             <a href="#contact-footer" onClick={(e) => smoothScrollTo(e, 'contact-footer')} className="text-sm font-semibold text-gray-700 hover:text-blue-600 transition-colors cursor-pointer">Contact</a>
@@ -198,7 +198,7 @@ export default function Navbar() {
                     <div className="px-2 pt-2 pb-3 space-y-1">
                         <Link href="/" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50">Home</Link>
                         <Link href="/products" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50">Products</Link>
-                        <a href="#about-us" onClick={(e) => { setIsOpen(false); smoothScrollTo(e, 'about-us'); }} className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50">About Us</a>
+                        <Link href="/about" onClick={() => setIsOpen(false)} className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50">About Us</Link>
                         <Link href="/deals" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50">Hot Deals</Link>
                         <a href="#contact-footer" onClick={(e) => { setIsOpen(false); smoothScrollTo(e, 'contact-footer'); }} className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50">Contact</a>
 

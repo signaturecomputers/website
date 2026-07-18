@@ -166,7 +166,7 @@ export default function Footer() {
                     <div>
                         <h4 className="text-base font-bold text-white mb-4 border-b border-gray-700/50 pb-1 inline-block">Quick Links</h4>
                         <ul className="space-y-2 text-sm">
-                            <li><a href="#about-us" onClick={(e) => smoothScrollTo(e, 'about-us')} className="hover:text-white hover:pl-1 transition-all cursor-pointer">About Us</a></li>
+                            <li><Link href="/about" className="hover:text-white hover:pl-1 transition-all">About Us</Link></li>
                             <li><Link href="/products" className="hover:text-white hover:pl-1 transition-all">Products</Link></li>
                             <li><a href="#contact-footer" onClick={(e) => smoothScrollTo(e, 'contact-footer')} className="hover:text-white hover:pl-1 transition-all cursor-pointer">Contact Us</a></li>
                             <li><Link href="/hot-deals" className="hover:text-white hover:pl-1 transition-all">Hot Deals</Link></li>
