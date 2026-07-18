@@ -6,7 +6,7 @@ export const BUSINESS_INFO = {
     legalName: 'Signature Computers',
     url: 'https://signaturecomputers.in',
     logo: 'https://signaturecomputers.in/logo-new-s.png',
-    description: 'Authorized computer dealer and reseller for HP, Dell, Lenovo in Chennai, Tamil Nadu, India. Premium laptops, desktops, monitors, and accessories.',
+    description: 'Authorized computer dealer and reseller for HP in Chennai, Tamil Nadu, India. Premium laptops, desktops, monitors, and accessories.',
     // Address
     address: {
         streetAddress: 'Chennai',

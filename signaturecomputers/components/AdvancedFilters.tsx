@@ -353,7 +353,7 @@ export default function AdvancedFilters({
                             />
                         ))
                     ) : (
-                        ['HP', 'Dell', 'Lenovo', 'Asus', 'Acer', 'Apple', 'MSI', 'Samsung'].map((brand) => (
+                        ['HP'].map((brand) => (
                             <Checkbox
                                 key={brand}
                                 label={brand}

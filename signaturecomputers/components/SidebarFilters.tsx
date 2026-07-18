@@ -86,7 +86,7 @@ export default function SidebarFilters({
             <div>
                 <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-4">Brands</h3>
                 <div className="space-y-2">
-                    {['Dell', 'HP', 'Lenovo', 'Apple', 'Asus'].map((brand) => (
+                    {['HP'].map((brand) => (
                         <label key={brand} className="flex items-center space-x-2">
                             <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
                             <span className="text-sm text-gray-700 dark:text-gray-300">{brand}</span>

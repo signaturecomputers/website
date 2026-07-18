@@ -161,7 +161,7 @@ const fieldOptions: Record<string, string[]> = {
     cableLength: ['0.5m', '1m', '1.5m', '2m', '3m', '5m', 'Other'],
     adapterType: ['USB-C Hub', 'HDMI Adapter', 'Power Adapter', 'Travel Adapter', 'Other'],
     wattage: ['30W', '45W', '65W', '90W', '100W', '135W', 'Other'],
-    brand: ['HP', 'Dell', 'Lenovo', 'Apple', 'Universal', 'Other'],
+    brand: ['HP'],
     // Dock options
     dockType: ['USB-C Dock', 'Thunderbolt Dock', 'Laptop Stand Dock', 'Port Replicator', 'Other'],
     ports: ['USB-A', 'USB-C', 'HDMI', 'DisplayPort', 'Ethernet', 'SD Card', 'Multiple'],
