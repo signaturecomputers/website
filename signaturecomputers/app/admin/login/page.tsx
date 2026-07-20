@@ -61,10 +61,6 @@ export default function AdminLogin() {
             }
 
 
-            // Sign out from Firebase Auth immediately after validation
-            // We only use Firebase for credential verification, not for persistent auth state
-            await signOut(adminAuth);
-
             // Update context (session-based, not Firebase auth state)
             login({
                 username: displayName,

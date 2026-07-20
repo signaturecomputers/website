@@ -5,6 +5,8 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { FiSearch, FiLoader } from 'react-icons/fi';
 import { searchProducts, SearchResults, CATEGORY_NAMES } from '@/lib/products';
+import { db } from '@/lib/firebase';
+import { collection, getDocs } from 'firebase/firestore';
 
 interface SearchDropdownProps {
     searchQuery: string;
@@ -25,6 +27,26 @@ export default function SearchDropdown({
     const [results, setResults] = useState<SearchResults>({ products: [], categories: [] });
     const [loading, setLoading] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const [categoryNames, setCategoryNames] = useState<Record<string, string>>(CATEGORY_NAMES);
+
+    useEffect(() => {
+        const fetchCategoryNames = async () => {
+            try {
+                const querySnapshot = await getDocs(collection(db, 'category_metadata'));
+                const updatedNames = { ...CATEGORY_NAMES };
+                querySnapshot.docs.forEach(doc => {
+                    const data = doc.data();
+                    if (data.name && !data.deleted) {
+                        updatedNames[doc.id] = data.name;
+                    }
+                });
+                setCategoryNames(updatedNames);
+            } catch (error) {
+                console.error('Error fetching category metadata for search dropdown:', error);
+            }
+        };
+        fetchCategoryNames();
+    }, []);
 
     // Debounced search
     useEffect(() => {
@@ -148,7 +170,7 @@ export default function SearchDropdown({
                                         <div className="flex items-center gap-2 text-sm">
                                             <span className="text-blue-600 font-semibold">₹{product.price.toLocaleString('en-IN')}</span>
                                             <span className="text-gray-400">•</span>
-                                            <span className="text-gray-500 truncate">{CATEGORY_NAMES[product.category] || product.category}</span>
+                                            <span className="text-gray-500 truncate">{categoryNames[product.category] || product.category}</span>
                                         </div>
                                     </div>
                                 </button>

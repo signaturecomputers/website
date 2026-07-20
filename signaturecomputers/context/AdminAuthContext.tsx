@@ -2,6 +2,8 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { auth } from "@/lib/firebase";
+import { signOut } from "firebase/auth";
 
 interface AdminUser {
     username: string;
@@ -12,7 +14,7 @@ interface AdminAuthContextType {
     adminUser: AdminUser | null;
     gatewayVerified: boolean;
     login: (user: AdminUser) => void;
-    logout: () => void;
+    logout: () => void | Promise<void>;
     verifyGateway: () => void;
     loading: boolean;
 }
@@ -44,7 +46,12 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
         sessionStorage.setItem("admin_user", JSON.stringify(user));
     };
 
-    const logout = () => {
+    const logout = async () => {
+        try {
+            await signOut(auth);
+        } catch (error) {
+            console.error("Firebase signout error:", error);
+        }
         setAdminUser(null);
         setGatewayVerified(false);
         sessionStorage.removeItem("admin_user");

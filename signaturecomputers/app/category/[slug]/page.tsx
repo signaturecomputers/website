@@ -2,6 +2,8 @@ import { Metadata } from 'next';
 import { CATEGORY_NAMES } from '@/lib/products';
 import { categoryIntros } from '@/lib/categoryContent';
 import CategoryProducts from './CategoryProducts';
+import { db } from '@/lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 interface PageProps {
     params: Promise<{ slug: string }>;
@@ -9,7 +11,22 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
     const { slug } = await params;
-    const categoryName = CATEGORY_NAMES[slug] || (slug ? slug.charAt(0).toUpperCase() + slug.slice(1) : 'Category');
+    
+    // Fetch custom category name dynamically
+    let categoryName = CATEGORY_NAMES[slug] || (slug ? slug.charAt(0).toUpperCase() + slug.slice(1) : 'Category');
+    try {
+        const docRef = doc(db, 'category_metadata', slug);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            if (data.name && !data.deleted) {
+                categoryName = data.name;
+            }
+        }
+    } catch (error) {
+        console.error('Error fetching category metadata for SEO:', error);
+    }
+
     const introText = categoryIntros[slug] || `Shop for premium ${categoryName} at Signature Computers in Egmore, Chennai.`;
     const description = introText.length > 150 ? introText.substring(0, 150) + '...' : introText;
 

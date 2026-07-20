@@ -96,6 +96,26 @@ export default function ProductDetails({ id }: ProductDetailsProps) {
     const [quantity, setQuantity] = useState(1);
     const [activeImage, setActiveImage] = useState('');
     const [isSaved, setIsSaved] = useState(false);
+    const [categoryNames, setCategoryNames] = useState<Record<string, string>>(CATEGORY_NAMES);
+
+    useEffect(() => {
+        const fetchCategoryNames = async () => {
+            try {
+                const querySnapshot = await getDocs(collection(db, 'category_metadata'));
+                const updatedNames = { ...CATEGORY_NAMES };
+                querySnapshot.docs.forEach(doc => {
+                    const data = doc.data();
+                    if (data.name && !data.deleted) {
+                        updatedNames[doc.id] = data.name;
+                    }
+                });
+                setCategoryNames(updatedNames);
+            } catch (error) {
+                console.error('Error fetching category metadata in ProductDetails:', error);
+            }
+        };
+        fetchCategoryNames();
+    }, []);
 
     // Windows installation state
     const [isFreeDOS, setIsFreeDOS] = useState(false);
@@ -487,7 +507,7 @@ export default function ProductDetails({ id }: ProductDetailsProps) {
                         href={`/category/${product.category}`}
                         className="inline-flex items-center text-sm font-medium text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors"
                     >
-                        &larr; Back to {CATEGORY_NAMES[product.category] || (product.category ? product.category.charAt(0).toUpperCase() + product.category.slice(1) : 'Category')}
+                        &larr; Back to {categoryNames[product.category] || (product.category ? product.category.charAt(0).toUpperCase() + product.category.slice(1) : 'Category')}
                     </Link>
                 </div>
 

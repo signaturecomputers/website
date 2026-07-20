@@ -48,6 +48,26 @@ export default function CategoryProducts({ slug }: CategoryProductsProps) {
     const [sortBy, setSortBy] = useState('newest');
     const [priceRange, setPriceRange] = useState<[number, number]>([0, 500000]);
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+    const [categoryNames, setCategoryNames] = useState<Record<string, string>>(CATEGORY_NAMES);
+
+    useEffect(() => {
+        const fetchCategoryNames = async () => {
+            try {
+                const querySnapshot = await getDocs(collection(db, 'category_metadata'));
+                const updatedNames = { ...CATEGORY_NAMES };
+                querySnapshot.docs.forEach(doc => {
+                    const data = doc.data();
+                    if (data.name && !data.deleted) {
+                        updatedNames[doc.id] = data.name;
+                    }
+                });
+                setCategoryNames(updatedNames);
+            } catch (error) {
+                console.error('Error fetching category metadata:', error);
+            }
+        };
+        fetchCategoryNames();
+    }, []);
 
     // Fetch products from Firestore
     useEffect(() => {
@@ -256,12 +276,12 @@ export default function CategoryProducts({ slug }: CategoryProductsProps) {
     });
 
     // Format slug for title
-    const title = CATEGORY_NAMES[slug] || (slug ? slug.charAt(0).toUpperCase() + slug.slice(1) : 'Category');
+    const title = categoryNames[slug] || (slug ? slug.charAt(0).toUpperCase() + slug.slice(1) : 'Category');
     const introText = categoryIntros[slug] || `Shop for premium ${title} at Signature Computers in Egmore, Chennai.`;
     const shopByCategoriesList = ['laptops', 'desktops', 'workstations', 'monitors', 'accessories'];
     const shopByCategories = shopByCategoriesList
         .filter(key => key !== slug)
-        .map(key => [key, CATEGORY_NAMES[key] || key.charAt(0).toUpperCase() + key.slice(1)]);
+        .map(key => [key, categoryNames[key] || key.charAt(0).toUpperCase() + key.slice(1)]);
 
     const seoData = getSEOContent(slug, title);
 

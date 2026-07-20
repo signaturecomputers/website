@@ -9,6 +9,8 @@ import AccessoriesSubcategorySection from '@/components/AccessoriesSubcategorySe
 import MemoryStorageSubcategorySection from '@/components/MemoryStorageSubcategorySection';
 import { Product } from '@/lib/products';
 import { FiLoader, FiGrid, FiList } from 'react-icons/fi';
+import { db } from '@/lib/firebase';
+import { collection, getDocs } from 'firebase/firestore';
 
 interface ProductsClientProps {
     initialProducts: Product[];
@@ -141,7 +143,7 @@ export default function ProductsClient({
     });
 
     // Category name mapping for display
-    const categoryNames: { [key: string]: string } = {
+    const [categoryNames, setCategoryNames] = useState<{ [key: string]: string }>({
         'all': 'All Products',
         'laptops': 'Laptops',
         'desktops': 'Desktops',
@@ -165,7 +167,26 @@ export default function ProductsClient({
         'usb-flashdrives': 'USB Flash Drives',
         'dvd-writers': 'Others',
         'webcams': 'Webcam',
-    };
+    });
+
+    useEffect(() => {
+        const fetchCategoryNames = async () => {
+            try {
+                const querySnapshot = await getDocs(collection(db, 'category_metadata'));
+                const updatedNames = { ...categoryNames };
+                querySnapshot.docs.forEach(doc => {
+                    const data = doc.data();
+                    if (data.name && !data.deleted) {
+                        updatedNames[doc.id] = data.name;
+                    }
+                });
+                setCategoryNames(updatedNames);
+            } catch (error) {
+                console.error('Error fetching category metadata for filters:', error);
+            }
+        };
+        fetchCategoryNames();
+    }, []);
 
     // Get display title based on selected category or search query
     const pageTitle = searchQueryText
