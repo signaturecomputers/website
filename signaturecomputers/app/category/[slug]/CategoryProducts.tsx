@@ -224,8 +224,6 @@ export default function CategoryProducts({ slug }: CategoryProductsProps) {
 
                 if (slug === 'webcams') {
                     fetchedProducts = fetchedProducts.filter(p => p.category === 'webcams' || p.productInfo?.othersType === 'webcam');
-                } else if (slug === 'dvd-writers') {
-                    fetchedProducts = fetchedProducts.filter(p => p.category === 'dvd-writers' || p.productInfo?.othersType === 'dvd');
                 } else if (slug === 'others') {
                     fetchedProducts = fetchedProducts.filter(p => p.category === 'others' || p.productInfo?.othersType === 'other');
                 }

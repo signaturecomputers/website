@@ -34,7 +34,6 @@ export default function SidebarFilters({
         { id: 'docks', name: 'Docks' },
         { id: 'hubs', name: 'Hubs' },
         { id: 'usb-flashdrives', name: 'USB Flash Drives' },
-        { id: 'webcams', name: 'Webcam' },
         { id: 'dvd-writers', name: 'Others' },
         { id: 'cctv', name: 'CCTV' },
     ];

@@ -72,8 +72,7 @@ export default function ProductsClient({
     // Accessory subcategory IDs
     const accessorySubcategories = [
         'keyboards', 'mouse', 'keyboard-mouse-combo', 'headphones', 'cables',
-        'power-adapters', 'bags', 'docks', 'hubs', 'usb-flashdrives', 'dvd-writers',
-        'webcams', 'others'
+        'power-adapters', 'bags', 'docks', 'hubs', 'usb-flashdrives', 'dvd-writers'
     ];
 
     // Memory & Storage subcategory IDs
@@ -96,11 +95,6 @@ export default function ProductsClient({
         // Category Filter
         if (selectedCategory !== 'all') {
             const productCategory = (p: Product) => {
-                if (p.category?.toLowerCase() === 'dvd-writers') {
-                    if (p.productInfo?.othersType === 'webcam') return 'webcams';
-                    if (p.productInfo?.othersType === 'other') return 'others';
-                    return 'dvd-writers';
-                }
                 return p.category?.toLowerCase();
             };
 
@@ -166,7 +160,6 @@ export default function ProductsClient({
         'hubs': 'Hubs',
         'usb-flashdrives': 'USB Flash Drives',
         'dvd-writers': 'Others',
-        'webcams': 'Webcam',
     });
 
     useEffect(() => {

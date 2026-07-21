@@ -125,17 +125,11 @@ export default async function ProductsPage(props: {
     if (category !== 'all') {
         const accessorySubcategories = [
             'keyboards', 'mouse', 'keyboard-mouse-combo', 'headphones', 'cables',
-            'power-adapters', 'bags', 'docks', 'hubs', 'usb-flashdrives', 'dvd-writers',
-            'webcams', 'others'
+            'power-adapters', 'bags', 'docks', 'hubs', 'usb-flashdrives', 'dvd-writers'
         ];
         const memoryStorageSubcategories = ['memory', 'storage', 'graphics-cards'];
 
         const getProductCategory = (p: any) => {
-            if (p.category?.toLowerCase() === 'dvd-writers') {
-                if (p.productInfo?.othersType === 'webcam') return 'webcams';
-                if (p.productInfo?.othersType === 'other') return 'others';
-                return 'dvd-writers';
-            }
             return p.category?.toLowerCase();
         };
 
