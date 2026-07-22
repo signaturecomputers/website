@@ -146,6 +146,7 @@ export default async function ProductsPage(props: {
 
     return (
         <ProductsClient 
+            key={`${category}_${search}`}
             initialProducts={products}
             initialCategory={category}
             initialSearch={search}
