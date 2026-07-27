@@ -11,6 +11,7 @@ import { Product } from '@/lib/products';
 import { FiLoader, FiGrid, FiList } from 'react-icons/fi';
 import { db } from '@/lib/firebase';
 import { collection, getDocs } from 'firebase/firestore';
+import Image from 'next/image';
 
 interface ProductsClientProps {
     initialProducts: Product[];
@@ -33,6 +34,7 @@ export default function ProductsClient({
     const [displayProducts, setDisplayProducts] = useState<Product[]>(initialProducts);
     const [loading, setLoading] = useState(false);
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+    const [visibleCount, setVisibleCount] = useState(24);
 
     // Filter State
     const [selectedCategory, setSelectedCategory] = useState(initialCategory);
@@ -44,6 +46,11 @@ export default function ProductsClient({
         return [0, 500000];
     });
     const [searchQueryText, setSearchQueryText] = useState(initialSearch);
+
+    // Reset visible count when filters or sorting change
+    useEffect(() => {
+        setVisibleCount(24);
+    }, [selectedCategory, searchQueryText, sortBy, displayProducts]);
 
     // Initialize from URL when they change
     useEffect(() => {
@@ -282,21 +289,23 @@ export default function ProductsClient({
                             </div>
                         ) : viewMode === 'grid' ? (
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-4 3xl:grid-cols-5 4xl:grid-cols-6 gap-4 lg:gap-6">
-                                {sortedProducts.map((product) => (
+                                {sortedProducts.slice(0, visibleCount).map((product) => (
                                     <ProductCard key={product.id} product={product} />
                                 ))}
                             </div>
                         ) : (
                             <div className="space-y-4">
-                                {sortedProducts.map((product) => (
+                                {sortedProducts.slice(0, visibleCount).map((product) => (
                                     <div
                                         key={product.id}
                                         className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-4 flex gap-4 hover:shadow-md transition-shadow"
                                     >
                                         <div className="w-32 h-32 flex-shrink-0 bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden relative">
-                                            <img
+                                            <Image
                                                 src={product.image || '/placeholder-product.png'}
                                                 alt={product.name}
+                                                fill
+                                                sizes="128px"
                                                 className="w-full h-full object-contain"
                                             />
                                         </div>
@@ -330,6 +339,18 @@ export default function ProductsClient({
                                         </div>
                                     </div>
                                 ))}
+                            </div>
+                        )}
+
+                        {/* Load More Button */}
+                        {visibleCount < sortedProducts.length && (
+                            <div className="flex justify-center mt-8">
+                                <button
+                                    onClick={() => setVisibleCount(prev => prev + 24)}
+                                    className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors shadow-sm cursor-pointer"
+                                >
+                                    Load More Products
+                                </button>
                             </div>
                         )}
                     </div>

@@ -10,14 +10,35 @@ const COLLECTIONS = [
     'workstations', 'cctv'
 ];
 
-export async function getAllProductsServer(): Promise<Product[]> {
+export async function getAllProductsServer(category?: string): Promise<Product[]> {
     try {
         if (!adminDb || typeof adminDb.collection !== 'function') {
             console.warn('Firebase Admin DB is not initialized properly, returning empty array.');
             return [];
         }
 
-        const productPromises = COLLECTIONS.map(async (collectionName) => {
+        let collectionsToFetch = COLLECTIONS;
+
+        if (category && category.toLowerCase() !== 'all') {
+            const catLower = category.toLowerCase();
+            const accessorySubcategories = [
+                'keyboards', 'mouse', 'keyboard-mouse-combo', 'headphones', 'cables',
+                'power-adapters', 'bags', 'docks', 'hubs', 'usb-flashdrives', 'dvd-writers'
+            ];
+            const memoryStorageSubcategories = ['memory', 'storage', 'graphics-cards'];
+
+            if (catLower === 'accessories') {
+                collectionsToFetch = ['accessories', ...accessorySubcategories];
+            } else if (catLower === 'memory-storage' || catLower === 'memory-storage-all') {
+                collectionsToFetch = memoryStorageSubcategories;
+            } else if (COLLECTIONS.includes(catLower)) {
+                collectionsToFetch = [catLower];
+            } else {
+                collectionsToFetch = [catLower];
+            }
+        }
+
+        const productPromises = collectionsToFetch.map(async (collectionName) => {
             try {
                 const snapshot = await adminDb.collection(collectionName).get();
                 return snapshot.docs.map((doc: any) => {

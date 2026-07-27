@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAdminAuth } from "@/context/AdminAuthContext";
 import { adminAuth } from "@/lib/firebaseAdmin";
 import { signInWithEmailAndPassword, signOut } from "firebase/auth";
-import { createAdminUserIfNeeded } from "@/lib/admin-actions";
+import { createAdminUserIfNeeded, checkAdminAuthRateLimit, recordAdminAuthLoginAttempt } from "@/lib/admin-actions";
 
 export default function AdminLogin() {
     const { gatewayVerified, login, loading: authLoading } = useAdminAuth();
@@ -32,6 +32,14 @@ export default function AdminLogin() {
         setLoading(true);
 
         try {
+            // Check rate limit first
+            const rateLimit = await checkAdminAuthRateLimit(email);
+            if (rateLimit.blocked) {
+                setError(`Too many failed attempts. Try again in ${Math.ceil((rateLimit.timeLeft || 0) / 60)} minutes.`);
+                setLoading(false);
+                return;
+            }
+
             // Firebase Auth login
             const userCredential = await signInWithEmailAndPassword(adminAuth, email, password);
             const user = userCredential.user;
@@ -44,6 +52,7 @@ export default function AdminLogin() {
 
             if (!result.success) {
                 await signOut(adminAuth);
+                await recordAdminAuthLoginAttempt(email, false);
                 setError(result.error || "Access denied. Failed to check admin record.");
                 setLoading(false);
                 return;
@@ -55,11 +64,14 @@ export default function AdminLogin() {
             // Verify role is either admin or staff
             if (role !== "admin" && role !== "staff") {
                 await signOut(adminAuth);
+                await recordAdminAuthLoginAttempt(email, false);
                 setError("Access denied. Invalid role assignment.");
                 setLoading(false);
                 return;
             }
 
+            // Clear rate limiting attempts on success
+            await recordAdminAuthLoginAttempt(email, true);
 
             // Update context (session-based, not Firebase auth state)
             login({
@@ -71,6 +83,9 @@ export default function AdminLogin() {
 
         } catch (err: any) {
             console.error("Login error:", err);
+
+            // Record failed attempt
+            await recordAdminAuthLoginAttempt(email, false);
 
             // Make sure to sign out on any error
             await signOut(adminAuth).catch(() => { });

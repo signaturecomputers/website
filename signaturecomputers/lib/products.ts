@@ -1,4 +1,4 @@
-import { collection, getDocs, doc, getDoc, query, where } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, query, where, limit as firestoreLimit } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 const COLLECTIONS = [
@@ -482,14 +482,15 @@ export async function getProductById(id: string): Promise<Product | null> {
 }
 
 // Get related products from same category
-export async function getRelatedProducts(category: string, excludeId: string, limit: number = 4): Promise<Product[]> {
+export async function getRelatedProducts(category: string, excludeId: string, limitCount: number = 4): Promise<Product[]> {
     try {
         const colRef = collection(db, category);
-        const snapshot = await getDocs(colRef);
+        const q = query(colRef, firestoreLimit(limitCount + 1));
+        const snapshot = await getDocs(q);
 
         const products = snapshot.docs
             .filter(doc => doc.id !== excludeId)
-            .slice(0, limit)
+            .slice(0, limitCount)
             .map(doc => {
                 const data = doc.data();
                 return {

@@ -3,6 +3,147 @@
 import { adminDb } from '@/lib/firebase-admin';
 import { revalidatePath } from 'next/cache';
 import bcrypt from 'bcryptjs';
+import { headers } from 'next/headers';
+import { FieldValue } from 'firebase-admin/firestore';
+
+// Helper to get client IP in Next.js Server Actions
+async function getClientIp() {
+    try {
+        const headersList = await headers();
+        const forwardedFor = headersList.get('x-forwarded-for');
+        if (forwardedFor) {
+            return forwardedFor.split(',')[0].trim();
+        }
+        return headersList.get('x-real-ip') || '127.0.0.1';
+    } catch (e) {
+        return '127.0.0.1';
+    }
+}
+
+// Rate limit helper
+async function checkRateLimit(identifier: string, collectionName: string): Promise<{ blocked: boolean; timeLeft?: number }> {
+    try {
+        const ip = await getClientIp();
+        const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
+
+        // Check rate limit for both the input identifier (email/username) and the client IP address
+        const checkIdentifiers = [identifier, ip].filter(Boolean);
+
+        for (const id of checkIdentifiers) {
+            const snapshot = await adminDb.collection(collectionName)
+                .where('identifier', '==', id)
+                .where('timestamp', '>=', fifteenMinutesAgo)
+                .where('success', '==', false)
+                .get();
+
+            if (snapshot.size >= 5) {
+                let newestTimestamp = fifteenMinutesAgo.getTime();
+                snapshot.forEach((doc: any) => {
+                    const data = doc.data();
+                    const ts = data.timestamp?.toDate ? data.timestamp.toDate().getTime() : new Date(data.timestamp).getTime();
+                    if (ts > newestTimestamp) {
+                        newestTimestamp = ts;
+                    }
+                });
+                const blockExpires = newestTimestamp + 15 * 60 * 1000;
+                const timeLeft = Math.max(0, Math.ceil((blockExpires - Date.now()) / 1000));
+                return { blocked: true, timeLeft };
+            }
+        }
+        return { blocked: false };
+    } catch (error) {
+        console.error(`Rate limit check error for ${collectionName}:`, error);
+        return { blocked: false };
+    }
+}
+
+// Record login attempt helper
+async function recordLoginAttempt(identifier: string, collectionName: string, success: boolean) {
+    try {
+        const ip = await getClientIp();
+
+        if (success) {
+            // Successful login clears previous failed attempts
+            const checkIdentifiers = [identifier, ip].filter(Boolean);
+            for (const id of checkIdentifiers) {
+                const snapshot = await adminDb.collection(collectionName)
+                    .where('identifier', '==', id)
+                    .get();
+                if (!snapshot.empty) {
+                    const batch = adminDb.batch();
+                    snapshot.docs.forEach((doc: any) => {
+                        batch.delete(doc.ref);
+                    });
+                    await batch.commit();
+                }
+            }
+        } else {
+            // Record failed attempt for both identifier and IP
+            const batch = adminDb.batch();
+            if (identifier) {
+                const docRef = adminDb.collection(collectionName).doc();
+                batch.set(docRef, {
+                    identifier,
+                    ip,
+                    timestamp: FieldValue.serverTimestamp(),
+                    success: false,
+                    createdAt: new Date().toISOString()
+                });
+            }
+            if (ip && ip !== identifier) {
+                const docRef = adminDb.collection(collectionName).doc();
+                batch.set(docRef, {
+                    identifier: ip,
+                    ip,
+                    timestamp: FieldValue.serverTimestamp(),
+                    success: false,
+                    createdAt: new Date().toISOString()
+                });
+            }
+            await batch.commit();
+        }
+    } catch (error) {
+        console.error(`Record login attempt error for ${collectionName}:`, error);
+    }
+}
+
+// Rate limiting exports for Admin
+export async function checkAdminAuthRateLimit(identifier: string) {
+    return checkRateLimit(identifier, 'admin_login_attempts');
+}
+
+export async function recordAdminAuthLoginAttempt(identifier: string, success: boolean) {
+    return recordLoginAttempt(identifier, 'admin_login_attempts', success);
+}
+
+// Rate limiting exports for Customer
+export async function checkCustomerRateLimit(identifier: string) {
+    return checkRateLimit(identifier, 'customer_login_attempts');
+}
+
+export async function recordCustomerLoginAttempt(identifier: string, success: boolean) {
+    return recordLoginAttempt(identifier, 'customer_login_attempts', success);
+}
+
+// Migration step to hash plaintext passwords with bcrypt
+export async function migratePlaintextPasswords() {
+    try {
+        const usersSnapshot = await adminDb.collection("admin_users").get();
+        for (const docSnap of usersSnapshot.docs) {
+            const data = docSnap.data();
+            const storedPassword = data.password;
+            if (storedPassword && !storedPassword.startsWith('$2a$') && !storedPassword.startsWith('$2b$')) {
+                const hashedPassword = await bcrypt.hash(storedPassword, 10);
+                await adminDb.collection("admin_users").doc(docSnap.id).update({
+                    password: hashedPassword
+                });
+                console.log(`[Migration] Plaintext password for admin ${data.username || docSnap.id} has been hashed.`);
+            }
+        }
+    } catch (err) {
+        console.error("[Migration] Failed to migrate plaintext passwords:", err);
+    }
+}
 
 // Helper to sanitize data (remove undefined)
 const sanitizeData = (data: any) => {
@@ -30,11 +171,24 @@ export async function validateAdminAccessKey(key: string) {
 
 export async function loginAdmin(username: string, password: string) {
     try {
+        // Rate limit check
+        const rateLimit = await checkAdminAuthRateLimit(username);
+        if (rateLimit.blocked) {
+            return {
+                success: false,
+                error: `Too many failed attempts. Try again in ${Math.ceil((rateLimit.timeLeft || 0) / 60)} minutes.`
+            };
+        }
+
+        // Run plaintext password migration if any exist in DB
+        await migratePlaintextPasswords();
+
         const usersSnapshot = await adminDb.collection("admin_users")
             .where("username", "==", username)
             .get();
 
         if (usersSnapshot.empty) {
+            await recordAdminAuthLoginAttempt(username, false);
             return { success: false, error: 'Invalid credentials' };
         }
 
@@ -43,23 +197,10 @@ export async function loginAdmin(username: string, password: string) {
             const data = docSnap.data();
             const storedPassword = data.password;
 
+            // Strict bcrypt.compare verification only
             let isMatch = false;
             if (storedPassword && (storedPassword.startsWith('$2a$') || storedPassword.startsWith('$2b$'))) {
                 isMatch = await bcrypt.compare(password, storedPassword);
-            } else {
-                if (storedPassword === password) {
-                    isMatch = true;
-                    // Auto-hash and save plaintext password
-                    try {
-                        const hashedPassword = await bcrypt.hash(password, 10);
-                        await adminDb.collection("admin_users").doc(docSnap.id).update({
-                            password: hashedPassword
-                        });
-                        console.log(`[Auth] Plaintext password for ${username} has been auto-hashed.`);
-                    } catch (hashErr) {
-                        console.error("[Auth] Failed to hash plaintext password:", hashErr);
-                    }
-                }
             }
 
             if (isMatch) {
@@ -69,6 +210,7 @@ export async function loginAdmin(username: string, password: string) {
         }
 
         if (user) {
+            await recordAdminAuthLoginAttempt(username, true);
             return {
                 success: true,
                 user: {
@@ -77,6 +219,8 @@ export async function loginAdmin(username: string, password: string) {
                 }
             };
         }
+
+        await recordAdminAuthLoginAttempt(username, false);
         return { success: false, error: 'Invalid credentials' };
 
     } catch (error) {

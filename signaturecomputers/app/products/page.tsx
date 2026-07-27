@@ -109,7 +109,7 @@ export default async function ProductsPage(props: {
     const search = typeof searchParams.search === 'string' ? searchParams.search : '';
 
     // Fetch all products server-side using firebase-admin
-    let products = await getAllProductsServer();
+    let products = await getAllProductsServer(category);
 
     // Apply Search Filter server-side
     if (search) {

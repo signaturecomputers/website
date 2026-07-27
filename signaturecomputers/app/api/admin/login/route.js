@@ -1,6 +1,7 @@
 import { adminDb } from "@/lib/firebase-admin";
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
+import { checkAdminAuthRateLimit, recordAdminAuthLoginAttempt, migratePlaintextPasswords } from "@/lib/admin-actions";
 
 export async function POST(req) {
     try {
@@ -13,12 +14,25 @@ export async function POST(req) {
             );
         }
 
+        // Check rate limit first
+        const rateLimit = await checkAdminAuthRateLimit(username);
+        if (rateLimit.blocked) {
+            return NextResponse.json(
+                { error: `Too many failed attempts. Try again in ${Math.ceil((rateLimit.timeLeft || 0) / 60)} minutes.` },
+                { status: 429 }
+            );
+        }
+
+        // Migrate plaintext passwords if any exist
+        await migratePlaintextPasswords();
+
         // Fetch user document from Firestore using Admin SDK
         const usersSnapshot = await adminDb.collection("admin_users")
             .where("username", "==", username)
             .get();
 
         if (usersSnapshot.empty) {
+            await recordAdminAuthLoginAttempt(username, false);
             return NextResponse.json(
                 { error: "Admin not found" },
                 { status: 401 }
@@ -30,23 +44,10 @@ export async function POST(req) {
             const adminData = docSnap.data();
             const storedPassword = adminData.password;
 
+            // Only allow bcrypt check
             let isMatch = false;
             if (storedPassword && (storedPassword.startsWith('$2a$') || storedPassword.startsWith('$2b$'))) {
                 isMatch = await bcrypt.compare(password, storedPassword);
-            } else {
-                if (storedPassword === password) {
-                    isMatch = true;
-                    // Auto-hash and save plaintext password
-                    try {
-                        const hashedPassword = await bcrypt.hash(password, 10);
-                        await adminDb.collection("admin_users").doc(docSnap.id).update({
-                            password: hashedPassword
-                        });
-                        console.log(`[API Auth] Plaintext password for ${username} has been auto-hashed.`);
-                    } catch (hashErr) {
-                        console.error("[API Auth] Failed to hash plaintext password:", hashErr);
-                    }
-                }
             }
 
             if (isMatch) {
@@ -56,11 +57,15 @@ export async function POST(req) {
         }
 
         if (!matchedUser) {
+            await recordAdminAuthLoginAttempt(username, false);
             return NextResponse.json(
                 { error: "Invalid username or password" },
                 { status: 401 }
             );
         }
+
+        // Clear failed attempts on success
+        await recordAdminAuthLoginAttempt(username, true);
 
         return NextResponse.json({
             success: true,

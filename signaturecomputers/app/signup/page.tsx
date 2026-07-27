@@ -9,6 +9,7 @@ import { FcGoogle } from 'react-icons/fc';
 import { createFirestoreUser } from '@/lib/auth-helpers';
 import { useAuth } from '@/context/AuthContext';
 import { isValidPhoneNumber, isValidName, isValidEmail, validatePassword } from '@/lib/form-validation';
+import { checkCustomerRateLimit, recordCustomerLoginAttempt } from '@/lib/admin-actions';
 
 export default function Signup() {
     const [firstName, setFirstName] = useState('');
@@ -67,8 +68,16 @@ export default function Signup() {
             return;
         }
 
+        // 2.5 Check rate limit
         setLoading(true);
         try {
+            const rateLimit = await checkCustomerRateLimit(email);
+            if (rateLimit.blocked) {
+                setError(`Too many failed registration/login attempts. Try again in ${Math.ceil((rateLimit.timeLeft || 0) / 60)} minutes.`);
+                setLoading(false);
+                return;
+            }
+
             // 3. Auth Creation
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
@@ -85,9 +94,16 @@ export default function Signup() {
                 policyAcceptedAt: new Date().toISOString(),
             });
 
+            // Clear attempts on success
+            await recordCustomerLoginAttempt(email, true);
+
             router.push('/');
         } catch (err: any) {
             console.error("Signup Error:", err);
+            
+            // Record failed attempt
+            await recordCustomerLoginAttempt(email, false);
+
             if (err.code === 'auth/email-already-in-use') {
                 setError('Email is already registered. Please login.');
             } else {

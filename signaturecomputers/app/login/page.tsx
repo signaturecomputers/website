@@ -10,6 +10,8 @@ import { createFirestoreUser } from '@/lib/auth-helpers';
 import { useAuth } from '@/context/AuthContext';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 
+import { checkCustomerRateLimit, recordCustomerLoginAttempt } from '@/lib/admin-actions';
+
 function LoginContent() {
     const [identifier, setIdentifier] = useState(''); // Email or Phone
     const [password, setPassword] = useState('');
@@ -56,11 +58,41 @@ function LoginContent() {
                 emailToLogin = userDoc.email;
             }
 
+            // 2.5 Check customer rate limit before calling signInWithEmailAndPassword
+            const rateLimit = await checkCustomerRateLimit(emailToLogin);
+            if (rateLimit.blocked) {
+                setError(`Too many failed login attempts. Try again in ${Math.ceil((rateLimit.timeLeft || 0) / 60)} minutes.`);
+                setLoading(false);
+                return;
+            }
+
             // 3. Login with Email/Password
             await signInWithEmailAndPassword(auth, emailToLogin, password);
+
+            // Record success to clear failed attempts
+            await recordCustomerLoginAttempt(emailToLogin, true);
+
             // Router will redirect via useEffect
         } catch (err: any) {
             console.error("Login Error:", err);
+
+            // Resolve email for recording failed attempt if it was a phone number
+            let emailToRecord = identifier;
+            if (/^[+\d]/.test(identifier) && !identifier.includes('@')) {
+                try {
+                    const q = query(collection(db, 'users'), where('phoneNumber', '==', identifier));
+                    const querySnapshot = await getDocs(q);
+                    if (!querySnapshot.empty) {
+                        emailToRecord = querySnapshot.docs[0].data().email || identifier;
+                    }
+                } catch (lookupErr) {
+                    console.error("Failed to resolve email for rate limit record:", lookupErr);
+                }
+            }
+
+            // Record failed attempt
+            await recordCustomerLoginAttempt(emailToRecord, false);
+
             if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
                 setError('Invalid email/phone or password.');
             } else {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { FiPlus, FiTrash2, FiEdit2, FiSearch, FiFilter, FiEye, FiCheck, FiX } from 'react-icons/fi';
 import { toast } from 'sonner';
 import { updateProductStock } from '@/lib/admin-actions';
+import Image from 'next/image';
 
 interface Product {
     id: string;
@@ -72,6 +73,12 @@ export default function ProductsPage() {
     const [editingStockId, setEditingStockId] = useState<string | null>(null);
     const [editingStockValue, setEditingStockValue] = useState<string>('');
     const [updatingStock, setUpdatingStock] = useState(false);
+    const [visibleCount, setVisibleCount] = useState(50);
+
+    // Reset visible count when filter or search changes
+    useEffect(() => {
+        setVisibleCount(50);
+    }, [selectedCategory, searchQuery]);
 
     useEffect(() => {
         fetchCategories();
@@ -303,30 +310,32 @@ export default function ProductsPage() {
         return count;
     };
 
-    const filteredProducts = products.filter(product => {
-        // 1. Category Filter
-        if (selectedCategory !== 'all') {
-            if (selectedCategory === 'webcams') {
-                if (product.category !== 'webcams' && product.productInfo?.othersType !== 'webcam') {
-                    return false;
+    const filteredProducts = useMemo(() => {
+        return products.filter(product => {
+            // 1. Category Filter
+            if (selectedCategory !== 'all') {
+                if (selectedCategory === 'webcams') {
+                    if (product.category !== 'webcams' && product.productInfo?.othersType !== 'webcam') {
+                        return false;
+                    }
+                } else if (selectedCategory === 'dvd-writers') {
+                    if (product.category !== 'dvd-writers' || product.productInfo?.othersType === 'webcam') {
+                        return false;
+                    }
+                } else {
+                    if (product.category !== selectedCategory) return false;
                 }
-            } else if (selectedCategory === 'dvd-writers') {
-                if (product.category !== 'dvd-writers' || product.productInfo?.othersType === 'webcam') {
-                    return false;
-                }
-            } else {
-                if (product.category !== selectedCategory) return false;
             }
-        }
 
-        // 2. Search Query Filter
-        const query = searchQuery.toLowerCase();
-        return (
-            product.name.toLowerCase().includes(query) ||
-            product.brand.toLowerCase().includes(query) ||
-            (product.productInfo?.partNo || '').toLowerCase().includes(query)
-        );
-    });
+            // 2. Search Query Filter
+            const query = searchQuery.toLowerCase();
+            return (
+                product.name.toLowerCase().includes(query) ||
+                product.brand.toLowerCase().includes(query) ||
+                (product.productInfo?.partNo || '').toLowerCase().includes(query)
+            );
+        });
+    }, [products, selectedCategory, searchQuery]);
 
     // Get unique groups for optgroups
     const groups = Array.from(new Set(categories.map(c => c.group))).filter(Boolean) as string[];
@@ -412,12 +421,12 @@ export default function ProductsPage() {
                                     <td colSpan={selectedCategory === 'all' ? 8 : 7} className="p-8 text-center text-gray-500">No products found{selectedCategory !== 'all' ? ` in ${selectedCategory}` : ''}.</td>
                                 </tr>
                             ) : (
-                                filteredProducts.map((product) => (
+                                filteredProducts.slice(0, visibleCount).map((product) => (
                                     <tr key={product.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                                         <td className="p-4">
-                                            <div className="w-12 h-12 rounded-lg bg-gray-100 dark:bg-gray-700 overflow-hidden flex items-center justify-center">
+                                            <div className="w-12 h-12 rounded-lg bg-gray-100 dark:bg-gray-700 overflow-hidden flex items-center justify-center relative">
                                                 {product.images?.[0] ? (
-                                                    <img src={product.images[0]} alt="" className="w-full h-full object-cover" />
+                                                    <Image src={product.images[0]} alt={product.name} fill sizes="48px" className="object-cover" />
                                                 ) : (
                                                     <span className="text-xs text-gray-400">No Img</span>
                                                 )}
@@ -530,6 +539,16 @@ export default function ProductsPage() {
                         </tbody>
                     </table>
                 </div>
+                {visibleCount < filteredProducts.length && (
+                    <div className="flex justify-center p-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800">
+                        <button
+                            onClick={() => setVisibleCount(prev => prev + 50)}
+                            className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm cursor-pointer"
+                        >
+                            Load More
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
     );

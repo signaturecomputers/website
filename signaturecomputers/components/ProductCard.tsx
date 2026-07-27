@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { FiShoppingCart, FiHeart } from 'react-icons/fi';
+import Image from 'next/image';
 import { useCart } from '@/context/CartContext';
 import { toast } from 'sonner';
 
@@ -75,9 +76,9 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
         >
             <div className="relative aspect-square overflow-hidden bg-gray-100 dark:bg-gray-800">
 
-                <div className="w-full h-full flex items-center justify-center text-gray-400">
+                <div className="w-full h-full flex items-center justify-center text-gray-400 relative">
                     {product.image ? (
-                        <img src={product.image} alt={product.name} className="object-cover w-full h-full group-hover:scale-105 transition-transform" />
+                        <Image src={product.image} alt={product.name} fill sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" className="object-cover w-full h-full group-hover:scale-105 transition-transform" />
                     ) : (
                         <span className="text-sm">No Image</span>
                     )}
