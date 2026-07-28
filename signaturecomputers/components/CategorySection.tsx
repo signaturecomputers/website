@@ -59,13 +59,6 @@ const defaultCategories = [
         link: '/products?category=accessories',
         image: '/images/categories/accessories.png',
     },
-    {
-        id: 'cctv',
-        title: 'CCTV',
-        description: 'Advanced security systems',
-        link: '/products?category=cctv',
-        image: '/images/categories/cctv.jpg',
-    },
 ];
 
 export default function CategorySection() {

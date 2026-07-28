@@ -1,5 +1,5 @@
 import { MetadataRoute } from 'next';
-import { getAllProducts } from '@/lib/products';
+import { getAllProductsServer } from '@/lib/products-server';
 import { BUSINESS_INFO } from '@/lib/seo-schema';
 
 /**
@@ -100,7 +100,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Category pages
     const categories = [
         'laptops', 'desktops', 'workstations', 'monitors', 'memory-storage',
-        'accessories', 'memory', 'storage', 'cctv',
+        'accessories', 'memory', 'storage',
         'keyboards', 'mouse', 'keyboard-mouse-combo', 'headphones',
         'cables', 'power-adapters', 'bags', 'docks', 'hubs', 'usb-flashdrives', 'dvd-writers'
     ];
@@ -116,13 +116,26 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     let productPages: MetadataRoute.Sitemap = [];
 
     try {
-        const products = await getAllProducts();
-        productPages = products.map(product => ({
-            url: `${baseUrl}/product/${product.id}`,
-            lastModified: new Date(),
-            changeFrequency: 'weekly' as const,
-            priority: 0.7,
-        }));
+        const products = await getAllProductsServer();
+        productPages = products.map(product => {
+            const prod = product as any;
+            let lastModified = new Date();
+            if (prod.updatedAt) {
+                try {
+                    lastModified = typeof prod.updatedAt.toDate === 'function'
+                        ? prod.updatedAt.toDate()
+                        : new Date(prod.updatedAt);
+                } catch (e) {
+                    console.warn(`Error parsing updatedAt for product ${product.id}:`, e);
+                }
+            }
+            return {
+                url: `${baseUrl}/product/${product.id}`,
+                lastModified,
+                changeFrequency: 'weekly' as const,
+                priority: 0.7,
+            };
+        });
     } catch (error) {
         console.error('Error fetching products for sitemap:', error);
     }

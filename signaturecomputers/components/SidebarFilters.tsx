@@ -35,8 +35,8 @@ export default function SidebarFilters({
         { id: 'hubs', name: 'Hubs' },
         { id: 'usb-flashdrives', name: 'USB Flash Drives' },
         { id: 'dvd-writers', name: 'Others' },
-        { id: 'cctv', name: 'CCTV' },
     ];
+
 
     return (
         <div className="space-y-8">
