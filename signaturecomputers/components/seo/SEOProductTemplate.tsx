@@ -111,7 +111,7 @@ export default function SEOProductTemplate({ product }: { product: Product }) {
                     Looking for more options? Explore related categories and find exactly what you need.
                 </p>
                 <div className="flex flex-wrap justify-center gap-4">
-                    <Link href={`/category/${product.category.toLowerCase()}`} className="text-blue-600 dark:text-blue-400 font-semibold hover:underline">
+                    <Link href={`/products?category=${product.category.toLowerCase()}`} className="text-blue-600 dark:text-blue-400 font-semibold hover:underline">
                         View All {product.category.charAt(0).toUpperCase() + product.category.slice(1)}
                     </Link>
                     <span className="text-gray-300 hidden sm:inline">|</span>

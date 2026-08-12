@@ -438,7 +438,7 @@ export default function CategoryProducts({ slug }: CategoryProductsProps) {
                     <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-4">Shop by Category</h3>
                     <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
                         {shopByCategories.map(([key, name]) => (
-                            <Link key={key} href={`/category/${key}`} className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                            <Link key={key} href={`/products?category=${key}`} className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                                 {name}
                             </Link>
                         ))}
@@ -467,11 +467,11 @@ export default function CategoryProducts({ slug }: CategoryProductsProps) {
                 <nav aria-label="Related Categories">
                     <h3>Explore More Related Categories in Chennai</h3>
                     <ul>
-                        <li><Link href="/category/laptops">Premium Laptops</Link></li>
-                        <li><Link href="/category/desktops">Desktops</Link></li>
-                        <li><Link href="/category/accessories">Computer Accessories</Link></li>
-                        <li><Link href="/category/monitors">Display Monitors</Link></li>
-                        <li><Link href="/category/memory-storage">Memory & Storage</Link></li>
+                        <li><Link href="/products?category=laptops">Premium Laptops</Link></li>
+                        <li><Link href="/products?category=desktops">Desktops</Link></li>
+                        <li><Link href="/products?category=accessories">Computer Accessories</Link></li>
+                        <li><Link href="/products?category=monitors">Display Monitors</Link></li>
+                        <li><Link href="/products?category=memory-storage">Memory & Storage</Link></li>
                     </ul>
                 </nav>
             </div>

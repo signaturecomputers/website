@@ -18,7 +18,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
             follow: true,
         },
         alternates: {
-            canonical: `${BUSINESS_INFO.url}/category/${slug}`,
+            canonical: `${BUSINESS_INFO.url}/products?category=${slug}`,
         },
     };
 }

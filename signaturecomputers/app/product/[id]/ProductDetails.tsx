@@ -504,7 +504,7 @@ export default function ProductDetails({ id }: ProductDetailsProps) {
                 {/* Breadcrumb / Back to Category Link */}
                 <div className="mb-6">
                     <Link
-                        href={`/category/${product.category}`}
+                        href={`/products?category=${product.category}`}
                         className="inline-flex items-center text-sm font-medium text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors"
                     >
                         &larr; Back to {categoryNames[product.category] || (product.category ? product.category.charAt(0).toUpperCase() + product.category.slice(1) : 'Category')}
@@ -881,7 +881,7 @@ export default function ProductDetails({ id }: ProductDetailsProps) {
                                                         {group.categoryName}
                                                     </h3>
                                                     <button
-                                                        onClick={() => router.push(`/category/${group.category}`)}
+                                                        onClick={() => router.push(`/products?category=${group.category}`)}
                                                         className="text-xs text-blue-600 hover:text-blue-700 font-medium whitespace-nowrap ml-2"
                                                     >
                                                         See more →
@@ -928,11 +928,11 @@ export default function ProductDetails({ id }: ProductDetailsProps) {
                     </p>
                     <p>
                         Explore more products in our{' '}
-                        <a href={`/category/${product.category}`} className="text-blue-600 dark:text-blue-400 hover:underline font-semibold">
+                        <a href={`/products?category=${product.category}`} className="text-blue-600 dark:text-blue-400 hover:underline font-semibold">
                             {product.category.charAt(0).toUpperCase() + product.category.slice(1)} Collection
                         </a>{' '}
                         or check out{' '}
-                        <a href="/category/accessories" className="text-blue-600 dark:text-blue-400 hover:underline font-semibold">
+                        <a href="/products?category=accessories" className="text-blue-600 dark:text-blue-400 hover:underline font-semibold">
                             Accessories
                         </a>{' '}
                         for additional options.

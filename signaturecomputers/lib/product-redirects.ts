@@ -4,7 +4,7 @@
  * Redirection targets can be absolute paths (e.g. `/product/new-id`) or general listings (e.g. `/products`).
  */
 export const PRODUCT_REDIRECTS: Record<string, string> = {
-    'old-laptop-hdx16': '/category/laptops',
+    'old-laptop-hdx16': '/products?category=laptops',
     'hp-pavilion-15-old': '/product/hp-pavilion-15-new',
     'dell-inspiron-14-old': '/product/dell-inspiron-14-new',
     // Fallbacks can be defined dynamically or here

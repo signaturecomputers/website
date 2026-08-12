@@ -18,7 +18,7 @@ export default function ProductSchema({ product }: ProductSchemaProps) {
     const categoryLabel = getCategoryLabel(product.category);
     const breadcrumbSchema = generateBreadcrumbSchema([
         { name: 'Home', url: baseUrl },
-        { name: categoryLabel, url: `${baseUrl}/category/${product.category}` },
+        { name: categoryLabel, url: `${baseUrl}/products?category=${product.category}` },
         { name: product.productInfo?.title || product.name, url: `${baseUrl}/product/${product.id}` },
     ]);
 
