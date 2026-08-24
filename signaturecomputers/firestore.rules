@@ -182,6 +182,16 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    match /category_redirects/{redirectId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /deleted_products/{productId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // ============================================
     // USER MANAGEMENT
     // ============================================

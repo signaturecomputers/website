@@ -302,8 +302,17 @@ export async function deleteProduct(category: string, productId: string) {
     try {
         const collectionName = category === 'hubs' ? 'docks' : category;
         await adminDb.collection(collectionName).doc(productId).delete();
+
+        // Write record to deleted_products collection for 410 handling
+        await adminDb.collection('deleted_products').doc(productId).set({
+            productId,
+            category: collectionName,
+            deletedAt: new Date().toISOString()
+        });
+
         revalidatePath('/admindashboard/products');
         revalidatePath('/products');
+        revalidatePath(`/product/${productId}`);
         return { success: true };
     } catch (error) {
         console.error('Error deleting product:', error);

@@ -65,3 +65,16 @@ export async function getAllProductsServer(category?: string): Promise<Product[]
         return [];
     }
 }
+
+export async function checkDeletedProductServer(id: string): Promise<boolean> {
+    try {
+        if (!adminDb || typeof adminDb.collection !== 'function') {
+            return false;
+        }
+        const docSnap = await adminDb.collection('deleted_products').doc(id).get();
+        return docSnap.exists;
+    } catch (error) {
+        console.error('Error checking deleted product server:', error);
+        return false;
+    }
+}

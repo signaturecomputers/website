@@ -88,6 +88,13 @@ export async function POST(request: NextRequest) {
         console.log('[Admin Delete] Deleting product...');
         await productRef.delete();
 
+        // Write record to deleted_products collection for 410 handling
+        await adminDb.collection('deleted_products').doc(productId).set({
+            productId,
+            category,
+            deletedAt: new Date().toISOString()
+        });
+
         console.log(`[Admin Delete] Product deleted successfully: ${category}/${productId}`);
 
         return NextResponse.json({

@@ -60,12 +60,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             priority: 0.3,
         },
         {
-            url: `${baseUrl}/services`,
-            lastModified: new Date(),
-            changeFrequency: 'monthly',
-            priority: 0.8,
-        },
-        {
             url: `${baseUrl}/about`,
             lastModified: new Date(),
             changeFrequency: 'monthly',
@@ -76,12 +70,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             lastModified: new Date(),
             changeFrequency: 'monthly',
             priority: 0.8,
-        },
-        {
-            url: `${baseUrl}/it-support-chennai`,
-            lastModified: new Date(),
-            changeFrequency: 'monthly',
-            priority: 0.9,
         },
     ];
 

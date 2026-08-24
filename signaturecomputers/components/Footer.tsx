@@ -316,10 +316,8 @@ export default function Footer() {
                 {/* SEO Hidden Navigation */}
                 <nav className="sr-only" aria-label="Secondary Navigation">
                     <ul>
-                        <li><Link href="/services">IT Services</Link></li>
                         <li><Link href="/about">About Signature Computers</Link></li>
                         <li><Link href="/contact">Contact Us</Link></li>
-                        <li><Link href="/it-support-chennai">IT Support Services Chennai</Link></li>
                     </ul>
                 </nav>
             </div>

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { collection, getDocs, doc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, setDoc, deleteDoc, updateDoc, query, where, writeBatch } from 'firebase/firestore';
 
 import { db } from '@/lib/firebase';
 import { toast } from 'sonner';
@@ -278,6 +278,36 @@ export default function CategoriesPage() {
                 toast.success('Category created successfully');
             } else {
                 // Update existing category metadata - save name, description, and image
+                const oldSlug = editingCategory!.id;
+                const newSlug = generateSlug(formData.name);
+
+                if (oldSlug && newSlug && oldSlug !== newSlug) {
+                    // Record category rename mapping oldSlug -> newSlug in category_redirects
+                    await setDoc(doc(db, 'category_redirects', oldSlug), {
+                        oldSlug,
+                        newSlug,
+                        renamedAt: new Date().toISOString()
+                    });
+
+                    // Update any existing category_redirects that pointed to oldSlug (handles A -> B -> C)
+                    try {
+                        const prevChainQuery = query(collection(db, 'category_redirects'), where('newSlug', '==', oldSlug));
+                        const prevChainSnap = await getDocs(prevChainQuery);
+                        if (!prevChainSnap.empty) {
+                            const batch = writeBatch(db);
+                            prevChainSnap.forEach(docSnap => {
+                                batch.update(docSnap.ref, {
+                                    newSlug,
+                                    renamedAt: new Date().toISOString()
+                                });
+                            });
+                            await batch.commit();
+                        }
+                    } catch (chainErr) {
+                        console.error('Error updating chained category redirects:', chainErr);
+                    }
+                }
+
                 await setDoc(doc(db, 'category_metadata', editingCategory!.id), {
                     name: formData.name.trim(),
                     description: formData.description,

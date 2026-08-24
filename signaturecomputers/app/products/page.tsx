@@ -3,6 +3,8 @@ import { categoryIntros } from '@/lib/categoryContent';
 import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { getAllProductsServer } from '@/lib/products-server';
+import { redirect, RedirectType } from 'next/navigation';
+import { resolveCategoryRedirect } from '@/lib/category-redirects';
 import ProductsClient from './ProductsClient';
 
 export const dynamic = 'force-dynamic';
@@ -107,6 +109,14 @@ export default async function ProductsPage(props: {
     const searchParams = await props.searchParams;
     const category = typeof searchParams.category === 'string' ? searchParams.category : 'all';
     const search = typeof searchParams.search === 'string' ? searchParams.search : '';
+
+    // Check for category rename redirects (handles chained renames A -> B -> C)
+    if (category && category.toLowerCase() !== 'all') {
+        const redirectedSlug = await resolveCategoryRedirect(category);
+        if (redirectedSlug && redirectedSlug !== category.toLowerCase()) {
+            redirect(`/products?category=${redirectedSlug}`, RedirectType.replace);
+        }
+    }
 
     // Fetch all products server-side using firebase-admin
     let products = await getAllProductsServer(category);

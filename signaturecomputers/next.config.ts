@@ -16,10 +16,12 @@ const nextConfig: NextConfig = {
   },
   async redirects() {
     return [
-      { source: '/services/index', destination: '/services', permanent: true },
+      { source: '/services', destination: '/products', permanent: true },
+      { source: '/services/index', destination: '/products', permanent: true },
       { source: '/about/index', destination: '/about', permanent: true },
       { source: '/contact/index', destination: '/contact', permanent: true },
-      { source: '/it-support-chennai/index', destination: '/it-support-chennai', permanent: true },
+      { source: '/it-support-chennai', destination: '/products', permanent: true },
+      { source: '/it-support-chennai/index', destination: '/products', permanent: true },
       { source: '/laptop-repair-chennai', destination: '/products', permanent: true },
       { source: '/laptop-repair-chennai/index', destination: '/products', permanent: true },
       { source: '/network-security-services', destination: '/products', permanent: true },
