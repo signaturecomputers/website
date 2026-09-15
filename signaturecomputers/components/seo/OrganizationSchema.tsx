@@ -1,27 +1,14 @@
-'use client';
-
-import { useEffect, useState } from 'react';
 import {
     generateOrganizationSchema,
     generateLocalBusinessSchema,
     generateWebSiteSchema
 } from '@/lib/seo-schema';
 
-import Script from 'next/script';
-
 /**
- * Component that injects Organization, LocalBusiness, and WebSite JSON-LD 
- * structured data into the page for site-wide SEO.
+ * Server-rendered structured data. Rendering this in the initial HTML means
+ * search crawlers do not have to execute client JavaScript to discover it.
  */
 export default function OrganizationSchema() {
-    const [mounted, setMounted] = useState(false);
-
-    useEffect(() => {
-        setMounted(true);
-    }, []);
-
-    if (!mounted) return null;
-
     const organizationSchema = generateOrganizationSchema();
     const localBusinessSchema = generateLocalBusinessSchema();
     const webSiteSchema = generateWebSiteSchema();
@@ -29,7 +16,7 @@ export default function OrganizationSchema() {
     return (
         <>
             {/* Organization Schema */}
-            <Script
+            <script
                 id="organization-schema"
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{
@@ -37,7 +24,7 @@ export default function OrganizationSchema() {
                 }}
             />
             {/* LocalBusiness Schema */}
-            <Script
+            <script
                 id="local-business-schema-layout"
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{
@@ -45,7 +32,7 @@ export default function OrganizationSchema() {
                 }}
             />
             {/* WebSite Schema with Search Action */}
-            <Script
+            <script
                 id="website-schema"
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{

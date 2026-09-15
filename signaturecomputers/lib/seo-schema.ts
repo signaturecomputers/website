@@ -7,33 +7,32 @@ export const BUSINESS_INFO = {
     url: 'https://signaturecomputers.in',
     logo: 'https://signaturecomputers.in/logo-new-s.png',
     description: 'Authorized computer dealer and reseller for HP in Chennai, Tamil Nadu, India. Premium laptops, desktops, monitors, and accessories.',
-    // Address
+    // Keep these details in one place so visible contact information and JSON-LD never disagree.
     address: {
-        streetAddress: 'Chennai',
+        streetAddress: 'Ground Floor, Sri Kalyan Square, 83/52 Pantheon Rd, Egmore',
         addressLocality: 'Chennai',
         addressRegion: 'Tamil Nadu',
-        postalCode: '600001',
+        postalCode: '600008',
         addressCountry: 'IN',
     },
-    // Geo coordinates for Chennai
+    // Storefront coordinates
     geo: {
-        latitude: 13.0827,
-        longitude: 80.2707,
+        latitude: 13.0709244,
+        longitude: 80.2586496,
     },
     // Contact
-    telephone: '+91-44-XXXXXXXX', // Update with actual phone
-    email: 'info@signaturecomputers.in',
-    // Social profiles (update with actual URLs if available)
+    telephone: '+919884285858',
+    email: 'sales@signaturecomputers.com',
     sameAs: [
-        // 'https://www.facebook.com/signaturecomputers',
-        // 'https://www.instagram.com/signaturecomputers',
+        'https://www.facebook.com/profile.php?id=100089983478161',
+        'https://www.instagram.com/signaturecomputers2/',
     ],
     // Brands we deal with
     brands: ['HP'],
     // Opening hours (Mon-Sat 10am-8pm)
     openingHours: 'Mo-Sa 10:00-20:00',
     // Price range
-    priceRange: '₹₹₹',
+    priceRange: '₹₹',
     // Areas served
     areaServed: ['Chennai', 'Tamil Nadu', 'India'],
 };

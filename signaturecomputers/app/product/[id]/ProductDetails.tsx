@@ -11,7 +11,6 @@ import { useAdminAuth } from '@/context/AdminAuthContext';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
 import { isFreeDOSProduct, getWindowsInstallationPrice, getProductOS } from '@/lib/windowsInstallationConfig';
-import ProductSchema from '@/components/seo/ProductSchema';
 import ProductSEOContent from '@/components/ProductSEOContent';
 import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
@@ -499,7 +498,6 @@ export default function ProductDetails({ id }: ProductDetailsProps) {
     return (
         <div className="bg-white dark:bg-black min-h-screen py-12">
             {/* SEO: Product JSON-LD Schema */}
-            <ProductSchema product={product} />
             <div className="w-full px-4 sm:px-8 lg:px-12">
                 {/* Breadcrumb / Back to Category Link */}
                 <div className="mb-6">

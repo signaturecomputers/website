@@ -1,5 +1,4 @@
 import { Metadata } from 'next';
-import LocalBusinessSchema from '../../components/seo/LocalBusinessSchema';
 import Hero from '@/components/Hero';
 import BrandMarquee from '@/components/BrandMarquee';
 import CategorySection from '@/components/CategorySection';
@@ -21,8 +20,6 @@ export const metadata: Metadata = {
 export default function ContactPage() {
     return (
         <div className="flex flex-col min-h-screen bg-white">
-            <LocalBusinessSchema />
-
             {/* Hidden SEO Content for Crawlers */}
             <div className="sr-only">
                 <h1>Contact Signature Computers</h1>

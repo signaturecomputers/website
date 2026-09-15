@@ -6,7 +6,7 @@ import LayoutWrapper from '@/components/LayoutWrapper';
 import { Toaster } from 'sonner';
 import ThemeEffectWrapper from '@/components/ThemeEffectWrapper';
 import OrganizationSchema from '@/components/seo/OrganizationSchema';
-import { Suspense } from 'react';
+import { BUSINESS_INFO } from '@/lib/seo-schema';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -26,7 +26,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'),
+  metadataBase: new URL(BUSINESS_INFO.url),
   title: {
     default: 'Signature Computers | Premium Tech Store',
     template: '%s | Signature Computers',
@@ -61,7 +61,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Signature Computers | Laptop, Desktop & PC Store in Egmore, Chennai',
     description: 'Buy new and refurbished laptops, desktops, workstations, monitors, and computer accessories at Signature Computers, Egmore, Chennai. Authorized HP partner with genuine parts, warranty, and doorstep service.',
-    images: ['/twitter-image.jpg'], // Fallback to OG image if this specific one doesn't exist
+    images: ['/og-image.png'],
   },
   robots: {
     index: true,

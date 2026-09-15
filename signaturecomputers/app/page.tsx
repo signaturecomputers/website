@@ -9,7 +9,6 @@ import AuthModal from '@/components/AuthModal';
 import SEOContentSection from '@/components/SEOContentSection';
 import { Metadata } from 'next';
 import { BUSINESS_INFO } from '@/lib/seo-schema';
-import LocalBusinessSchema from '@/components/seo/LocalBusinessSchema';
 
 export const metadata: Metadata = {
   title: 'Signature Computers | Laptop, Desktop & PC Store in Egmore, Chennai',
@@ -26,7 +25,6 @@ export const metadata: Metadata = {
 export default function Home() {
   return (
     <div className="flex flex-col min-h-screen bg-white">
-      <LocalBusinessSchema />
       <ScrollHandler />
       <AuthModal />
       <Hero />
