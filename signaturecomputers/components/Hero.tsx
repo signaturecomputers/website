@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { FiShoppingCart, FiChevronLeft, FiChevronRight, FiArrowRight } from 'react-icons/fi';
+import { FiShoppingCart, FiChevronLeft, FiChevronRight, FiArrowRight, FiPlay, FiPause, FiVolume2, FiVolumeX } from 'react-icons/fi';
 import { HiOutlineFire } from 'react-icons/hi';
 import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -13,6 +13,135 @@ import { getProductById, Product } from '@/lib/products';
 interface HeroImageData {
     imageUrl: string;
     alt: string;
+    mediaType?: 'image' | 'video';
+}
+
+function isVideoUrl(url: string, mediaType?: string) {
+    if (mediaType === 'video') return true;
+    if (mediaType === 'image') return false;
+    if (!url) return false;
+    const cleanUrl = url.split('?')[0].toLowerCase();
+    return cleanUrl.endsWith('.mp4') || 
+           cleanUrl.endsWith('.webm') || 
+           cleanUrl.endsWith('.ogg') || 
+           cleanUrl.endsWith('.mov') || 
+           cleanUrl.endsWith('.m4v') ||
+           url.includes('/video/upload/');
+}
+
+interface HeroVideoSlideProps {
+    src: string;
+    alt?: string;
+    isActive: boolean;
+    onVideoPlayStateChange?: (playing: boolean) => void;
+    onVideoEnded?: () => void;
+}
+
+function HeroVideoSlide({ src, alt, isActive, onVideoPlayStateChange, onVideoEnded }: HeroVideoSlideProps) {
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const [isPlaying, setIsPlaying] = useState(true);
+    const [isMuted, setIsMuted] = useState(true);
+
+    useEffect(() => {
+        if (!videoRef.current) return;
+        if (isActive) {
+            videoRef.current.currentTime = 0;
+            videoRef.current.play().then(() => {
+                setIsPlaying(true);
+                onVideoPlayStateChange?.(true);
+            }).catch(() => {
+                // If autoplay is blocked by browser policy
+                setIsPlaying(false);
+                onVideoPlayStateChange?.(false);
+            });
+        } else {
+            videoRef.current.pause();
+            setIsPlaying(false);
+            onVideoPlayStateChange?.(false);
+        }
+    }, [isActive]);
+
+    const togglePlay = (e?: React.MouseEvent) => {
+        if (e) e.stopPropagation();
+        if (!videoRef.current) return;
+        if (videoRef.current.paused) {
+            videoRef.current.play().then(() => {
+                setIsPlaying(true);
+                onVideoPlayStateChange?.(true);
+            }).catch(console.error);
+        } else {
+            videoRef.current.pause();
+            setIsPlaying(false);
+            onVideoPlayStateChange?.(false);
+        }
+    };
+
+    const toggleMute = (e?: React.MouseEvent) => {
+        if (e) e.stopPropagation();
+        if (!videoRef.current) return;
+        const nextMuted = !videoRef.current.muted;
+        videoRef.current.muted = nextMuted;
+        setIsMuted(nextMuted);
+    };
+
+    const handleEnded = () => {
+        setIsPlaying(false);
+        onVideoPlayStateChange?.(false);
+        onVideoEnded?.();
+    };
+
+    return (
+        <div className="relative w-full h-full flex items-center justify-center overflow-hidden bg-white">
+            <video
+                ref={videoRef}
+                src={src}
+                playsInline
+                muted={isMuted}
+                autoPlay
+                onClick={togglePlay}
+                onPlay={() => {
+                    setIsPlaying(true);
+                    onVideoPlayStateChange?.(true);
+                }}
+                onPause={() => {
+                    setIsPlaying(false);
+                    onVideoPlayStateChange?.(false);
+                }}
+                onEnded={handleEnded}
+                className="w-full h-full object-fill cursor-pointer"
+            />
+
+            {/* Video Controls Overlay */}
+            <div 
+                className="absolute bottom-4 right-4 sm:bottom-6 sm:right-6 z-30 flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-2.5 py-1.5 rounded-full border border-white/20 shadow-lg transition-all"
+                onClick={(e) => e.stopPropagation()}
+                onMouseDown={(e) => e.stopPropagation()}
+                onTouchStart={(e) => e.stopPropagation()}
+            >
+                {/* Play / Pause Button */}
+                <button
+                    type="button"
+                    onClick={togglePlay}
+                    className="p-1.5 rounded-full bg-white/10 hover:bg-white/25 text-white transition-all hover:scale-105 active:scale-95 focus:outline-none"
+                    aria-label={isPlaying ? 'Pause video' : 'Play video'}
+                    title={isPlaying ? 'Pause' : 'Play'}
+                >
+                    {isPlaying ? <FiPause className="w-3.5 h-3.5" /> : <FiPlay className="w-3.5 h-3.5 translate-x-0.5" />}
+                </button>
+
+                {/* Mute / Unmute Button */}
+                <button
+                    type="button"
+                    onClick={toggleMute}
+                    className="p-1.5 rounded-full bg-white/10 hover:bg-white/25 text-white transition-all hover:scale-105 active:scale-95 focus:outline-none"
+                    aria-label={isMuted ? 'Unmute video' : 'Mute video'}
+                    title={isMuted ? 'Unmute' : 'Mute'}
+                >
+                    {isMuted ? <FiVolumeX className="w-3.5 h-3.5 text-gray-300" /> : <FiVolume2 className="w-3.5 h-3.5 text-white" />}
+                </button>
+            </div>
+        </div>
+    );
 }
 
 export default function Hero() {
@@ -31,6 +160,7 @@ export default function Hero() {
     const [hotDeals, setHotDeals] = useState<Product[]>([]);
     const [currentSlide, setCurrentSlide] = useState(0);
     const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+    const [isVideoPlaying, setIsVideoPlaying] = useState(false);
     const [loading, setLoading] = useState(true);
     const [isTransitioning, setIsTransitioning] = useState(false);
     const slideRef = useRef<HTMLDivElement>(null);
@@ -110,6 +240,15 @@ export default function Hero() {
     const edmCount = edmImages.length;
     const totalSlides = 1 + edmCount + hotDeals.length;
 
+    // Check if the current active slide is a video
+    const activeEdmIndex = currentSlide >= 1 && currentSlide <= edmCount ? currentSlide - 1 : null;
+    const isCurrentSlideVideo = activeEdmIndex !== null && isVideoUrl(edmImages[activeEdmIndex]?.imageUrl, edmImages[activeEdmIndex]?.mediaType);
+
+    // Reset video playing state when slide changes
+    useEffect(() => {
+        setIsVideoPlaying(false);
+    }, [currentSlide]);
+
     // Navigation with fade transition
     const goToSlide = useCallback((index: number) => {
         if (isTransitioning) return;
@@ -128,14 +267,37 @@ export default function Hero() {
         goToSlide((currentSlide - 1 + totalSlides) % totalSlides);
     }, [totalSlides, currentSlide, goToSlide]);
 
-    // Auto-slide every 6 seconds
+    // Handle video completion: when video finishes, smoothly move to next slide
+    const handleVideoEnded = useCallback(() => {
+        setTimeout(() => {
+            nextSlide();
+        }, 1200);
+    }, [nextSlide]);
+
+    // 1. Timer for Video Slides:
+    // - While video is PLAYING: timer is suspended so user can watch the video completely without interruptions.
+    // - When video is PAUSED: 6-second countdown timer starts to advance to the next slide.
     useEffect(() => {
-        if (!isAutoPlaying || totalSlides <= 1) return;
+        if (!isCurrentSlideVideo || isVideoPlaying || totalSlides <= 1) {
+            return;
+        }
+
+        const timer = setTimeout(() => {
+            nextSlide();
+        }, 6000);
+
+        return () => clearTimeout(timer);
+    }, [isCurrentSlideVideo, isVideoPlaying, currentSlide, totalSlides, nextSlide]);
+
+    // 2. Timer for Standard Slides (Static Hero, EDM Images, Hot Deals): 6-second auto-slide
+    useEffect(() => {
+        if (isCurrentSlideVideo || !isAutoPlaying || totalSlides <= 1) return;
+
         const interval = setInterval(nextSlide, 6000);
         return () => clearInterval(interval);
-    }, [nextSlide, isAutoPlaying, totalSlides]);
+    }, [nextSlide, isAutoPlaying, totalSlides, isCurrentSlideVideo, currentSlide]);
 
-    // Pause auto-play on hover
+    // Pause auto-play on hover for non-video slides
     const handleMouseEnter = () => setIsAutoPlaying(false);
     const handleMouseLeave = () => setIsAutoPlaying(true);
 
@@ -286,27 +448,44 @@ export default function Hero() {
                     </div>
                 </div>
 
-                {/* EDM Images Slides (indices 1 to edmCount) */}
+                {/* EDM Media Slides (indices 1 to edmCount) */}
                 {edmImages.map((edm, index) => {
                     const slideIndex = index + 1;
+                    const isVideo = isVideoUrl(edm.imageUrl, edm.mediaType);
+                    const isActive = currentSlide === slideIndex;
+
                     return (
                         <div
                             key={`edm-${index}`}
-                            className={`absolute inset-0 w-full h-full bg-white transition-all duration-600 ease-in-out ${currentSlide === slideIndex
+                            className={`absolute inset-0 w-full h-full bg-white transition-all duration-600 ease-in-out ${isActive
                                 ? 'opacity-100 z-10 pointer-events-auto'
                                 : 'opacity-0 z-0 pointer-events-none'
                                 }`}
                         >
-                            <div className="relative w-full h-full flex items-center justify-center">
-                                <Image
+                            {isVideo ? (
+                                <HeroVideoSlide
                                     src={edm.imageUrl}
-                                    alt={edm.alt || `EDM Offer ${index + 1}`}
-                                    fill
-                                    className="object-fill pointer-events-none"
-                                    priority={index === 0}
-                                    draggable={false}
+                                    alt={edm.alt}
+                                    isActive={isActive}
+                                    onVideoPlayStateChange={(playing) => {
+                                        if (isActive) {
+                                            setIsVideoPlaying(playing);
+                                        }
+                                    }}
+                                    onVideoEnded={handleVideoEnded}
                                 />
-                            </div>
+                            ) : (
+                                <div className="relative w-full h-full flex items-center justify-center bg-white">
+                                    <Image
+                                        src={edm.imageUrl}
+                                        alt={edm.alt || `EDM Offer ${index + 1}`}
+                                        fill
+                                        className="object-fill pointer-events-none"
+                                        priority={index === 0}
+                                        draggable={false}
+                                    />
+                                </div>
+                            )}
                         </div>
                     );
                 })}

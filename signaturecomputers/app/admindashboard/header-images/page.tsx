@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import Image from 'next/image';
-import { FiUpload, FiTrash2, FiPlus, FiEdit2, FiSave, FiX, FiMove, FiImage } from 'react-icons/fi';
+import { FiUpload, FiTrash2, FiPlus, FiEdit2, FiSave, FiX, FiMove, FiImage, FiVideo } from 'react-icons/fi';
 import { toast } from 'sonner';
 
 interface BrandLogo {
@@ -16,6 +16,7 @@ interface BrandLogo {
 interface HeroImageData {
     imageUrl: string;
     alt: string;
+    mediaType?: 'image' | 'video';
 }
 
 const DEFAULT_BRANDS: BrandLogo[] = [
@@ -65,8 +66,22 @@ export default function HeaderImagesPage() {
     const heroFileRef = useRef<HTMLInputElement>(null);
     const aboutFileRef = useRef<HTMLInputElement>(null);
     const edmFileRef = useRef<HTMLInputElement>(null);
+    const edmVideoFileRef = useRef<HTMLInputElement>(null);
     const brandFileRef = useRef<HTMLInputElement>(null);
     const editBrandFileRef = useRef<HTMLInputElement>(null);
+
+    const isVideoUrl = (url: string, mediaType?: string) => {
+        if (mediaType === 'video') return true;
+        if (mediaType === 'image') return false;
+        if (!url) return false;
+        const cleanUrl = url.split('?')[0].toLowerCase();
+        return cleanUrl.endsWith('.mp4') || 
+               cleanUrl.endsWith('.webm') || 
+               cleanUrl.endsWith('.ogg') || 
+               cleanUrl.endsWith('.mov') || 
+               cleanUrl.endsWith('.m4v') ||
+               url.includes('/video/upload/');
+    };
 
     // Fetch data on mount
     useEffect(() => {
@@ -210,42 +225,44 @@ export default function HeaderImagesPage() {
         }
     };
 
-    // EDM Images Handlers
-    const handleEdmUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    // EDM Images & Videos Handlers
+    const handleEdmUpload = async (e: React.ChangeEvent<HTMLInputElement>, mediaType: 'image' | 'video' = 'image') => {
         const file = e.target.files?.[0];
         if (!file) return;
 
         setEdmUploading(true);
         try {
             const imageUrl = await uploadToCloudinary(file);
-            const newImage = { imageUrl, alt: 'Signature Computers EDM' };
-            const updatedImages = [...edmImages, newImage];
+            const newMedia: HeroImageData = { 
+                imageUrl, 
+                alt: mediaType === 'video' ? 'Signature Computers EDM Video' : 'Signature Computers EDM',
+                mediaType 
+            };
+            const updatedImages = [...edmImages, newMedia];
             await setDoc(doc(db, 'header_settings', 'edm_images'), { images: updatedImages });
             setEdmImages(updatedImages);
-            toast.success('EDM image added successfully!');
+            toast.success(mediaType === 'video' ? 'EDM video added successfully!' : 'EDM image added successfully!');
         } catch (error) {
-            console.error('Error uploading EDM image:', error);
-            toast.error('Failed to upload EDM image');
+            console.error('Error uploading EDM media:', error);
+            toast.error(`Failed to upload EDM ${mediaType}`);
         } finally {
             setEdmUploading(false);
-            // Reset input so the same file can be selected again
-            if (edmFileRef.current) {
-                edmFileRef.current.value = '';
-            }
+            if (edmFileRef.current) edmFileRef.current.value = '';
+            if (edmVideoFileRef.current) edmVideoFileRef.current.value = '';
         }
     };
 
     const handleEdmDelete = async (index: number) => {
-        if (!confirm('Are you sure you want to remove this EDM image?')) return;
+        if (!confirm('Are you sure you want to remove this EDM item?')) return;
 
         try {
             const updatedImages = edmImages.filter((_, i) => i !== index);
             await setDoc(doc(db, 'header_settings', 'edm_images'), { images: updatedImages });
             setEdmImages(updatedImages);
-            toast.success('EDM image removed');
+            toast.success('EDM item removed');
         } catch (error) {
-            console.error('Error removing EDM image:', error);
-            toast.error('Failed to remove EDM image');
+            console.error('Error removing EDM item:', error);
+            toast.error('Failed to remove EDM item');
         }
     };
 
@@ -440,60 +457,97 @@ export default function HeaderImagesPage() {
                 </div>
             </div>
 
-            {/* EDM Images Section */}
+            {/* EDM Images & Videos Section */}
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                <div className="flex justify-between items-center mb-4">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
                     <div>
-                        <h2 className="text-lg font-semibold dark:text-white">EDM Images (Hero Carousel)</h2>
-                        <p className="text-sm text-gray-500">These images are displayed as slides in the hero carousel, right after the main hero slide.</p>
+                        <h2 className="text-lg font-semibold dark:text-white">EDM Images & Videos (Hero Carousel)</h2>
+                        <p className="text-sm text-gray-500">These images and videos are displayed as slides in the hero carousel, right after the main hero slide.</p>
                     </div>
-                    <div>
+                    <div className="flex items-center gap-2 flex-wrap">
                         <input
                             ref={edmFileRef}
                             type="file"
                             accept="image/*"
                             className="hidden"
-                            onChange={handleEdmUpload}
+                            onChange={(e) => handleEdmUpload(e, 'image')}
                         />
                         <button
                             onClick={() => edmFileRef.current?.click()}
                             disabled={edmUploading}
-                            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 text-sm font-medium"
                         >
-                            <FiPlus className="mr-2" />
+                            <FiPlus className="mr-1.5" />
                             {edmUploading ? 'Uploading...' : 'Add EDM Image'}
+                        </button>
+
+                        <input
+                            ref={edmVideoFileRef}
+                            type="file"
+                            accept="video/*"
+                            className="hidden"
+                            onChange={(e) => handleEdmUpload(e, 'video')}
+                        />
+                        <button
+                            onClick={() => edmVideoFileRef.current?.click()}
+                            disabled={edmUploading}
+                            className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 text-sm font-medium"
+                        >
+                            <FiVideo className="mr-1.5" />
+                            {edmUploading ? 'Uploading...' : 'Add EDM Video'}
                         </button>
                     </div>
                 </div>
 
                 {edmImages.length === 0 ? (
                     <div className="text-center py-8 text-gray-500 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-dashed border-gray-300 dark:border-gray-600">
-                        No EDM images added yet. Click "Add EDM Image" to upload one.
+                        No EDM images or videos added yet. Click "Add EDM Image" or "Add EDM Video" to upload.
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {edmImages.map((img, index) => (
-                            <div key={index} className="bg-gray-50 dark:bg-gray-700 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600">
-                                <div className="relative aspect-video bg-gray-100 dark:bg-gray-800">
-                                    <Image
-                                        src={img.imageUrl}
-                                        alt={`EDM Image ${index + 1}`}
-                                        fill
-                                        className="object-contain"
-                                    />
+                        {edmImages.map((media, index) => {
+                            const isVideo = isVideoUrl(media.imageUrl, media.mediaType);
+                            return (
+                                <div key={index} className="bg-gray-50 dark:bg-gray-700 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600 flex flex-col">
+                                    <div className="relative aspect-video bg-black flex items-center justify-center overflow-hidden">
+                                        {isVideo ? (
+                                            <video
+                                                src={media.imageUrl}
+                                                controls
+                                                playsInline
+                                                className="w-full h-full object-contain"
+                                            />
+                                        ) : (
+                                            <Image
+                                                src={media.imageUrl}
+                                                alt={`EDM Image ${index + 1}`}
+                                                fill
+                                                className="object-contain"
+                                            />
+                                        )}
+                                    </div>
+                                    <div className="p-3 flex justify-between items-center bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 mt-auto">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Slide {index + 1}</span>
+                                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                                                isVideo 
+                                                    ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300' 
+                                                    : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
+                                            }`}>
+                                                {isVideo ? 'Video' : 'Image'}
+                                            </span>
+                                        </div>
+                                        <button
+                                            onClick={() => handleEdmDelete(index)}
+                                            className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
+                                            title="Remove item"
+                                        >
+                                            <FiTrash2 size={18} />
+                                        </button>
+                                    </div>
                                 </div>
-                                <div className="p-3 flex justify-between items-center bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-                                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Slide {index + 1}</span>
-                                    <button
-                                        onClick={() => handleEdmDelete(index)}
-                                        className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
-                                        title="Remove image"
-                                    >
-                                        <FiTrash2 size={18} />
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
             </div>

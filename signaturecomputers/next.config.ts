@@ -26,6 +26,8 @@ const nextConfig: NextConfig = {
       { source: '/laptop-repair-chennai/index', destination: '/products', permanent: true },
       { source: '/network-security-services', destination: '/products', permanent: true },
       { source: '/network-security-services/index', destination: '/products', permanent: true },
+      // Legacy category URL reported by Google Search Console.
+      { source: '/product-category/backpack', destination: '/products?category=bags', permanent: true },
       { source: '/category/accessories', destination: '/products?category=accessories', permanent: true },
       { source: '/category/bags', destination: '/products?category=bags', permanent: true },
       { source: '/category/cables', destination: '/products?category=cables', permanent: true },
