@@ -5,10 +5,10 @@ import { useSearchParams } from 'next/navigation';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import Link from 'next/link';
-import { FiPlus, FiTrash2, FiEdit2, FiSearch, FiFilter, FiEye, FiCheck, FiX, FiArchive } from 'react-icons/fi';
+import { FiPlus, FiTrash2, FiEdit2, FiSearch, FiFilter, FiEye, FiCheck, FiX, FiArchive, FiClock } from 'react-icons/fi';
 import { toast } from 'sonner';
 import { updateProductStock, moveToOldMaterial } from '@/lib/admin-actions';
-import { isProductOldMaterial } from '@/lib/product-utils';
+import { isProductOldMaterial, getRestoredGracePeriodInfo } from '@/lib/product-utils';
 import Image from 'next/image';
 
 interface Product {
@@ -22,6 +22,7 @@ interface Product {
     isOldMaterial?: boolean;
     zeroStockDate?: string | null;
     oldMaterialDate?: string | null;
+    restoredFromOldMaterialDate?: string | null;
     updatedAt?: string | null;
     createdAt?: string | null;
     [key: string]: any;
@@ -243,6 +244,12 @@ export default function ProductsPage() {
     };
 
     const handleMoveToOld = async (productId: string, productCategory: string, productName: string) => {
+        const prod = products.find(p => p.id === productId);
+        if (prod && prod.stock > 0) {
+            toast.error(`Cannot move "${productName}" to Old Material because it is currently in stock (${prod.stock} in stock). Only products with 0 stock can be moved.`);
+            return;
+        }
+
         if (!confirm(`Are you sure you want to move "${productName}" to Old Material (End of Life)? It will be moved to the Old Material section.`)) {
             return;
         }
@@ -253,7 +260,7 @@ export default function ProductsPage() {
             if (result.success) {
                 setProducts(prev => prev.map(p => {
                     if (p.id === productId) {
-                        return { ...p, isOldMaterial: true, oldMaterialDate: new Date().toISOString() };
+                        return { ...p, isOldMaterial: true, oldMaterialDate: new Date().toISOString(), restoredFromOldMaterialDate: null };
                     }
                     return p;
                 }));
@@ -479,106 +486,122 @@ export default function ProductsPage() {
                                     <td colSpan={selectedCategory === 'all' ? 9 : 8} className="p-8 text-center text-gray-500">No active products found{selectedCategory !== 'all' ? ` in ${selectedCategory}` : ''}.</td>
                                 </tr>
                             ) : (
-                                filteredProducts.slice(0, visibleCount).map((product) => (
-                                    <tr key={product.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                                        <td className="p-4">
-                                            <div className="w-12 h-12 rounded-lg bg-gray-100 dark:bg-gray-700 overflow-hidden flex items-center justify-center relative">
-                                                {product.images?.[0] ? (
-                                                    <Image src={product.images[0]} alt={product.name} fill sizes="48px" className="object-cover" />
-                                                ) : (
-                                                    <span className="text-xs text-gray-400">No Img</span>
-                                                )}
-                                            </div>
-                                        </td>
-                                        <td className="p-4 font-medium dark:text-gray-200">{product.name}</td>
-                                        <td className="p-4 text-gray-500 dark:text-gray-400 font-mono text-xs">
-                                            {product.productInfo?.partNo || '-'}
-                                        </td>
-                                        {selectedCategory === 'all' && (
-                                            <td className="p-4">
-                                                <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 capitalize">
-                                                    {categories.find(c => c.id === product.category)?.name || product.category}
-                                                </span>
-                                            </td>
-                                        )}
-                                        <td className="p-4 text-gray-500 dark:text-gray-400">{product.brand}</td>
-                                        <td className="p-4 font-medium dark:text-gray-200">₹{product.price.toLocaleString('en-IN')}</td>
-                                        
-                                        {/* Stock cell */}
-                                        <td className="p-4">
-                                            {editingStockId === product.id ? (
-                                                <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-                                                    <input
-                                                        type="number"
-                                                        value={editingStockValue}
-                                                        onChange={(e) => setEditingStockValue(e.target.value)}
-                                                        onKeyDown={(e) => {
-                                                             if (e.key === 'Enter') {
-                                                                handleSaveStock(product.id, product.category || selectedCategory);
-                                                            } else if (e.key === 'Escape') {
-                                                                handleCancelStock();
-                                                            }
-                                                        }}
-                                                        disabled={updatingStock}
-                                                        className="w-16 px-1.5 py-0.5 text-sm border rounded dark:bg-gray-900 dark:border-gray-700 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                                        min="0"
-                                                        autoFocus
-                                                    />
-                                                    <button
-                                                        onClick={() => handleSaveStock(product.id, product.category || selectedCategory)}
-                                                        disabled={updatingStock}
-                                                        className="p-1 text-green-600 hover:bg-green-50 rounded dark:hover:bg-green-900/20 transition-colors disabled:opacity-50"
-                                                        title="Save"
-                                                    >
-                                                        <FiCheck className="w-4 h-4" />
-                                                    </button>
-                                                    <button
-                                                        onClick={handleCancelStock}
-                                                        disabled={updatingStock}
-                                                        className="p-1 text-red-600 hover:bg-red-50 rounded dark:hover:bg-red-900/20 transition-colors disabled:opacity-50"
-                                                        title="Cancel"
-                                                    >
-                                                        <FiX className="w-4 h-4" />
-                                                    </button>
-                                                </div>
-                                            ) : (
-                                                <div className="flex items-center gap-2 group/stock">
-                                                    <span 
-                                                        onClick={() => startEditStock(product.id, product.stock)}
-                                                        className={`px-2 py-1 rounded-full text-xs font-medium cursor-pointer transition-all hover:ring-1 hover:ring-blue-400 ${
-                                                            product.stock > 5
-                                                                ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                                                                : product.stock > 0
-                                                                    ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-                                                                    : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                                                        }`}
-                                                        title="Click to edit stock"
-                                                    >
-                                                        {product.stock} in stock
-                                                    </span>
-                                                    <button
-                                                        onClick={() => startEditStock(product.id, product.stock)}
-                                                        className="opacity-0 group-hover/stock:opacity-100 p-1 text-gray-400 hover:text-blue-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-all"
-                                                        title="Quick edit stock"
-                                                    >
-                                                        <FiEdit2 className="w-3.5 h-3.5" />
-                                                    </button>
-                                                </div>
-                                            )}
-                                        </td>
+                                    filteredProducts.slice(0, visibleCount).map((product) => {
+                                        const grace = getRestoredGracePeriodInfo(product);
+                                        const isOutOfStock = (product.stock ?? 0) <= 0;
 
-                                        {/* Button Move to Old situated in between Stock and Eye button */}
-                                        <td className="p-4 text-center">
-                                            <button
-                                                onClick={() => handleMoveToOld(product.id, product.category || selectedCategory, product.name)}
-                                                disabled={movingToOldId === product.id}
-                                                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 dark:bg-amber-900/20 dark:text-amber-300 dark:border-amber-800/50 rounded-lg transition-colors shadow-xs disabled:opacity-50 cursor-pointer"
-                                                title="Move product to Old Material (End of Life)"
-                                            >
-                                                <FiArchive className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                                                <span>{movingToOldId === product.id ? 'Moving...' : 'Move to Old'}</span>
-                                            </button>
-                                        </td>
+                                        return (
+                                            <tr key={product.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                                                <td className="p-4">
+                                                    <div className="w-12 h-12 rounded-lg bg-gray-100 dark:bg-gray-700 overflow-hidden flex items-center justify-center relative">
+                                                        {product.images?.[0] ? (
+                                                            <Image src={product.images[0]} alt={product.name} fill sizes="48px" className="object-cover" />
+                                                        ) : (
+                                                            <span className="text-xs text-gray-400">No Img</span>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                                <td className="p-4 font-medium dark:text-gray-200">{product.name}</td>
+                                                <td className="p-4 text-gray-500 dark:text-gray-400 font-mono text-xs">
+                                                    {product.productInfo?.partNo || '-'}
+                                                </td>
+                                                {selectedCategory === 'all' && (
+                                                    <td className="p-4">
+                                                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 capitalize">
+                                                            {categories.find(c => c.id === product.category)?.name || product.category}
+                                                        </span>
+                                                    </td>
+                                                )}
+                                                <td className="p-4 text-gray-500 dark:text-gray-400">{product.brand}</td>
+                                                <td className="p-4 font-medium dark:text-gray-200">₹{product.price.toLocaleString('en-IN')}</td>
+                                                
+                                                {/* Stock cell */}
+                                                <td className="p-4">
+                                                    {editingStockId === product.id ? (
+                                                        <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                                                            <input
+                                                                type="number"
+                                                                value={editingStockValue}
+                                                                onChange={(e) => setEditingStockValue(e.target.value)}
+                                                                onKeyDown={(e) => {
+                                                                    if (e.key === 'Enter') {
+                                                                        handleSaveStock(product.id, product.category || selectedCategory);
+                                                                    } else if (e.key === 'Escape') {
+                                                                        handleCancelStock();
+                                                                    }
+                                                                }}
+                                                                disabled={updatingStock}
+                                                                className="w-16 px-1.5 py-0.5 text-sm border rounded dark:bg-gray-900 dark:border-gray-700 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                                                min="0"
+                                                                autoFocus
+                                                            />
+                                                            <button
+                                                                onClick={() => handleSaveStock(product.id, product.category || selectedCategory)}
+                                                                disabled={updatingStock}
+                                                                className="p-1 text-green-600 hover:bg-green-50 rounded dark:hover:bg-green-900/20 transition-colors disabled:opacity-50"
+                                                                title="Save"
+                                                            >
+                                                                <FiCheck className="w-4 h-4" />
+                                                            </button>
+                                                            <button
+                                                                onClick={handleCancelStock}
+                                                                disabled={updatingStock}
+                                                                className="p-1 text-red-600 hover:bg-red-50 rounded dark:hover:bg-red-900/20 transition-colors disabled:opacity-50"
+                                                                title="Cancel"
+                                                            >
+                                                                <FiX className="w-4 h-4" />
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex flex-col gap-1">
+                                                            <div className="flex items-center gap-2 group/stock">
+                                                                <span 
+                                                                    onClick={() => startEditStock(product.id, product.stock)}
+                                                                    className={`px-2 py-1 rounded-full text-xs font-medium cursor-pointer transition-all hover:ring-1 hover:ring-blue-400 ${
+                                                                        product.stock > 5
+                                                                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                                                            : product.stock > 0
+                                                                                ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                                                                                : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                                                                    }`}
+                                                                    title="Click to edit stock"
+                                                                >
+                                                                    {product.stock} in stock
+                                                                </span>
+                                                                <button
+                                                                    onClick={() => startEditStock(product.id, product.stock)}
+                                                                    className="opacity-0 group-hover/stock:opacity-100 p-1 text-gray-400 hover:text-blue-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-all"
+                                                                    title="Quick edit stock"
+                                                                >
+                                                                    <FiEdit2 className="w-3.5 h-3.5" />
+                                                                </button>
+                                                            </div>
+                                                            {grace.isWithinGrace && (
+                                                                <div className="flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400 font-medium" title="Restored from Old Stock. If stock is not updated within 24h, it will auto-return to Old Stock.">
+                                                                    <FiClock className="w-3 h-3 flex-shrink-0 animate-pulse text-amber-500" />
+                                                                    <span>Restored ({grace.remainingHours}h {grace.remainingMinutes}m left to update)</span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </td>
+
+                                                {/* Button Move to Old: only visible if product stock is 0 */}
+                                                <td className="p-4 text-center">
+                                                    {isOutOfStock ? (
+                                                        <button
+                                                            onClick={() => handleMoveToOld(product.id, product.category || selectedCategory, product.name)}
+                                                            disabled={movingToOldId === product.id}
+                                                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 dark:bg-amber-900/20 dark:text-amber-300 dark:border-amber-800/50 rounded-lg transition-colors shadow-xs disabled:opacity-50 cursor-pointer"
+                                                            title="Move out-of-stock product to Old Material"
+                                                        >
+                                                            <FiArchive className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                                                            <span>{movingToOldId === product.id ? 'Moving...' : 'Move to Old'}</span>
+                                                        </button>
+                                                    ) : (
+                                                        <span className="text-xs text-gray-300 dark:text-gray-600 font-mono" title="Only 0-stock products can be moved to Old Material">-</span>
+                                                    )}
+                                                </td>
 
                                         {/* Actions */}
                                         <td className="p-4 text-right">
@@ -609,8 +632,9 @@ export default function ProductsPage() {
                                             </div>
                                         </td>
                                     </tr>
-                                ))
-                            )}
+                                );
+                            })
+                        )}
                         </tbody>
                     </table>
                 </div>

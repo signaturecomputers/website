@@ -35,6 +35,7 @@ interface Product {
     isOldMaterial?: boolean;
     zeroStockDate?: string | null;
     oldMaterialDate?: string | null;
+    restoredFromOldMaterialDate?: string | null;
     updatedAt?: string | null;
     createdAt?: string | null;
     productInfo?: any;
@@ -266,7 +267,11 @@ export default function OldMaterialPage() {
             if (result.success) {
                 // Product moved back to active section
                 setProducts(prev => prev.filter(p => p.id !== productId));
-                toast.success(`"${productName}" restored with stock ${newStock} and moved to active Products!`);
+                if (newStock > 0) {
+                    toast.success(`"${productName}" restored with stock ${newStock} and moved to active Products!`);
+                } else {
+                    toast.success(`"${productName}" moved to active Products! Note: Stock must be updated within 24 hours.`);
+                }
                 setRestoreModalProduct(null);
             } else {
                 throw new Error(result.error || 'Failed to restore product');
@@ -383,8 +388,12 @@ export default function OldMaterialPage() {
         return oldMaterialProducts.filter(p => p.isOldMaterial).length;
     }, [oldMaterialProducts]);
 
+    const unupdatedAfterRestoreCount = useMemo(() => {
+        return oldMaterialProducts.filter(p => !p.isOldMaterial && p.restoredFromOldMaterialDate).length;
+    }, [oldMaterialProducts]);
+
     const zeroStockOverMonthCount = useMemo(() => {
-        return oldMaterialProducts.filter(p => !p.isOldMaterial).length;
+        return oldMaterialProducts.filter(p => !p.isOldMaterial && !p.restoredFromOldMaterialDate).length;
     }, [oldMaterialProducts]);
 
     return (
@@ -403,7 +412,7 @@ export default function OldMaterialPage() {
                             </span>
                         </h1>
                         <p className="text-sm text-gray-500 dark:text-gray-400">
-                            Products with 0 stock for over 30 days or manually moved to End of Life.
+                            Products with 0 stock for over 30 days, restored items unupdated for 24h, or manually moved to End of Life.
                         </p>
                     </div>
                 </div>
@@ -424,14 +433,15 @@ export default function OldMaterialPage() {
                 <div className="text-sm text-amber-800 dark:text-amber-300">
                     <p className="font-semibold mb-0.5">Automated Stock & EOL Management</p>
                     <p className="text-xs text-amber-700 dark:text-amber-400 leading-relaxed">
-                        • Items that remain at <strong>0 stock for more than 30 days (1 month)</strong> are automatically displayed here.<br />
-                        • Click <strong>Change Stock</strong> or <strong>Restore</strong> to set new stock quantity. When stock is changed to a value &gt; 0, the item will <strong>automatically move back to the active Products section</strong>!
+                        • Items that remain at <strong>0 stock for more than 30 days (1 month)</strong> are automatically moved here.<br />
+                        • Items moved/restored from Old Stock with 0 stock have <strong>24 hours to update stock</strong>; otherwise, they automatically return here.<br />
+                        • Click <strong>Change Stock</strong> or <strong>Restore</strong> to set new stock quantity. When stock is changed to a value &gt; 0, the item will <strong>automatically move back to active Products</strong>!
                     </p>
                 </div>
             </div>
 
             {/* Quick Stat Badges */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm flex items-center justify-between">
                     <div>
                         <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Total Old Material</p>
@@ -447,6 +457,15 @@ export default function OldMaterialPage() {
                         <p className="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1">{zeroStockOverMonthCount}</p>
                     </div>
                     <div className="p-3 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 rounded-lg">
+                        <FiRefreshCw className="w-5 h-5" />
+                    </div>
+                </div>
+                <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Unupdated (&gt; 24h Restore)</p>
+                        <p className="text-2xl font-bold text-rose-600 dark:text-rose-400 mt-1">{unupdatedAfterRestoreCount}</p>
+                    </div>
+                    <div className="p-3 bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 rounded-lg">
                         <FiRefreshCw className="w-5 h-5" />
                     </div>
                 </div>
@@ -562,9 +581,11 @@ export default function OldMaterialPage() {
                                             <td className="p-4">
                                                 <div className="flex flex-col gap-1">
                                                     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium w-fit ${
-                                                        product.isOldMaterial
+                                                        reason.type === 'manual'
                                                             ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'
-                                                            : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+                                                            : reason.type === 'unupdated_24h'
+                                                                ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300'
+                                                                : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
                                                     }`}>
                                                         {reason.label}
                                                     </span>
@@ -711,17 +732,20 @@ export default function OldMaterialPage() {
                             </p>
                             <div>
                                 <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                                    Set New Stock Quantity
+                                    Set Stock Quantity
                                 </label>
                                 <input
                                     type="number"
-                                    min="1"
+                                    min="0"
                                     value={restoreStockInput}
                                     onChange={(e) => setRestoreStockInput(e.target.value)}
                                     className="w-full px-3 py-2 text-sm border rounded-lg dark:bg-gray-900 dark:border-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none font-medium"
-                                    placeholder="Enter stock quantity (min 1)"
+                                    placeholder="Enter stock quantity (0 or more)"
                                     autoFocus
                                 />
+                                <p className="text-xs text-amber-600 dark:text-amber-400 mt-2 bg-amber-50 dark:bg-amber-950/20 p-2.5 rounded-lg border border-amber-200 dark:border-amber-800/40 leading-relaxed">
+                                    💡 <strong>Notice:</strong> If restored with <strong>0 stock</strong>, the product moves to active Products with a <strong>24-hour grace period</strong>. If its stock is not updated to &gt; 0 within 24 hours, it will automatically return to Old Material.
+                                </p>
                             </div>
                         </div>
                         <div className="mt-6 flex justify-end gap-3">
@@ -734,8 +758,8 @@ export default function OldMaterialPage() {
                             <button
                                 onClick={() => {
                                     const qty = parseInt(restoreStockInput, 10);
-                                    if (isNaN(qty) || qty <= 0) {
-                                        toast.error('Please enter a valid stock quantity greater than 0');
+                                    if (isNaN(qty) || qty < 0) {
+                                        toast.error('Please enter a valid stock quantity (0 or more)');
                                         return;
                                     }
                                     handleQuickRestore(

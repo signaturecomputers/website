@@ -279,6 +279,18 @@ export async function updateProduct(productId: string, productData: any, targetC
         const newCollection = targetCategory === 'hubs' ? 'docks' : targetCategory;
         const oldCollection = originalCategory === 'hubs' ? 'docks' : originalCategory;
 
+        if (sanitized.stock !== undefined) {
+            const stockNum = Number(sanitized.stock);
+            if (stockNum > 0) {
+                sanitized.isOldMaterial = false;
+                sanitized.oldMaterialDate = null;
+                sanitized.restoredFromOldMaterialDate = null;
+                sanitized.zeroStockDate = null;
+            } else if (stockNum <= 0 && !sanitized.zeroStockDate) {
+                sanitized.zeroStockDate = new Date().toISOString();
+            }
+        }
+
         if (newCollection !== oldCollection) {
             // Move product: Set in new collection, then delete from old
             await adminDb.collection(newCollection).doc(productId).set(sanitized);
@@ -370,6 +382,7 @@ export async function updateProductStock(productId: string, category: string, ne
             updateData.isOldMaterial = false;
             updateData.zeroStockDate = null;
             updateData.oldMaterialDate = null;
+            updateData.restoredFromOldMaterialDate = null;
         } else {
             // When stock is set to 0, mark zeroStockDate if not already set
             updateData.zeroStockDate = new Date().toISOString();
@@ -396,9 +409,24 @@ export async function moveToOldMaterial(productId: string, category: string) {
         }
         const collectionName = targetCategory === 'hubs' ? 'docks' : targetCategory;
 
-        await adminDb.collection(collectionName).doc(productId).update({
+        const docRef = adminDb.collection(collectionName).doc(productId);
+        const docSnap = await docRef.get();
+
+        if (docSnap.exists) {
+            const data = docSnap.data();
+            const currentStock = Number(data?.stock ?? 0);
+            if (currentStock > 0) {
+                return {
+                    success: false,
+                    error: `Cannot move in-stock product to Old Material (${currentStock} in stock). Only products with 0 stock can be moved.`
+                };
+            }
+        }
+
+        await docRef.update({
             isOldMaterial: true,
             oldMaterialDate: new Date().toISOString(),
+            restoredFromOldMaterialDate: null,
             updatedAt: new Date().toISOString()
         });
 
@@ -413,7 +441,7 @@ export async function moveToOldMaterial(productId: string, category: string) {
     }
 }
 
-export async function restoreFromOldMaterial(productId: string, category: string, newStock: number = 1) {
+export async function restoreFromOldMaterial(productId: string, category: string, newStock: number = 0) {
     try {
         let targetCategory = category === 'webcams' ? 'dvd-writers' : category;
         if (targetCategory === 'probook' || targetCategory === 'zbook-firefly' || targetCategory === 'elitebook') {
@@ -421,13 +449,23 @@ export async function restoreFromOldMaterial(productId: string, category: string
         }
         const collectionName = targetCategory === 'hubs' ? 'docks' : targetCategory;
 
-        await adminDb.collection(collectionName).doc(productId).update({
+        const updateData: any = {
             stock: newStock,
             isOldMaterial: false,
-            zeroStockDate: null,
             oldMaterialDate: null,
             updatedAt: new Date().toISOString()
-        });
+        };
+
+        if (newStock > 0) {
+            updateData.zeroStockDate = null;
+            updateData.restoredFromOldMaterialDate = null;
+        } else {
+            // Restored with 0 stock: start 24-hour countdown grace period
+            updateData.zeroStockDate = new Date().toISOString();
+            updateData.restoredFromOldMaterialDate = new Date().toISOString();
+        }
+
+        await adminDb.collection(collectionName).doc(productId).update(updateData);
 
         revalidatePath('/admindashboard/products');
         revalidatePath('/admindashboard/old-material');
