@@ -18,7 +18,8 @@ import {
     Image as ImageIcon,
     MessageSquare,
     Eye,
-    Webhook
+    Webhook,
+    Archive
 } from "lucide-react";
 
 export default function AdminDashboardLayout({
@@ -45,6 +46,7 @@ export default function AdminDashboardLayout({
     const navItems = [
         { name: "Dashboard", href: "/admindashboard", icon: LayoutDashboard },
         { name: "Products", href: "/admindashboard/products", icon: Package },
+        { name: "Old Material", href: "/admindashboard/old-material", icon: Archive },
         { name: "Orders", href: "/admindashboard/orders", icon: ShoppingCart },
         { name: "Quote Requests", href: "/admindashboard/quotes", icon: MessageSquare },
         { name: "Webhook Logs", href: "/admindashboard/webhook-logs", icon: Webhook },

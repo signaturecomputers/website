@@ -5,9 +5,10 @@ import { useSearchParams } from 'next/navigation';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import Link from 'next/link';
-import { FiPlus, FiTrash2, FiEdit2, FiSearch, FiFilter, FiEye, FiCheck, FiX } from 'react-icons/fi';
+import { FiPlus, FiTrash2, FiEdit2, FiSearch, FiFilter, FiEye, FiCheck, FiX, FiArchive } from 'react-icons/fi';
 import { toast } from 'sonner';
-import { updateProductStock } from '@/lib/admin-actions';
+import { updateProductStock, moveToOldMaterial } from '@/lib/admin-actions';
+import { isProductOldMaterial } from '@/lib/product-utils';
 import Image from 'next/image';
 
 interface Product {
@@ -18,6 +19,11 @@ interface Product {
     stock: number;
     images: string[];
     category?: string;
+    isOldMaterial?: boolean;
+    zeroStockDate?: string | null;
+    oldMaterialDate?: string | null;
+    updatedAt?: string | null;
+    createdAt?: string | null;
     [key: string]: any;
 }
 
@@ -73,6 +79,7 @@ export default function ProductsPage() {
     const [editingStockId, setEditingStockId] = useState<string | null>(null);
     const [editingStockValue, setEditingStockValue] = useState<string>('');
     const [updatingStock, setUpdatingStock] = useState(false);
+    const [movingToOldId, setMovingToOldId] = useState<string | null>(null);
     const [visibleCount, setVisibleCount] = useState(50);
 
     // Reset visible count when filter or search changes
@@ -235,6 +242,33 @@ export default function ProductsPage() {
         }
     };
 
+    const handleMoveToOld = async (productId: string, productCategory: string, productName: string) => {
+        if (!confirm(`Are you sure you want to move "${productName}" to Old Material (End of Life)? It will be moved to the Old Material section.`)) {
+            return;
+        }
+
+        setMovingToOldId(productId);
+        try {
+            const result = await moveToOldMaterial(productId, productCategory || selectedCategory);
+            if (result.success) {
+                setProducts(prev => prev.map(p => {
+                    if (p.id === productId) {
+                        return { ...p, isOldMaterial: true, oldMaterialDate: new Date().toISOString() };
+                    }
+                    return p;
+                }));
+                toast.success(`"${productName}" moved to Old Material successfully`);
+            } else {
+                throw new Error(result.error || 'Failed to move product');
+            }
+        } catch (error: any) {
+            console.error('Error moving product to old material:', error);
+            toast.error(error.message || 'Failed to move product');
+        } finally {
+            setMovingToOldId(null);
+        }
+    };
+
     const handleDelete = async (productId: string, productCategory: string) => {
         if (!confirm('Are you sure you want to delete this product? This action cannot be undone.')) return;
 
@@ -283,9 +317,14 @@ export default function ProductsPage() {
         }
     };
 
+    const oldMaterialCount = useMemo(() => {
+        return products.filter(p => isProductOldMaterial(p)).length;
+    }, [products]);
+
     const getProductCountForCategory = (catId: string) => {
         let count = 0;
         products.forEach(p => {
+            if (isProductOldMaterial(p)) return; // Exclude old material / EOL items
             if (p.stock <= 0) return; // Skip if stock is 0 (out of stock)
             
             if (catId === 'all') {
@@ -312,6 +351,11 @@ export default function ProductsPage() {
 
     const filteredProducts = useMemo(() => {
         return products.filter(product => {
+            // Exclude Old Material / End of Life products
+            if (isProductOldMaterial(product)) {
+                return false;
+            }
+
             // 1. Category Filter
             if (selectedCategory !== 'all') {
                 if (selectedCategory === 'webcams') {
@@ -343,18 +387,31 @@ export default function ProductsPage() {
     return (
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <h1 className="text-2xl font-bold dark:text-white">Products</h1>
-                <div className="flex gap-2">
+                <div>
+                    <h1 className="text-2xl font-bold dark:text-white">Products</h1>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Manage active store products and live inventory.
+                    </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                    <Link
+                        href="/admindashboard/old-material"
+                        className="flex items-center px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors font-medium text-sm shadow-sm"
+                        title="View Old Material & End of Life Products"
+                    >
+                        <FiArchive className="mr-2" />
+                        Old Material {oldMaterialCount > 0 && `(${oldMaterialCount})`}
+                    </Link>
                     <Link
                         href="/admindashboard/products/care-packs"
-                        className="flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium"
+                        className="flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium text-sm"
                     >
                         <FiPlus className="mr-2" />
                         Add Care Pack
                     </Link>
                     <Link
                         href={selectedCategory && selectedCategory !== 'all' ? `/admindashboard/products/add?category=${selectedCategory}` : "/admindashboard/products/add"}
-                        className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                        className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
                     >
                         <FiPlus className="mr-2" />
                         Add Product
@@ -398,7 +455,7 @@ export default function ProductsPage() {
             {/* Table */}
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
                 <div className="overflow-x-auto">
-                    <table className="w-full min-w-[800px] text-left text-sm">
+                    <table className="w-full min-w-[880px] text-left text-sm">
                         <thead className="bg-gray-50 dark:bg-gray-900/50 text-gray-500 dark:text-gray-400 font-medium">
                             <tr>
                                 <th className="p-4 w-20">Image</th>
@@ -408,17 +465,18 @@ export default function ProductsPage() {
                                 <th className="p-4">Brand</th>
                                 <th className="p-4">Price</th>
                                 <th className="p-4">Stock</th>
+                                <th className="p-4 text-center">Move to Old</th>
                                 <th className="p-4 text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                             {loading ? (
                                 <tr>
-                                    <td colSpan={selectedCategory === 'all' ? 8 : 7} className="p-8 text-center text-gray-500">Loading products...</td>
+                                    <td colSpan={selectedCategory === 'all' ? 9 : 8} className="p-8 text-center text-gray-500">Loading products...</td>
                                 </tr>
                             ) : filteredProducts.length === 0 ? (
                                 <tr>
-                                    <td colSpan={selectedCategory === 'all' ? 8 : 7} className="p-8 text-center text-gray-500">No products found{selectedCategory !== 'all' ? ` in ${selectedCategory}` : ''}.</td>
+                                    <td colSpan={selectedCategory === 'all' ? 9 : 8} className="p-8 text-center text-gray-500">No active products found{selectedCategory !== 'all' ? ` in ${selectedCategory}` : ''}.</td>
                                 </tr>
                             ) : (
                                 filteredProducts.slice(0, visibleCount).map((product) => (
@@ -445,6 +503,8 @@ export default function ProductsPage() {
                                         )}
                                         <td className="p-4 text-gray-500 dark:text-gray-400">{product.brand}</td>
                                         <td className="p-4 font-medium dark:text-gray-200">₹{product.price.toLocaleString('en-IN')}</td>
+                                        
+                                        {/* Stock cell */}
                                         <td className="p-4">
                                             {editingStockId === product.id ? (
                                                 <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
@@ -453,7 +513,7 @@ export default function ProductsPage() {
                                                         value={editingStockValue}
                                                         onChange={(e) => setEditingStockValue(e.target.value)}
                                                         onKeyDown={(e) => {
-                                                            if (e.key === 'Enter') {
+                                                             if (e.key === 'Enter') {
                                                                 handleSaveStock(product.id, product.category || selectedCategory);
                                                             } else if (e.key === 'Escape') {
                                                                 handleCancelStock();
@@ -506,6 +566,21 @@ export default function ProductsPage() {
                                                 </div>
                                             )}
                                         </td>
+
+                                        {/* Button Move to Old situated in between Stock and Eye button */}
+                                        <td className="p-4 text-center">
+                                            <button
+                                                onClick={() => handleMoveToOld(product.id, product.category || selectedCategory, product.name)}
+                                                disabled={movingToOldId === product.id}
+                                                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 dark:bg-amber-900/20 dark:text-amber-300 dark:border-amber-800/50 rounded-lg transition-colors shadow-xs disabled:opacity-50 cursor-pointer"
+                                                title="Move product to Old Material (End of Life)"
+                                            >
+                                                <FiArchive className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                                                <span>{movingToOldId === product.id ? 'Moving...' : 'Move to Old'}</span>
+                                            </button>
+                                        </td>
+
+                                        {/* Actions */}
                                         <td className="p-4 text-right">
                                             <div className="flex items-center justify-end gap-2">
                                                 <Link

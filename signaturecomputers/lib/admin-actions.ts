@@ -360,18 +360,83 @@ export async function updateProductStock(productId: string, category: string, ne
         }
         const collectionName = targetCategory === 'hubs' ? 'docks' : targetCategory;
 
-        await adminDb.collection(collectionName).doc(productId).update({
+        const updateData: any = {
             stock: newStock,
             updatedAt: new Date().toISOString()
-        });
+        };
+
+        if (newStock > 0) {
+            // When stock is updated to > 0, it is no longer old material or out-of-stock
+            updateData.isOldMaterial = false;
+            updateData.zeroStockDate = null;
+            updateData.oldMaterialDate = null;
+        } else {
+            // When stock is set to 0, mark zeroStockDate if not already set
+            updateData.zeroStockDate = new Date().toISOString();
+        }
+
+        await adminDb.collection(collectionName).doc(productId).update(updateData);
 
         revalidatePath('/admindashboard/products');
+        revalidatePath('/admindashboard/old-material');
         revalidatePath('/products');
         revalidatePath(`/product/${productId}`);
         return { success: true };
     } catch (error: any) {
         console.error('Error updating stock:', error);
         return { success: false, error: error.message || 'Failed to update stock' };
+    }
+}
+
+export async function moveToOldMaterial(productId: string, category: string) {
+    try {
+        let targetCategory = category === 'webcams' ? 'dvd-writers' : category;
+        if (targetCategory === 'probook' || targetCategory === 'zbook-firefly' || targetCategory === 'elitebook') {
+            targetCategory = 'laptops';
+        }
+        const collectionName = targetCategory === 'hubs' ? 'docks' : targetCategory;
+
+        await adminDb.collection(collectionName).doc(productId).update({
+            isOldMaterial: true,
+            oldMaterialDate: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        });
+
+        revalidatePath('/admindashboard/products');
+        revalidatePath('/admindashboard/old-material');
+        revalidatePath('/products');
+        revalidatePath(`/product/${productId}`);
+        return { success: true };
+    } catch (error: any) {
+        console.error('Error moving to old material:', error);
+        return { success: false, error: error.message || 'Failed to move to old material' };
+    }
+}
+
+export async function restoreFromOldMaterial(productId: string, category: string, newStock: number = 1) {
+    try {
+        let targetCategory = category === 'webcams' ? 'dvd-writers' : category;
+        if (targetCategory === 'probook' || targetCategory === 'zbook-firefly' || targetCategory === 'elitebook') {
+            targetCategory = 'laptops';
+        }
+        const collectionName = targetCategory === 'hubs' ? 'docks' : targetCategory;
+
+        await adminDb.collection(collectionName).doc(productId).update({
+            stock: newStock,
+            isOldMaterial: false,
+            zeroStockDate: null,
+            oldMaterialDate: null,
+            updatedAt: new Date().toISOString()
+        });
+
+        revalidatePath('/admindashboard/products');
+        revalidatePath('/admindashboard/old-material');
+        revalidatePath('/products');
+        revalidatePath(`/product/${productId}`);
+        return { success: true };
+    } catch (error: any) {
+        console.error('Error restoring from old material:', error);
+        return { success: false, error: error.message || 'Failed to restore product' };
     }
 }
 
