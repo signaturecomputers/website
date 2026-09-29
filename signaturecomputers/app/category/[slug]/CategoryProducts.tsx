@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Product, CATEGORY_NAMES } from '@/lib/products';
+import { isProductOldMaterial } from '@/lib/product-utils';
 import { categoryIntros } from '@/lib/categoryContent';
 import { FiLoader, FiGrid, FiList } from 'react-icons/fi';
 import { getSEOContent } from '@/lib/category-seo';
@@ -227,6 +228,9 @@ export default function CategoryProducts({ slug }: CategoryProductsProps) {
                 } else if (slug === 'others') {
                     fetchedProducts = fetchedProducts.filter(p => p.category === 'others' || p.productInfo?.othersType === 'other');
                 }
+
+                // Filter out Old Material / EOL products from customer website
+                fetchedProducts = fetchedProducts.filter(p => !isProductOldMaterial(p));
 
                 setProducts(fetchedProducts);
                 setFilteredProducts(fetchedProducts);

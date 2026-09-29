@@ -1,5 +1,6 @@
 import { collection, getDocs, doc, getDoc, query, where, limit as firestoreLimit } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { isProductOldMaterial } from './product-utils';
 
 const COLLECTIONS = [
     'laptops', 'desktops', 'monitors', 'accessories', 'memory', 'storage', 'graphics-cards',
@@ -436,8 +437,8 @@ export async function getAllProducts(): Promise<Product[]> {
 
         const results = await Promise.all(productPromises);
 
-        // Flatten the array of arrays
-        return results.flat();
+        // Flatten the array of arrays and filter out old material
+        return results.flat().filter(product => !isProductOldMaterial(product));
     } catch (error) {
         console.warn('Warning: Some collections could not be fetched (likely due to missing permissions):', error);
         return [];
@@ -465,13 +466,20 @@ export async function getProductById(id: string): Promise<Product | null> {
         if (foundSnap) {
             const data = foundSnap.data() || {};
             const category = foundSnap.ref.parent.id; // Get collection name
-            return {
+            const product = {
                 id: foundSnap.id,
                 ...data,
                 category,
                 image: data.images?.[0] || '',
                 partNumber: data.partNumber || data.partNo || data.productInfo?.partNo || '',
             } as Product;
+
+            // Exclude old stock / EOL material from website front-end
+            if (isProductOldMaterial(product)) {
+                return null;
+            }
+
+            return product;
         }
 
         return null;
@@ -485,12 +493,11 @@ export async function getProductById(id: string): Promise<Product | null> {
 export async function getRelatedProducts(category: string, excludeId: string, limitCount: number = 4): Promise<Product[]> {
     try {
         const colRef = collection(db, category);
-        const q = query(colRef, firestoreLimit(limitCount + 1));
+        const q = query(colRef, firestoreLimit(limitCount + 10)); // Fetch extra to account for any old material filtered out
         const snapshot = await getDocs(q);
 
         const products = snapshot.docs
             .filter(doc => doc.id !== excludeId)
-            .slice(0, limitCount)
             .map(doc => {
                 const data = doc.data();
                 return {
@@ -499,7 +506,9 @@ export async function getRelatedProducts(category: string, excludeId: string, li
                     category,
                     image: data.images?.[0] || '',
                 } as Product;
-            });
+            })
+            .filter(p => !isProductOldMaterial(p))
+            .slice(0, limitCount);
 
         return products;
     } catch (error) {
@@ -519,30 +528,48 @@ export async function getSuggestedAccessories(productCategory: string): Promise<
             const mouseSnapshot = await getDocs(collection(db, 'mouse'));
 
             if (bagsSnapshot.docs.length > 0) {
-                const bags = bagsSnapshot.docs.slice(0, 2).map(doc => {
-                    const data = doc.data();
-                    return { id: doc.id, ...data, category: 'bags', image: data.images?.[0] || '' } as Product;
-                });
-                suggestions.push({ category: 'bags', categoryName: 'Laptop Bags', products: bags });
+                const bags = bagsSnapshot.docs
+                    .map(doc => {
+                        const data = doc.data();
+                        return { id: doc.id, ...data, category: 'bags', image: data.images?.[0] || '' } as Product;
+                    })
+                    .filter(p => !isProductOldMaterial(p))
+                    .slice(0, 2);
+
+                if (bags.length > 0) {
+                    suggestions.push({ category: 'bags', categoryName: 'Laptop Bags', products: bags });
+                }
             }
 
             if (mouseSnapshot.docs.length > 0) {
-                const mice = mouseSnapshot.docs.slice(0, 2).map(doc => {
-                    const data = doc.data();
-                    return { id: doc.id, ...data, category: 'mouse', image: data.images?.[0] || '' } as Product;
-                });
-                suggestions.push({ category: 'mouse', categoryName: 'Mouse', products: mice });
+                const mice = mouseSnapshot.docs
+                    .map(doc => {
+                        const data = doc.data();
+                        return { id: doc.id, ...data, category: 'mouse', image: data.images?.[0] || '' } as Product;
+                    })
+                    .filter(p => !isProductOldMaterial(p))
+                    .slice(0, 2);
+
+                if (mice.length > 0) {
+                    suggestions.push({ category: 'mouse', categoryName: 'Mouse', products: mice });
+                }
             }
         } else if (productCategory === 'desktops' || productCategory === 'workstations') {
             // For desktops/workstations: suggest monitors
             const monitorsSnapshot = await getDocs(collection(db, 'monitors'));
 
             if (monitorsSnapshot.docs.length > 0) {
-                const monitors = monitorsSnapshot.docs.slice(0, 2).map(doc => {
-                    const data = doc.data();
-                    return { id: doc.id, ...data, category: 'monitors', image: data.images?.[0] || '' } as Product;
-                });
-                suggestions.push({ category: 'monitors', categoryName: 'Monitors', products: monitors });
+                const monitors = monitorsSnapshot.docs
+                    .map(doc => {
+                        const data = doc.data();
+                        return { id: doc.id, ...data, category: 'monitors', image: data.images?.[0] || '' } as Product;
+                    })
+                    .filter(p => !isProductOldMaterial(p))
+                    .slice(0, 2);
+
+                if (monitors.length > 0) {
+                    suggestions.push({ category: 'monitors', categoryName: 'Monitors', products: monitors });
+                }
             }
         }
 

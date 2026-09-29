@@ -1,5 +1,6 @@
 import { adminDb } from './firebase-admin';
 import { Product } from './products';
+import { isProductOldMaterial } from './product-utils';
 
 const COLLECTIONS = [
     'laptops', 'desktops', 'monitors', 'accessories', 'memory', 'storage', 'graphics-cards',
@@ -59,7 +60,7 @@ export async function getAllProductsServer(category?: string): Promise<Product[]
         });
 
         const results = await Promise.all(productPromises);
-        return results.flat();
+        return results.flat().filter(product => !isProductOldMaterial(product));
     } catch (error) {
         console.error('Error in getAllProductsServer:', error);
         return [];
